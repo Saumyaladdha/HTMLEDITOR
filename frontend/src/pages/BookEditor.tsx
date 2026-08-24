@@ -533,7 +533,13 @@ export default function BookEditor() {
    * and a selected block could not be deleted or duplicated from the
    * keyboard at all.
    */
-  const handleEditorKey = useCallback(
+  // Deliberately NOT memoized. It calls onRemoveBlock/onDuplicateBlock/etc.,
+  // which close over `selectedBlock` STATE — memoizing this on a narrow
+  // dependency list pins those closures, so Delete would act on whichever
+  // block was selected when that dependency last changed rather than the one
+  // selected now. Recreated every render, and reached through a ref (below)
+  // so listeners never need re-registering.
+  const handleEditorKey =
     (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
@@ -632,26 +638,24 @@ export default function BookEditor() {
         default:
           break;
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [contextMenu],
-  );
+    };
 
-  useEffect(() => {
-    window.addEventListener("keydown", handleEditorKey);
-    return () => window.removeEventListener("keydown", handleEditorKey);
-  }, [handleEditorKey]);
-
-  // The iframe listener is registered once per document load, but
-  // handleEditorKey is a new closure whenever its deps change. Registering
-  // the closure directly would pin whichever version existed at load time;
-  // this indirection keeps a stable function identity that always calls the
-  // current one.
+  // Latest-ref indirection. Both listeners (the outer window, and the iframe
+  // document — keydown inside an iframe doesn't bubble out) are registered
+  // ONCE with a stable wrapper, which always dispatches to the current
+  // handler. That keeps registration cheap while guaranteeing the handler
+  // sees current state, which is the whole point of not memoizing above.
   const handleEditorKeyRef = useRef(handleEditorKey);
   useEffect(() => {
     handleEditorKeyRef.current = handleEditorKey;
-  }, [handleEditorKey]);
+  }); // no dependency array — refresh after EVERY render
+
   const iframeKeyHandler = useRef((e: KeyboardEvent) => handleEditorKeyRef.current(e)).current;
+
+  useEffect(() => {
+    window.addEventListener("keydown", iframeKeyHandler);
+    return () => window.removeEventListener("keydown", iframeKeyHandler);
+  }, [iframeKeyHandler]);
 
   /** Cleanup for listeners registered on elements OUTSIDE the iframe.
    * Anything attached to the iframe's own document dies with it on the next
