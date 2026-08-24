@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.auth import rate_limit
 from app.auth.security import (
     create_access_token,
     hash_password,
@@ -19,9 +20,29 @@ from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, Signup
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _prune_stale_refresh_tokens(db: Session, user: User) -> None:
+    """Rotation issues a new row on every refresh and revokes the old one, so
+    this table grew without bound — an active user accumulates one dead row
+    per refresh, forever. Pruning opportunistically here (rather than via a
+    scheduled job that doesn't exist yet) keeps it proportional to genuinely
+    live sessions. Revoked rows are kept briefly on purpose: they're what a
+    reuse-detection check would need to recognise a replayed stolen token."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=1)
+    (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.user_id == user.id,
+            (RefreshToken.expires_at < datetime.now(timezone.utc))
+            | (RefreshToken.revoked_at < cutoff),
+        )
+        .delete(synchronize_session=False)
+    )
+
+
 def _issue_token_pair(db: Session, user: User) -> TokenPair:
     access = create_access_token(user.id)
     refresh_plain = new_refresh_token_plaintext()
+    _prune_stale_refresh_tokens(db, user)
     db.add(RefreshToken(
         user_id=user.id,
         token_hash=hash_refresh_token(refresh_plain),
@@ -32,7 +53,8 @@ def _issue_token_pair(db: Session, user: User) -> TokenPair:
 
 
 @router.post("/signup", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
-def signup(body: SignupRequest, db: Session = Depends(get_db)):
+def signup(body: SignupRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limit.enforce(request, "signup")
     if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
     user = User(email=body.email, password_hash=hash_password(body.password), display_name=body.display_name)
@@ -43,10 +65,12 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenPair)
-def login(body: LoginRequest, db: Session = Depends(get_db)):
+def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limit.enforce(request, "login")
     user = db.query(User).filter(User.email == body.email).first()
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password")
+    rate_limit.reset(request, "login")
     return _issue_token_pair(db, user)
 
 

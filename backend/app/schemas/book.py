@@ -33,3 +33,6 @@ class CreateVersionRequest(BaseModel):
     html: str
     label: str | None = None
     parent_version_id: uuid.UUID | None = None
+    # Set by the client only after the user has been shown the 409 conflict
+    # and explicitly chosen to overwrite whatever was saved elsewhere.
+    force: bool = False

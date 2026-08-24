@@ -19,6 +19,15 @@ def version_key(user_id: uuid.UUID, book_id: uuid.UUID, version_id: uuid.UUID) -
     return _key("users", str(user_id), "books", str(book_id), "versions", f"{version_id}.html")
 
 
+def check_access() -> None:
+    """Cheapest call that actually proves the credentials work and the bucket
+    is reachable — raises (ClientError / NoCredentialsError / the
+    expired-token error) if not. Used by /health so an expired AWS session
+    token shows up as a red dependency instead of as mysteriously failing
+    saves hours later."""
+    _s3.head_bucket(Bucket=settings.s3_bucket)
+
+
 def put_html(key: str, html: str) -> int:
     """Uploads HTML text to S3, returns the byte size written."""
     body = html.encode("utf-8")

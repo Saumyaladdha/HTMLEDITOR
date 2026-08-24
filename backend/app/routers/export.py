@@ -1,4 +1,7 @@
+import re
+import unicodedata
 import uuid
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -12,6 +15,41 @@ from app.routers.versions import _get_version
 from app.services import s3_service
 
 router = APIRouter(prefix="/books/{book_id}/export", tags=["export"])
+
+# Anything that has no business in a filename, plus the quote/backslash/CR/LF
+# that would let a crafted title break out of the quoted header value
+# entirely and inject a header of its own.
+_UNSAFE_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+
+
+def _content_disposition(title: str, extension: str) -> str:
+    """Builds an RFC 6266 Content-Disposition for a book title.
+
+    Two problems with interpolating the title straight into
+    `filename="{title}"`, which is what this used to do:
+
+    1. HTTP header values are latin-1. Every title in this pipeline is
+       Hindi, so `"अध्याय 1".encode("latin-1")` raised UnicodeEncodeError
+       and the export endpoint returned a 500 — HTML export was simply
+       broken for the entire real corpus.
+    2. `title` is an arbitrary user-supplied query parameter at upload
+       time. A quote closed the quoted-string early and a CR/LF could
+       append a header of the server's own.
+
+    RFC 6266 solves both: a conservative ASCII `filename` for old clients,
+    plus a percent-encoded UTF-8 `filename*` that every current browser
+    prefers and that preserves the real Hindi title.
+    """
+    safe_title = _UNSAFE_FILENAME_CHARS.sub("", title).strip() or "document"
+
+    # ASCII fallback: decompose accents to their base letters where possible,
+    # drop whatever still isn't representable, and never emit an empty name.
+    ascii_title = (
+        unicodedata.normalize("NFKD", safe_title).encode("ascii", "ignore").decode("ascii").strip()
+    )
+    ascii_name = (re.sub(r"\s+", "_", ascii_title) or "document") + extension
+    utf8_name = quote(f"{safe_title}{extension}", safe="")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{utf8_name}"
 
 
 @router.get("")
@@ -30,11 +68,10 @@ def export_book(
     html = s3_service.get_html(version.s3_key)
 
     if format == "html":
-        filename = f"{book.title.replace(' ', '_')}.html"
         return Response(
             content=html,
             media_type="text/html; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={"Content-Disposition": _content_disposition(book.title, ".html")},
         )
     if format == "pdf":
         # Phase 3 (per plan): reuse HTML_Automation/skills/skill_pdf_exporter's
