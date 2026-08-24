@@ -65,6 +65,30 @@ function isSkippable(el: Element): boolean {
   return SKIP_TAGS.has(el.tagName);
 }
 
+/**
+ * Element children, realm-safely.
+ *
+ * This used to filter with `c instanceof HTMLElement`, which is ALWAYS FALSE
+ * here. The document being edited lives inside an iframe, so its elements are
+ * instances of the IFRAME window's HTMLElement — a different constructor from
+ * the parent page's, which is the one `instanceof` resolves against in this
+ * module. Every child was therefore discarded: findContentRoot could never
+ * descend past <body>, and collectBlocks returned an empty list, so nothing
+ * was ever stamped and nothing in the document could be clicked or edited.
+ *
+ * It went unnoticed because the unit tests build documents with DOMParser,
+ * which produces elements in the SAME realm as the test — so `instanceof`
+ * held there and the tests passed while the real editor was inert.
+ *
+ * `children` yields only Elements by definition, so a nodeType check is both
+ * sufficient and realm-independent.
+ */
+function elementChildren(el: Element): HTMLElement[] {
+  return Array.from(el.children).filter(
+    (c): c is HTMLElement => c.nodeType === 1 && !isSkippable(c),
+  );
+}
+
 function displayOf(el: Element, win: Window): string {
   return win.getComputedStyle(el).display;
 }
@@ -115,9 +139,7 @@ export function findContentRoot(doc: Document): HTMLElement {
   if (totalText === 0) return root;
 
   for (let depth = 0; depth < 10; depth++) {
-    const candidates = Array.from(root.children).filter(
-      (c): c is HTMLElement => c instanceof HTMLElement && !isSkippable(c),
-    );
+    const candidates = elementChildren(root);
     const dominant = candidates.find(
       (c) => (c.textContent ?? "").trim().length >= totalText * 0.9,
     );
@@ -148,9 +170,7 @@ function detectPageSelector(doc: Document): { selector: string; els: HTMLElement
   // so a paginated document from a tool this code has never heard of still
   // gets page features.
   const root = findContentRoot(doc);
-  const children = Array.from(root.children).filter(
-    (c): c is HTMLElement => c instanceof HTMLElement && !isSkippable(c),
-  );
+  const children = elementChildren(root);
   if (looksLikeRepeatedPages(children)) {
     const cls = children[0].classList[0];
     // An attribute selector avoids depending on CSS.escape (absent in some
@@ -221,9 +241,7 @@ export function collectBlocks(doc: Document, structure: DocumentStructure): HTML
   if (structure.blockContainerSelectors.length > 0) {
     const blocks: HTMLElement[] = [];
     doc.querySelectorAll(structure.blockContainerSelectors.join(", ")).forEach((container) => {
-      Array.from(container.children).forEach((child) => {
-        if (child instanceof HTMLElement && !isSkippable(child)) blocks.push(child);
-      });
+      elementChildren(container).forEach((child) => blocks.push(child));
     });
     if (blocks.length > 0) return blocks;
     // Fall through to inference: a document can declare containers and still
@@ -232,8 +250,7 @@ export function collectBlocks(doc: Document, structure: DocumentStructure): HTML
 
   const blocks: HTMLElement[] = [];
   const visit = (el: Element) => {
-    for (const child of Array.from(el.children)) {
-      if (!(child instanceof HTMLElement) || isSkippable(child)) continue;
+    for (const child of elementChildren(el)) {
       if (isAtomic(child, win)) {
         blocks.push(child);
       } else if (isBlockLevel(child, win)) {
