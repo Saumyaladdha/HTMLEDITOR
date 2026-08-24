@@ -30,6 +30,8 @@ const btnStyle: CSSProperties = {
 export default function FloatingTextToolbar({ rect, onBold, onItalic, onUnderline, onFontStep, onColor, onHighlight, onClear }: Props) {
   return (
     <div
+      role="toolbar"
+      aria-label="Text formatting"
       style={{
         position: "fixed",
         left: rect.left + rect.width / 2,
@@ -49,18 +51,18 @@ export default function FloatingTextToolbar({ rect, onBold, onItalic, onUnderlin
       // iframe's live text selection before its onClick handler can run.
       onMouseDown={(e) => e.preventDefault()}
     >
-      <button style={{ ...btnStyle, fontWeight: 700 }} title="Bold" onClick={onBold}>B</button>
-      <button style={{ ...btnStyle, fontStyle: "italic" }} title="Italic" onClick={onItalic}>I</button>
-      <button style={{ ...btnStyle, textDecoration: "underline" }} title="Underline" onClick={onUnderline}>U</button>
+      <button style={{ ...btnStyle, fontWeight: 700 }} title="Bold (Ctrl+B)" aria-label="Bold" onClick={onBold}>B</button>
+      <button style={{ ...btnStyle, fontStyle: "italic" }} title="Italic (Ctrl+I)" aria-label="Italic" onClick={onItalic}>I</button>
+      <button style={{ ...btnStyle, textDecoration: "underline" }} title="Underline (Ctrl+U)" aria-label="Underline" onClick={onUnderline}>U</button>
       <Divider />
-      <button style={btnStyle} title="Smaller" onClick={() => onFontStep(-0.15)}>A-</button>
-      <button style={btnStyle} title="Bigger" onClick={() => onFontStep(0.15)}>A+</button>
+      <button style={btnStyle} aria-label="Decrease font size" title="Smaller" onClick={() => onFontStep(-0.15)}>A-</button>
+      <button style={btnStyle} aria-label="Increase font size" title="Bigger" onClick={() => onFontStep(0.15)}>A+</button>
       <Divider />
       <Swatches palette={TEXT_COLOR_PALETTE} onPick={onColor} ring />
       <Divider />
       <Swatches palette={HIGHLIGHT_PALETTE} onPick={onHighlight} />
       <Divider />
-      <button style={{ ...btnStyle, fontSize: 11 }} title="Clear formatting" onClick={onClear}>✕</button>
+      <button style={{ ...btnStyle, fontSize: 11 }} aria-label="Clear formatting" title="Clear formatting" onClick={onClear}>✕</button>
     </div>
   );
 }
@@ -76,6 +78,7 @@ function Swatches({ palette, onPick, ring }: { palette: { name: string; hex: str
         <button
           key={c.name}
           title={c.name}
+          aria-label={`${ring ? "Text colour" : "Highlight"}: ${c.name}`}
           onClick={() => onPick(c.hex)}
           style={{
             width: 16,

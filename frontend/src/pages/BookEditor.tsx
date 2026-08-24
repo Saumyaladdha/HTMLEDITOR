@@ -55,12 +55,14 @@ import Toasts, { useToasts } from "../components/Toasts/Toasts";
 import { serializeForSave } from "../editor/sanitize";
 import { ED, injectChromeStyles } from "../editor/chrome";
 import {
+  collectBlocks,
   collectPages,
   detectStructure,
   type DocumentStructure,
 } from "../editor/structure";
 import { detectCapabilities, NO_CAPABILITIES, type DocumentCapabilities } from "../editor/capabilities";
 import { attachPasteSanitizer } from "../editor/textEditing";
+import { discoverTemplates, type BlockTemplate } from "../editor/blockTemplates";
 
 export default function BookEditor() {
   const { bookId } = useParams<{ bookId: string }>();
@@ -102,6 +104,14 @@ export default function BookEditor() {
   const [zoomOverride, setZoomOverride] = useState<number | null>(null);
 
   const [autosaveFailures, setAutosaveFailures] = useState(0);
+
+  // Components the open document actually uses, offered in the insert
+  // palette alongside the semantic defaults — so the palette reflects THIS
+  // document's vocabulary instead of a fixed list of pipeline snippets. See
+  // discoverTemplates. Recomputed when the document is (re)loaded, not on
+  // every edit: a new component type appearing mid-session is rare, and
+  // scanning every block on each keystroke commit is not worth it.
+  const [discoveredTemplates, setDiscoveredTemplates] = useState<BlockTemplate[]>([]);
 
   const [showFind, setShowFind] = useState(false);
   const [findQuery, setFindQuery] = useState("");
@@ -659,6 +669,7 @@ export default function BookEditor() {
     outerListenerCleanupRef.current = null;
 
     stampBlockIds(doc, structure);
+    setDiscoveredTemplates(discoverTemplates(collectBlocks(doc, structure)));
     attachPasteSanitizer(doc);
     // Nested-item (single figure in a pair, single bullet line) drag must
     // attach BEFORE the block-level drag below — see attachNestedItemReorder's
@@ -1950,7 +1961,11 @@ export default function BookEditor() {
         )}
 
         {showInsert && (
-          <InsertBlockPalette onInsert={onInsertBlock} onClose={() => setShowInsert(false)} />
+          <InsertBlockPalette
+            discovered={discoveredTemplates}
+            onInsert={onInsertBlock}
+            onClose={() => setShowInsert(false)}
+          />
         )}
 
         <button

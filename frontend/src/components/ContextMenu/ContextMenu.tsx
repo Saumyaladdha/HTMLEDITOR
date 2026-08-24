@@ -46,6 +46,8 @@ export default function ContextMenu({ x, y, label, pageCount, currentPageIndex, 
           menu closes it, matching standard context-menu behavior. */}
       <div style={{ position: "fixed", inset: 0, zIndex: 60 }} onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} />
       <div
+        role="menu"
+        aria-label={`${label} actions`}
         style={{
           position: "fixed",
           left,

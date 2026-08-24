@@ -44,6 +44,8 @@ export default function FloatingBlockToolbar({
 
   return (
     <div
+      role="toolbar"
+      aria-label="Block actions"
       style={{
         position: "fixed",
         left: rect.left,
@@ -65,10 +67,10 @@ export default function FloatingBlockToolbar({
       <span style={{ padding: "0 6px 0 0", color: "#8f8fa0", whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>
         {multiCount > 1 ? `${multiCount} blocks` : label}
       </span>
-      <button style={iconBtn} title="Insert block after" onClick={onInsertAfter}>+</button>
-      <button style={iconBtn} title="Duplicate" onClick={onDuplicate}>⧉</button>
+      <button style={iconBtn} aria-label="Insert block after" title="Insert block after" onClick={onInsertAfter}>+</button>
+      <button style={iconBtn} aria-label="Duplicate block" title="Duplicate (Ctrl+D)" onClick={onDuplicate}>⧉</button>
       <div style={{ position: "relative" }}>
-        <button style={iconBtn} title="Move to page…" onClick={() => setMovePickerOpen((o) => !o)}>⇥</button>
+        <button style={iconBtn} aria-label="Move to page" title="Move to page…" onClick={() => setMovePickerOpen((o) => !o)}>⇥</button>
         {movePickerOpen && (
           <div
             style={{
@@ -112,9 +114,9 @@ export default function FloatingBlockToolbar({
         )}
       </div>
       {multiCount <= 1 && (
-        <button style={iconBtn} title="Edit raw HTML" onClick={onEditHtml}>{"</>"}</button>
+        <button style={iconBtn} aria-label="Edit raw HTML" title="Edit raw HTML" onClick={onEditHtml}>{"</>"}</button>
       )}
-      <button style={{ ...iconBtn, color: "#e08a8a" }} title="Delete" onClick={onDelete}>🗑</button>
+      <button style={{ ...iconBtn, color: "#e08a8a" }} aria-label="Delete block" title="Delete (Del)" onClick={onDelete}>🗑</button>
     </div>
   );
 }

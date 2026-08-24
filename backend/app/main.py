@@ -11,8 +11,10 @@ load_dotenv()
 
 import logging
 
-from fastapi import Depends, FastAPI
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -44,6 +46,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(BotoCoreError)
+@app.exception_handler(ClientError)
+def storage_error_handler(request, exc):
+    """Turns an S3 failure into an explicable error instead of a bare 500.
+
+    Expired AWS session tokens are the single most common failure this app
+    hits — the credentials in backend/.env are short-lived and have to be
+    re-minted via MFA. Every save, load and export then fails with
+    `Internal Server Error` and nothing else, which tells a teacher nothing
+    and tells an operator nothing either. Naming the cause turns a confusing
+    outage into a one-line fix.
+    """
+    code = ""
+    if isinstance(exc, ClientError):
+        code = exc.response.get("Error", {}).get("Code", "")
+    logger.error("storage error on %s %s: %s", request.method, request.url.path, exc)
+
+    if code in {"ExpiredToken", "InvalidToken", "TokenRefreshRequired"}:
+        detail = (
+            "The server's storage credentials have expired. "
+            "Your work has NOT been saved — please contact whoever administers this server."
+        )
+    elif code in {"AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch"}:
+        detail = "The server is not authorised to access document storage. Your work has NOT been saved."
+    else:
+        detail = "Document storage is unavailable right now. Your work has NOT been saved — please try again."
+
+    return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"detail": detail})
+
 
 app.include_router(auth.router)
 app.include_router(books.router)

@@ -27,6 +27,8 @@ export default function FindReplacePanel({
 }: Props) {
   return (
     <div
+      role="search"
+      aria-label="Find and replace"
       style={{
         position: "absolute",
         top: 56,
@@ -42,7 +44,7 @@ export default function FindReplacePanel({
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <strong style={{ fontSize: 13 }}>Find & replace</strong>
-        <button className="btn icon-only" onClick={onClose}>✕</button>
+        <button className="btn icon-only" aria-label="Close find and replace" onClick={onClose}>✕</button>
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -54,6 +56,7 @@ export default function FindReplacePanel({
             if (e.key === "Enter") (e.shiftKey ? onPrev : onNext)();
           }}
           placeholder="Find…"
+          aria-label="Find"
           style={{
             flex: 1,
             background: "var(--shell-800)",
@@ -78,6 +81,7 @@ export default function FindReplacePanel({
         value={replacement}
         onChange={(e) => onReplacementChange(e.target.value)}
         placeholder="Replace with…"
+        aria-label="Replace with"
         style={{
           width: "100%",
           boxSizing: "border-box",
