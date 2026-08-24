@@ -3,6 +3,7 @@ import re
 from fastapi import HTTPException, status
 
 from app.config import settings
+from app.services.html_ingest import decode_html
 
 # Matches every class="..." attribute; membership is then tested against the
 # SPLIT token list rather than with a word-boundary regex. `\bpage\b` looked
@@ -37,10 +38,10 @@ def validate_upload(raw: bytes) -> str:
             status.HTTP_400_BAD_REQUEST,
             f"File too large ({len(raw)} bytes, max {settings.max_upload_bytes})",
         )
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File is not valid UTF-8 HTML")
+    # Any declared or detectable encoding, not UTF-8 only — see decode_html.
+    # Rejecting non-UTF-8 turned a large share of real-world HTML (anything
+    # from older tooling, most Windows editors) into an upload failure.
+    text, _encoding = decode_html(raw)
 
     if not _HAS_ELEMENT_RE.search(text):
         raise HTTPException(

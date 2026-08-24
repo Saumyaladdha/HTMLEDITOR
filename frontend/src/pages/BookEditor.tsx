@@ -35,7 +35,7 @@ import {
   makeNestedItemsDraggable,
   attachNestedItemReorder,
 } from "../editor/dragDrop";
-import { BookDocument, parseDocument, serializeDocument, renderSinglePageHtml } from "../editor/model";
+import { BookDocument, countWords, parseDocument, serializeDocument, renderSinglePageHtml } from "../editor/model";
 import { ScreenRect, isPageOverflowing, toOuterRect } from "../editor/geometry";
 import { PageEntry } from "../components/PageThumbnailRail/PageThumbnailRail";
 import PropertyPanel from "../components/PropertyPanel/PropertyPanel";
@@ -51,6 +51,9 @@ import { buildToc, TocEntry } from "../editor/toc";
 import FindReplacePanel from "../components/FindReplacePanel/FindReplacePanel";
 import { findMatches, highlightMatch, replaceAll as replaceAllMatches, replaceMatch, Match } from "../editor/findReplace";
 import ContextMenu from "../components/ContextMenu/ContextMenu";
+import SlashMenu from "../components/SlashMenu/SlashMenu";
+import ShortcutHelp from "../components/ShortcutHelp/ShortcutHelp";
+import Breadcrumb from "../components/Breadcrumb/Breadcrumb";
 import Toasts, { useToasts } from "../components/Toasts/Toasts";
 import { serializeForSave } from "../editor/sanitize";
 import { ED, injectChromeStyles } from "../editor/chrome";
@@ -119,6 +122,11 @@ export default function BookEditor() {
   const [autosaveFailures, setAutosaveFailures] = useState(0);
   // Link editor popover, opened either from the toolbar or by Ctrl+K.
   const [linkEditorOpen, setLinkEditorOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  // Slash menu: null when closed, otherwise the text typed after the "/".
+  // The "/" and query stay in the document while the menu is open and are
+  // removed only when an action runs, so cancelling leaves what was typed.
+  const [slashQuery, setSlashQuery] = useState<string | null>(null);
 
   // Components the open document actually uses, offered in the insert
   // palette alongside the semantic defaults — so the palette reflects THIS
@@ -255,6 +263,21 @@ export default function BookEditor() {
   const pages: PageEntry[] = useMemo(() => {
     if (!docModel) return [];
     return docModel.pages.map((p, i) => ({ id: p.id, index: i }));
+  }, [docModel]);
+
+  /** Words in the document. Derived from the model rather than the live DOM
+   * so it recomputes exactly when content changes (on commit), not on every
+   * scroll or selection tick — counting words in a 6MB chapter is not free. */
+  const wordCount = useMemo(() => {
+    if (!docModel) return null;
+    const blockHtml = docModel.pages
+      .flatMap((p) => [...p.fullBlocks, ...p.blocks])
+      .map((b) => b.html)
+      .join(" ");
+    // A flow document keeps its content in the shell rather than in pages,
+    // so fall back to that. countWords drops <style>/<script> bodies, without
+    // which the fallback would count the entire inlined stylesheet as prose.
+    return countWords(blockHtml.trim() ? blockHtml : docModel.prefix);
   }, [docModel]);
 
   const renderPageHtml = useCallback(
@@ -648,6 +671,48 @@ export default function BookEditor() {
     return false;
   }
 
+  /**
+   * Tracks a "/" trigger while typing.
+   *
+   * The slash and everything typed after it stay in the document so the text
+   * looks normal while choosing; `consumeSlashText` removes exactly that run
+   * when an action fires. Abandoning the menu (Escape, moving the caret)
+   * therefore leaves what was typed intact, rather than eating it.
+   */
+  function updateSlashState() {
+    const doc = getDoc();
+    const sel = doc?.getSelection();
+    if (!doc || !sel || sel.rangeCount === 0 || !sel.isCollapsed) return setSlashQuery(null);
+
+    const node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return setSlashQuery(null);
+    const text = (node.textContent ?? "").slice(0, sel.getRangeAt(0).startOffset);
+
+    // A slash that begins a word — never mid-word, so "and/or" or a URL
+    // typed into text doesn't pop the menu.
+    const match = /(?:^|\s)\/([^\s/]*)$/.exec(text);
+    setSlashQuery(match ? match[1] : null);
+  }
+
+  function consumeSlashText() {
+    const doc = getDoc();
+    const sel = doc?.getSelection();
+    if (!doc || !sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const before = (node.textContent ?? "").slice(0, range.startOffset);
+    const match = /\/[^\s/]*$/.exec(before);
+    if (!match) return;
+    const start = range.startOffset - match[0].length;
+    (node as Text).deleteData(start, match[0].length);
+    const cleaned = doc.createRange();
+    cleaned.setStart(node, start);
+    cleaned.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(cleaned);
+  }
+
   function onConvertBlockType(tagName: string) {
     const doc = getDoc();
     if (!doc || !selectedBlock) return;
@@ -687,7 +752,14 @@ export default function BookEditor() {
       }
 
       if (!mod) {
+        if (e.key === "?" && !typing) {
+          e.preventDefault();
+          setShowShortcuts(true);
+          return;
+        }
         if (e.key === "Escape") {
+          if (showShortcuts) return setShowShortcuts(false);
+          if (slashQuery !== null) return setSlashQuery(null);
           // Step out one level: close a menu, leave text editing, then
           // finally clear the selection.
           if (contextMenu) return setContextMenu(null);
@@ -1044,7 +1116,13 @@ export default function BookEditor() {
     // read happens again whenever the selection actually moves. Throttled
     // via the same rAF gate as scroll, since selectionchange fires on
     // every caret move while typing.
-    doc.addEventListener("selectionchange", tickOnScroll);
+    doc.addEventListener("selectionchange", () => {
+      tickOnScroll();
+      updateSlashState();
+    });
+    // keyup, not keydown: the character has to be IN the document before
+    // the query after "/" can be read from it.
+    doc.addEventListener("keyup", updateSlashState);
 
     // The full keyboard layer, while focus is inside the iframe — keydown
     // there does NOT bubble to the parent window, so the same handler has to
@@ -1750,6 +1828,20 @@ export default function BookEditor() {
     }
   }
 
+  // Caret position in outer-page coordinates, for anchoring the slash menu.
+  // A collapsed range has zero width and getBoundingClientRect can report an
+  // empty rect for it, so fall back to the block's own box rather than
+  // rendering the menu at 0,0.
+  let textCaretRect: ScreenRect | null = null;
+  if (doc && iframeEl && selectedBlock) {
+    const sel = doc.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const r = sel.getRangeAt(0).getBoundingClientRect();
+      const usable = r.width > 0 || r.height > 0 ? r : selectedBlock.getBoundingClientRect();
+      textCaretRect = toOuterRect(iframeEl, usable, canvasScale);
+    }
+  }
+
   // Read live at render time, like every other selection-derived value here,
   // so the link button reflects whatever the caret is currently inside.
   const existingLinkHref =
@@ -1923,7 +2015,23 @@ export default function BookEditor() {
         >
           Outline
         </button>
+        {wordCount !== null && (
+          <span
+            style={{ fontSize: 11, color: "var(--ink-500)", fontVariantNumeric: "tabular-nums" }}
+            title="Words in this document"
+          >
+            {wordCount.toLocaleString()} words
+          </span>
+        )}
         <button className="btn" onClick={() => setShowFind((s) => !s)}>Find</button>
+        <button
+          className="btn icon-only"
+          onClick={() => setShowShortcuts(true)}
+          title="Keyboard shortcuts (?)"
+          aria-label="Keyboard shortcuts"
+        >
+          ?
+        </button>
         <button className="btn" onClick={() => setShowHistory((s) => !s)}>History</button>
         <a className="btn" href={exportUrl(book.id, "html", book.current_version_id ?? undefined)} target="_blank" rel="noreferrer">
           Export HTML
@@ -2170,6 +2278,27 @@ export default function BookEditor() {
         </button>
       </div>
 
+      {slashQuery !== null && textCaretRect && singleSelected && (
+        <SlashMenu
+          rect={textCaretRect}
+          query={slashQuery}
+          discovered={discoveredTemplates}
+          onInsert={(html) => {
+            consumeSlashText();
+            onInsertBlock(html);
+            setSlashQuery(null);
+          }}
+          onConvert={(tag) => {
+            consumeSlashText();
+            onConvertBlockType(tag);
+            setSlashQuery(null);
+          }}
+          onClose={() => setSlashQuery(null)}
+        />
+      )}
+
+      {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
+
       {contextMenu && selectedBlock && (
         <ContextMenu
           x={contextMenu.x}
@@ -2184,6 +2313,16 @@ export default function BookEditor() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      <Breadcrumb
+        selected={selectedSubPart ?? selectedSubBlock ?? selectedBlock}
+        root={structure?.root ?? null}
+        onSelect={(el) => {
+          setSelectedBlock(el);
+          setSelectedSubPart(null);
+          setSelectedSubBlock(null);
+        }}
+      />
 
       {/* Replaces the single never-dismissing line of red text in the corner
           that could only ever show one problem at a time. */}

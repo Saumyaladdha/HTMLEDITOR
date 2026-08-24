@@ -337,6 +337,18 @@ function renderPage(page: Page): string {
   return `<div ${serializeAttrs(attrs)}>${fullHtml}${body}</div>${page.trailingGap}`;
 }
 
+/** Visible words in a document — markup, and the CONTENTS of <script> and
+ * <style>, removed. Stripping tags alone leaves the entire stylesheet's text
+ * behind, which in a packaged chapter is megabytes of CSS and would report a
+ * word count in the hundreds of thousands. */
+export function countWords(html: string): number {
+  const text = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
+    .replace(/<[^>]*>/g, " ");
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
 /** A standalone single-page document — same prefix/suffix (so identical
  * CSS/fonts) but only one page's markup, for the page-navigator thumbnails
  * to render in their own mini-iframe without needing the whole chapter. */

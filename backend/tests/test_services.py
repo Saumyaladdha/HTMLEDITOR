@@ -109,9 +109,12 @@ def test_upload_rejects_empty_and_non_markup():
         validate_upload(b"just some plain text, no markup at all")
 
 
-def test_upload_rejects_invalid_utf8():
-    with pytest.raises(HTTPException):
-        validate_upload(b"<html>\xff\xfe</html>")
+def test_upload_accepts_non_utf8_html():
+    # Deliberately inverted from the old behaviour: this used to raise
+    # "File is not valid UTF-8 HTML". Real HTML is frequently windows-1252,
+    # and rejecting it made those documents impossible to open at all.
+    raw = "<html><body><p>caf\u00e9 na\u00efve</p></body></html>".encode("windows-1252")
+    assert validate_upload(raw)
 
 
 def test_saved_html_rejects_empty():
@@ -157,3 +160,71 @@ def test_strip_editor_chrome_is_idempotent():
     html = '<p data-block-id="b-1" draggable="true">x</p>'
     once = strip_editor_chrome(html)
     assert strip_editor_chrome(once) == once
+
+
+# --------------------------------------------------------------------------
+# Ingest: encoding detection and script-rendered document recognition.
+# --------------------------------------------------------------------------
+
+from app.services.html_ingest import decode_html, is_script_rendered, visible_text_length
+
+
+def test_decode_utf8():
+    text, enc = decode_html("<html><body><p>विद्युत आवेश</p></body></html>".encode("utf-8"))
+    assert "विद्युत" in text
+    assert enc == "utf-8"
+
+
+def test_decode_windows_1252_is_accepted_not_rejected():
+    # Previously any non-UTF-8 upload was rejected outright as "not valid
+    # UTF-8 HTML", which fails a large share of real-world HTML.
+    raw = '<html><body><p>café naïve — dash</p></body></html>'.encode("windows-1252")
+    text, enc = decode_html(raw)
+    assert "caf" in text
+    assert enc in {"windows-1252", "latin-1"}
+
+
+def test_decode_honours_declared_charset():
+    raw = '<html><head><meta charset="windows-1252"></head><body><p>café</p></body></html>'.encode("windows-1252")
+    text, enc = decode_html(raw)
+    assert enc == "windows-1252"
+    assert "café" in text
+
+
+def test_decode_handles_utf8_bom():
+    raw = b"\xef\xbb\xbf<html><body><p>hi</p></body></html>"
+    text, enc = decode_html(raw)
+    assert enc == "utf-8-sig"
+    assert text.startswith("<html>")
+
+
+def test_decode_never_raises_on_arbitrary_bytes():
+    text, _ = decode_html(bytes(range(256)))
+    assert isinstance(text, str)
+
+
+def test_visible_text_ignores_script_and_style_bodies():
+    html = "<style>" + "a{color:red}" * 500 + "</style><script>" + "x" * 5000 + "</script><p>Only this</p>"
+    assert visible_text_length(html) < 40
+
+
+def test_script_rendered_detection():
+    bundle = (
+        '<html><body><div>This page requires JavaScript to display.</div>'
+        '<script type="__bundler/manifest">' + "A" * 100000 + "</script></body></html>"
+    )
+    assert is_script_rendered(bundle) is True
+
+
+def test_ordinary_document_is_not_script_rendered():
+    html = "<html><body><article><h1>T</h1><p>" + ("word " * 400) + "</p></article></body></html>"
+    assert is_script_rendered(html) is False
+
+
+def test_document_with_analytics_script_is_not_misclassified():
+    # A real page carrying a large third-party script must not be mistaken
+    # for a bundle — it has plenty of readable content of its own.
+    html = (
+        "<html><body><p>" + ("word " * 500) + "</p><script>" + "x" * 80000 + "</script></body></html>"
+    )
+    assert is_script_rendered(html) is False
