@@ -1,0 +1,85 @@
+:root {
+  --shell-950: #12141a;
+  --shell-900: #191c23;
+  --shell-850: #20242d;
+  --shell-800: #292e39;
+  --shell-700: #3a4150;
+  --shell-600: #4d5566;
+  --ink-100: #eceef3;
+  --ink-300: #c7cbd6;
+  --ink-500: #8990a3;
+  --paper: #f6f1e2;
+  --paper-edge: #e7dfc8;
+  --paper-ink: #2b2115;
+  --paper-ink-soft: #6b5a48;
+  --accent: #6c8bff;
+  --accent-hover: #7d99ff;
+  --accent-ink: #eef1ff;
+  --accent-soft: rgba(108, 139, 255, 0.16);
+  --good: #3fcf8e;
+  --bad: #e0777a;
+  --warn: #f0a63d;
+  --radius-lg: 14px;
+  --radius-md: 9px;
+  --radius-sm: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--shell-900);
+  color: var(--ink-100);
+}
+
+button, input, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.btn {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-300);
+  background: var(--shell-800);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.btn:hover { background: var(--shell-700); color: var(--ink-100); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.icon-only { padding: 7px 8px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.danger { color: var(--bad); }
+.btn[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
+
+.field {
+  width: 100%;
+  background: var(--shell-800);
+  border: 1px solid var(--shell-700);
+  color: var(--ink-100);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.field:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.card {
+  background: var(--shell-850);
+  border: 1px solid var(--shell-700);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.error-text {
+  color: var(--bad);
+  font-size: 13px;
+}

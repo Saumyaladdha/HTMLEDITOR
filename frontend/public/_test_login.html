@@ -1,0 +1,16 @@
+<!doctype html>
+<div id="log" style="position:fixed;top:0;left:0;background:#111;color:#0f0;font:13px monospace;padding:10px;z-index:99999;white-space:pre-wrap">loading...</div>
+<script>
+(async () => {
+  const login = await fetch('http://localhost:8010/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: 'teacher5@example.com', password: 'testpass123'})
+  });
+  const tokens = await login.json();
+  localStorage.setItem('access_token', tokens.access_token);
+  localStorage.setItem('refresh_token', tokens.refresh_token);
+  document.getElementById('log').textContent = 'redirecting...';
+  location.href = '/books/6704c9cb-9455-46f3-8e85-086523162e7c';
+})();
+</script>

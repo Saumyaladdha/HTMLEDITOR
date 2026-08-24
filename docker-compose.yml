@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: book_editor_postgres
+    environment:
+      POSTGRES_USER: book_editor
+      POSTGRES_PASSWORD: book_editor_dev_password
+      POSTGRES_DB: book_editor
+    ports:
+      - "5432:5432"
+    volumes:
+      - book_editor_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U book_editor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  book_editor_pg_data:
