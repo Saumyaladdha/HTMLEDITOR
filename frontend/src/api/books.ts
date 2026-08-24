@@ -41,18 +41,26 @@ export async function uploadBook(title: string, file: File): Promise<Book> {
   });
 }
 
-export function listVersions(bookId: string) {
-  return apiFetch<BookVersion[]>(`/books/${bookId}/versions`);
+export function listVersions(bookId: string, limit = 100, offset = 0) {
+  return apiFetch<BookVersion[]>(`/books/${bookId}/versions?limit=${limit}&offset=${offset}`);
 }
 
 export function getVersionHtml(bookId: string, versionId: string) {
   return apiFetch<string>(`/books/${bookId}/versions/${versionId}`);
 }
 
-export function saveVersion(bookId: string, html: string, label?: string, parentVersionId?: string) {
+/** `force` is only ever set after the user has been shown the 409 conflict
+ * and explicitly chosen to overwrite whatever was saved elsewhere. */
+export function saveVersion(
+  bookId: string,
+  html: string,
+  label?: string,
+  parentVersionId?: string,
+  force = false,
+) {
   return apiFetch<BookVersion>(`/books/${bookId}/versions`, {
     method: "POST",
-    body: { html, label, parent_version_id: parentVersionId },
+    body: { html, label, parent_version_id: parentVersionId, force },
   });
 }
 

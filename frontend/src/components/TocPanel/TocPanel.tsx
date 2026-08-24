@@ -3,14 +3,17 @@ import { TocEntry } from "../../editor/toc";
 interface Props {
   entries: TocEntry[];
   onClose: () => void;
-  onJump: (pageIndex: number) => void;
+  onJump: (entry: TocEntry) => void;
 }
 
-const LEVEL_STYLE: Record<TocEntry["level"], { indent: number; size: number; weight: number; color: string }> = {
-  title: { indent: 0, size: 13, weight: 800, color: "var(--ink-100)" },
-  part: { indent: 6, size: 12.5, weight: 700, color: "var(--accent, #6c8bff)" },
-  section: { indent: 14, size: 12, weight: 600, color: "var(--ink-200)" },
-  subheading: { indent: 22, size: 11.5, weight: 500, color: "var(--ink-400)" },
+/** Depth 1–4, matching TocEntry.level. Driven by nesting depth rather than by
+ * a fixed set of named heading types, so an ordinary <h1>/<h2> document
+ * renders exactly as well as a pipeline chapter. */
+const LEVEL_STYLE: Record<number, { indent: number; size: number; weight: number; color: string }> = {
+  1: { indent: 0, size: 13, weight: 800, color: "var(--ink-100)" },
+  2: { indent: 6, size: 12.5, weight: 700, color: "var(--accent, #6c8bff)" },
+  3: { indent: 14, size: 12, weight: 600, color: "var(--ink-200)" },
+  4: { indent: 22, size: 11.5, weight: 500, color: "var(--ink-400)" },
 };
 
 export default function TocPanel({ entries, onClose, onJump }: Props) {
@@ -36,14 +39,14 @@ export default function TocPanel({ entries, onClose, onJump }: Props) {
         <button className="btn icon-only" onClick={onClose}>✕</button>
       </div>
       {entries.length === 0 && (
-        <p style={{ fontSize: 12.5, color: "var(--ink-500)" }}>No headings found in this chapter.</p>
+        <p style={{ fontSize: 12.5, color: "var(--ink-500)" }}>No headings found in this document.</p>
       )}
       {entries.map((entry, i) => {
-        const style = LEVEL_STYLE[entry.level];
+        const style = LEVEL_STYLE[entry.level] ?? LEVEL_STYLE[4];
         return (
           <button
             key={i}
-            onClick={() => onJump(entry.pageIndex)}
+            onClick={() => onJump(entry)}
             title={entry.text}
             style={{
               display: "block",
@@ -65,9 +68,11 @@ export default function TocPanel({ entries, onClose, onJump }: Props) {
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--shell-800)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <span style={{ color: "var(--ink-500)", fontWeight: 400, marginRight: 6 }}>
-              p{entry.pageIndex + 1}
-            </span>
+            {entry.pageIndex !== null && (
+              <span style={{ color: "var(--ink-500)", fontWeight: 400, marginRight: 6 }}>
+                p{entry.pageIndex + 1}
+              </span>
+            )}
             {entry.text}
           </button>
         );

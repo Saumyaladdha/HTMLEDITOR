@@ -10,6 +10,7 @@ import {
   revertToVersion,
   saveVersion,
 } from "../api/books";
+import { ApiError } from "../api/client";
 import {
   applyImageToFigureSlot,
   findBlockAncestor,
@@ -49,6 +50,17 @@ import TocPanel from "../components/TocPanel/TocPanel";
 import { buildToc, TocEntry } from "../editor/toc";
 import FindReplacePanel from "../components/FindReplacePanel/FindReplacePanel";
 import { findMatches, highlightMatch, replaceAll as replaceAllMatches, replaceMatch, Match } from "../editor/findReplace";
+import ContextMenu from "../components/ContextMenu/ContextMenu";
+import Toasts, { useToasts } from "../components/Toasts/Toasts";
+import { serializeForSave } from "../editor/sanitize";
+import { ED, injectChromeStyles } from "../editor/chrome";
+import {
+  collectPages,
+  detectStructure,
+  type DocumentStructure,
+} from "../editor/structure";
+import { detectCapabilities, NO_CAPABILITIES, type DocumentCapabilities } from "../editor/capabilities";
+import { attachPasteSanitizer } from "../editor/textEditing";
 
 export default function BookEditor() {
   const { bookId } = useParams<{ bookId: string }>();
@@ -63,6 +75,33 @@ export default function BookEditor() {
   const [showHistory, setShowHistory] = useState(false);
   const [showInsert, setShowInsert] = useState(false);
   const [tocEntries, setTocEntries] = useState<TocEntry[] | null>(null);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
+
+  // How this particular document is shaped — paginated chapter vs ordinary
+  // flowing HTML — detected on load rather than assumed. See structure.ts.
+  const [structure, setStructure] = useState<DocumentStructure | null>(null);
+  const structureRef = useRef<DocumentStructure | null>(null);
+  const [capabilities, setCapabilities] = useState<DocumentCapabilities>(NO_CAPABILITIES);
+
+  // Viewing an older version, rather than editing the current one.
+  //
+  // "Preview" used to just swap the canvas content with no flag, no undo
+  // reset and no visual indication. Editing then marked the document dirty
+  // and Save wrote the OLD version's content with the CURRENT version as its
+  // parent — silently moving the head backwards and dropping every newer
+  // edit from the document. Preview is now explicitly read-only, with the
+  // only ways out being "restore this version" or "back to current".
+  const [previewVersionId, setPreviewVersionId] = useState<string | null>(null);
+
+  // Right-click menu — the discoverable path to duplicate/move/delete that
+  // ContextMenu.tsx was written for but never wired to anything.
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // null = fit to available width (the previous fixed behaviour); a number is
+  // an explicit user-chosen zoom.
+  const [zoomOverride, setZoomOverride] = useState<number | null>(null);
+
+  const [autosaveFailures, setAutosaveFailures] = useState(0);
 
   const [showFind, setShowFind] = useState(false);
   const [findQuery, setFindQuery] = useState("");
@@ -124,7 +163,9 @@ export default function BookEditor() {
     if (!doc) return;
     doc.querySelectorAll<HTMLElement>("[data-block-id]").forEach((el) => {
       const id = el.dataset.blockId ?? "";
-      el.style.outline = multiSelectedIds.has(id) ? "2px dashed var(--accent, #6c8bff)" : "";
+      // A class, never an inline style — inline styles written onto the
+      // user's own elements get serialized into every save and export.
+      el.classList.toggle(ED.multiSelected, multiSelectedIds.has(id));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [multiSelectedIds, html]);
@@ -150,9 +191,15 @@ export default function BookEditor() {
   // iframe to the REAL content dimensions and scale the whole thing down
   // to fit the available canvas width, so the full page is always
   // visible with no horizontal clipping or scrolling.
-  const PAGE_W = 1240;
+  // Default only — the real width comes from the detected structure
+  // (structure.contentWidthPx), so a flow document renders at a readable
+  // column width instead of being stretched to A4-at-150dpi.
+  const DEFAULT_PAGE_W = 1240;
+  const [pageWidth, setPageWidth] = useState(DEFAULT_PAGE_W);
+  const PAGE_W = pageWidth;
   const mainRef = useRef<HTMLDivElement>(null);
   const [canvasScale, setCanvasScale] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
   const canvasScaleRef = useRef(1);
   useEffect(() => {
     canvasScaleRef.current = canvasScale;
@@ -169,10 +216,26 @@ export default function BookEditor() {
   // rail — each thumbnail lazily renders its own copy in a mini-iframe
   // (see PageThumbnailRail). Recomputed only when the model actually
   // changes, not on every render.
+  // Only identity here — deliberately NOT the rendered HTML.
+  //
+  // This memo used to call renderSinglePageHtml for every page on every model
+  // change, and that function prepends the document's whole inlined
+  // stylesheet (several MB in a real chapter) to each one. A 39-page chapter
+  // therefore allocated ~120MB of strings on every single commit — every
+  // slider release, text blur, drag and image swap — and retained them for as
+  // long as the rail was mounted, to render thumbnails that are mostly
+  // offscreen and already lazily mounted behind an IntersectionObserver.
+  // Rendering moved into the thumbnail itself, so a page's HTML is only ever
+  // built when that thumbnail actually becomes visible.
   const pages: PageEntry[] = useMemo(() => {
     if (!docModel) return [];
-    return docModel.pages.map((p, i) => ({ id: p.id, html: renderSinglePageHtml(docModel, i) }));
+    return docModel.pages.map((p, i) => ({ id: p.id, index: i }));
   }, [docModel]);
+
+  const renderPageHtml = useCallback(
+    (index: number) => (docModelRef.current ? renderSinglePageHtml(docModelRef.current, index) : ""),
+    [],
+  );
 
   async function load(versionIdOverride?: string) {
     if (!bookId) return;
@@ -185,19 +248,23 @@ export default function BookEditor() {
       if (targetVersionId) {
         const h = await getVersionHtml(bookId, targetVersionId);
         // Sanity-check BEFORE writing it into the iframe — a saved version
-        // that somehow ended up structurally empty (no real .page content)
-        // despite non-trivial size would otherwise render as a blank
-        // canvas with no explanation. Mirrors the same guard undo/redo
-        // already has (isSnapshotSane) — same failure mode, different
-        // entry point (loading, not restoring).
-        const parsed = parseDocument(h);
-        const totalBlocks = parsed.pages.reduce((n, p) => n + p.blocks.length + p.fullBlocks.length, 0);
-        if (h.length > 1000 && totalBlocks === 0) {
-          setError(
-            "This saved version looks corrupted (no page content found) — try reverting to an earlier version from History.",
-          );
-          return;
+        // that somehow ended up genuinely empty would otherwise render as a
+        // blank canvas with no explanation.
+        //
+        // The check is now "is there any content at all", not "does it parse
+        // into .page divs with blocks". The old form counted blocks inside
+        // parsed PAGES, so any document without this pipeline's page
+        // structure — i.e. every ordinary HTML file — counted zero and was
+        // rejected as corrupted even though it was perfectly fine.
+        if (!/<[a-zA-Z][^>]*>/.test(h) || h.replace(/<[^>]*>/g, "").trim().length === 0) {
+          if (h.length > 1000) {
+            setError(
+              "This saved version looks corrupted (no readable content found) — try reverting to an earlier version from History.",
+            );
+            return;
+          }
         }
+        setPreviewVersionId(null);
         setHtml(h);
         // Fresh baseline — loading a version resets undo history rather
         // than trying to splice it onto a differently-shaped document.
@@ -241,23 +308,47 @@ export default function BookEditor() {
     if (!bookId) return;
     const id = window.setInterval(async () => {
       if (!dirtyRef.current) return;
+      // Never autosave while previewing an old version — that would persist
+      // the version being LOOKED at as if it were an edit.
+      if (previewVersionIdRef.current) return;
       const doc = getDoc();
       if (!doc) return;
       try {
-        const serialized = "<!doctype html>\n" + doc.documentElement.outerHTML;
+        const serialized = serializeForSave(doc);
         const version = await saveVersion(bookId, serialized, "Autosave", bookRef.current?.current_version_id ?? undefined);
         setDirty(false);
         setBook((b) => (b ? { ...b, current_version_id: version.id } : b));
         setVersions((vs) => [version, ...vs]);
         setLastAutosavedAt(new Date());
-      } catch {
-        // Silent — dirty stays true (we returned before clearing it) so
-        // the next tick, or a manual Save, just retries.
+        setAutosaveFailures(0);
+      } catch (err) {
+        // Previously an empty `catch {}`. `dirty` staying true does mean the
+        // next tick retries — but with the failure invisible, a teacher could
+        // edit for an hour watching "● Unsaved changes" while every single
+        // attempt was rejected (an expired S3 credential does exactly this),
+        // and only discover it on closing the tab. Retrying silently is
+        // right; failing silently is not.
+        setAutosaveFailures((n) => {
+          const next = n + 1;
+          if (next === 2) {
+            pushToast(
+              "error",
+              `Autosave isn't working: ${err instanceof Error ? err.message : "unknown error"}. Your changes are still here, but they aren't being saved.`,
+              { action: { label: "Retry now", run: () => void onSave() } },
+            );
+          }
+          return next;
+        });
       }
     }, 20000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId]);
+
+  const previewVersionIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    previewVersionIdRef.current = previewVersionId;
+  }, [previewVersionId]);
 
   const getDoc = useCallback(() => iframeRef.current?.contentDocument ?? null, []);
 
@@ -271,14 +362,18 @@ export default function BookEditor() {
     const CANVAS_PADDING = 48; // leaves a little breathing room on each side
     const compute = () => {
       const available = el.clientWidth - CANVAS_PADDING;
-      setCanvasScale(Math.min(1, available / PAGE_W));
+      const fit = Math.min(1, available / PAGE_W);
+      setFitScale(fit);
+      // An explicit zoom wins over fit-to-width; fit remains the default and
+      // the value the "Fit" button returns to.
+      setCanvasScale(zoomOverride ?? fit);
     };
     compute();
     const ro = new ResizeObserver(compute);
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [PAGE_W, zoomOverride]);
 
   // Deliberately NOT using the iframe's `srcdoc` attribute: some browsers
   // silently truncate very large srcdoc strings, and a packaged chapter's
@@ -295,10 +390,25 @@ export default function BookEditor() {
     doc.open();
     doc.write(html);
     doc.close();
+
+    // Editor-only stylesheet first, so nothing below has to express editor
+    // state as an inline style on the user's own elements (see chrome.ts).
+    injectChromeStyles(doc);
+
+    // Work out what kind of document this is BEFORE anything tries to find
+    // blocks or pages in it — everything downstream (stamping, drag, the
+    // page rail, overflow detection, the canvas width) is driven by this
+    // rather than by hardcoded pipeline selectors.
+    const detected = detectStructure(doc);
+    setStructure(detected);
+    structureRef.current = detected;
+    setPageWidth(detected.contentWidthPx || DEFAULT_PAGE_W);
+    setCapabilities(detectCapabilities(doc));
+
     const model = parseDocument(html);
     setDocModel(model);
     docModelRef.current = model;
-    onIframeLoad();
+    onIframeLoad(detected);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html]);
 
@@ -311,7 +421,11 @@ export default function BookEditor() {
   function commitToModel() {
     const doc = getDoc();
     if (!doc) return;
-    const currentHtml = "<!doctype html>\n" + doc.documentElement.outerHTML;
+    // Snapshots are taken from the SANITIZED document, so editor scaffolding
+    // never enters the undo history either — otherwise an undo could restore
+    // a state that reintroduced `data-block-id`s and chrome classes as if
+    // they were content.
+    const currentHtml = serializeForSave(doc);
     const newModel = parseDocument(currentHtml);
     if (docModelRef.current) {
       historyRef.current.push(docModelRef.current);
@@ -356,6 +470,13 @@ export default function BookEditor() {
    * their undo/redo history got wedged.
    */
   function isSnapshotSane(snapshot: BookDocument): boolean {
+    // Only meaningful for a paginated document. In flow mode there are no
+    // `.page` divs at all, so the old "zero pages means corrupt" rule
+    // declared every ordinary HTML document permanently broken and disabled
+    // undo/redo outright with a "history looks corrupted" error.
+    if (structureRef.current?.mode !== "paginated") {
+      return snapshot.prefix.length > 0 || snapshot.pages.length > 0;
+    }
     if (snapshot.pages.length === 0) return false;
     const totalBlocks = snapshot.pages.reduce((n, p) => n + p.blocks.length + p.fullBlocks.length, 0);
     return totalBlocks > 0;
@@ -386,36 +507,166 @@ export default function BookEditor() {
   // Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z from anywhere, including while focus is
   // inside the iframe (a second listener there, attached in onIframeLoad,
   // covers that — see below).
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
-      if (e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      } else if (e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        setShowFind(true);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** Block clipboard — the editor's own, not the OS one. Copying a whole
+   * block as markup was simply not possible before: you could copy its TEXT
+   * via the browser, but never the block itself, so there was no way to
+   * repeat a styled element or move one between chapters. */
+  const blockClipboardRef = useRef<string | null>(null);
 
-  function onIframeLoad() {
+  /**
+   * The editor's keyboard layer, shared by the outer window and the iframe
+   * (keydown inside an iframe doesn't bubble out to the parent, so both
+   * documents register this same handler — see onIframeLoad).
+   *
+   * Only Ctrl+Z and Ctrl+F existed before, which meant bold/italic required
+   * finding a floating toolbar with the mouse, there was no Save shortcut,
+   * and a selected block could not be deleted or duplicated from the
+   * keyboard at all.
+   */
+  const handleEditorKey = useCallback(
+    (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      const target = e.target as HTMLElement | null;
+      const typing = !!target?.isContentEditable || ["INPUT", "TEXTAREA"].includes(target?.tagName ?? "");
+
+      if (!mod) {
+        if (e.key === "Escape") {
+          // Step out one level: close a menu, leave text editing, then
+          // finally clear the selection.
+          if (contextMenu) return setContextMenu(null);
+          if (typing && target?.isContentEditable) {
+            setContentEditable(target, false);
+            commitToModel();
+            return;
+          }
+          setSelectedBlock(null);
+          setSelectedSubPart(null);
+          setSelectedSubBlock(null);
+          setMultiSelectedIds(new Set());
+          return;
+        }
+        // Delete only acts on a block when NOT typing — otherwise it would
+        // eat the character the user meant to delete.
+        if ((e.key === "Delete" || e.key === "Backspace") && !typing && selectedBlockRef.current) {
+          e.preventDefault();
+          if (multiSelectedIdsRef.current.size > 1) onBulkDelete();
+          else onRemoveBlock();
+        }
+        return;
+      }
+
+      switch (key) {
+        case "z":
+          e.preventDefault();
+          if (e.shiftKey) redo();
+          else undo();
+          break;
+        case "y": // Windows convention for redo
+          e.preventDefault();
+          redo();
+          break;
+        case "f":
+          e.preventDefault();
+          setShowFind(true);
+          break;
+        case "s":
+          e.preventDefault();
+          void onSave();
+          break;
+        case "b":
+          if (typing) {
+            e.preventDefault();
+            onTextBold();
+          }
+          break;
+        case "i":
+          if (typing) {
+            e.preventDefault();
+            onTextItalic();
+          }
+          break;
+        case "u":
+          if (typing) {
+            e.preventDefault();
+            onTextUnderline();
+          }
+          break;
+        case "d":
+          if (!typing && selectedBlockRef.current) {
+            e.preventDefault();
+            if (multiSelectedIdsRef.current.size > 1) onBulkDuplicate();
+            else onDuplicateBlock();
+          }
+          break;
+        case "c":
+          if (!typing && selectedBlockRef.current) {
+            e.preventDefault();
+            blockClipboardRef.current = selectedBlockRef.current.outerHTML;
+            pushToast("success", "Block copied");
+          }
+          break;
+        case "x":
+          if (!typing && selectedBlockRef.current) {
+            e.preventDefault();
+            blockClipboardRef.current = selectedBlockRef.current.outerHTML;
+            onRemoveBlock();
+          }
+          break;
+        case "v":
+          if (!typing && blockClipboardRef.current) {
+            e.preventDefault();
+            onInsertBlock(blockClipboardRef.current);
+          }
+          break;
+        default:
+          break;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [contextMenu],
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleEditorKey);
+    return () => window.removeEventListener("keydown", handleEditorKey);
+  }, [handleEditorKey]);
+
+  // The iframe listener is registered once per document load, but
+  // handleEditorKey is a new closure whenever its deps change. Registering
+  // the closure directly would pin whichever version existed at load time;
+  // this indirection keeps a stable function identity that always calls the
+  // current one.
+  const handleEditorKeyRef = useRef(handleEditorKey);
+  useEffect(() => {
+    handleEditorKeyRef.current = handleEditorKey;
+  }, [handleEditorKey]);
+  const iframeKeyHandler = useRef((e: KeyboardEvent) => handleEditorKeyRef.current(e)).current;
+
+  /** Cleanup for listeners registered on elements OUTSIDE the iframe.
+   * Anything attached to the iframe's own document dies with it on the next
+   * `doc.write()`, but a listener on the outer <main> does not — and this
+   * function runs again on every version load, undo and redo. Each run used
+   * to add another scroll handler that was never removed, every one holding
+   * a stale `pageEls` array from a document that no longer exists. */
+  const outerListenerCleanupRef = useRef<(() => void) | null>(null);
+
+  function onIframeLoad(structure: DocumentStructure) {
     const doc = getDoc();
     if (!doc) return;
-    stampBlockIds(doc);
+
+    outerListenerCleanupRef.current?.();
+    outerListenerCleanupRef.current = null;
+
+    stampBlockIds(doc, structure);
+    attachPasteSanitizer(doc);
     // Nested-item (single figure in a pair, single bullet line) drag must
     // attach BEFORE the block-level drag below — see attachNestedItemReorder's
     // own doc comment for why registration order here isn't arbitrary.
     makeNestedItemsDraggable(doc);
     attachNestedItemReorder(doc, markDirty);
-    makeNestedItemsDraggable(doc);
     makeBlocksDraggable(doc);
-    attachDragReorder(doc, markDirty);
+    attachDragReorder(doc, structure, markDirty);
 
     // Some pipeline output references decorator/illustration images by a
     // relative file path (e.g. section-head's "student with pencil"
@@ -435,24 +686,19 @@ export default function BookEditor() {
         // look (dashed tan box) rather than an alarming red error box —
         // this is a normal, expected placeholder state (a relative-path
         // decorator image that can't resolve standalone), not a fault.
+        //
+        // Applied as a class, not as a dozen inline styles: the inline
+        // version was serialized into every save and export, permanently
+        // baking placeholder chrome into the document even after the image
+        // was fixed. See chrome.ts.
         img.alt = "चित्र यहाँ आएगा — क्लिक करके जोड़ें";
-        img.style.display = "inline-flex";
-        img.style.alignItems = "center";
-        img.style.justifyContent = "center";
-        img.style.minHeight = "48px";
-        img.style.minWidth = "48px";
-        img.style.border = "2px dashed #9a8f7d";
-        img.style.borderRadius = "8px";
-        img.style.background = "#faf8f4";
-        img.style.color = "#9a8f7d";
-        img.style.fontSize = "11px";
-        img.style.cursor = "pointer";
+        img.classList.add(ED.brokenImage);
         img.title = "Image not available — click to upload one";
       },
       true,
     );
 
-    const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".page"));
+    const pageEls = collectPages(doc, structure);
 
     // Real content height (all pages stacked), so the scaled wrapper
     // reserves exactly enough scroll space — not the iframe's own
@@ -481,15 +727,32 @@ export default function BookEditor() {
       };
       mainEl.addEventListener("scroll", onScroll, { passive: true });
       onScroll();
+      outerListenerCleanupRef.current = () => mainEl.removeEventListener("scroll", onScroll);
     }
 
     checkOverflow();
 
-    const firstPage = doc.querySelector<HTMLElement>(".page");
+    const firstPage = pageEls[0];
     if (firstPage) {
       const fs = parseFloat(firstPage.style.getPropertyValue("--fs-base"));
       setPageFontSizePx(fs || 20);
     }
+
+    // Right-click anywhere on a block opens the same actions the floating
+    // toolbar offers. ContextMenu.tsx already implemented all of this and was
+    // never imported by anything — right-click did nothing at all.
+    doc.addEventListener("contextmenu", (e) => {
+      const block = findBlockAncestor(e.target as Element);
+      if (!block) return;
+      e.preventDefault();
+      setSelectedBlock(block);
+      const iframeRect = iframeRef.current?.getBoundingClientRect();
+      const scale = canvasScaleRef.current;
+      setContextMenu({
+        x: (iframeRect?.left ?? 0) + e.clientX * scale,
+        y: (iframeRect?.top ?? 0) + e.clientY * scale,
+      });
+    });
 
     doc.addEventListener("click", (e) => {
       const target = e.target as Element;
@@ -621,21 +884,12 @@ export default function BookEditor() {
     // every caret move while typing.
     doc.addEventListener("selectionchange", tickOnScroll);
 
-    // Undo/redo while focus is inside the iframe (typing in a text block)
-    // — keydown here does NOT bubble to the parent window, so this is a
-    // separate listener from the one on `window`, not a duplicate.
-    doc.addEventListener("keydown", (e) => {
-      const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
-      if (e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      } else if (e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        setShowFind(true);
-      }
-    });
+    // The full keyboard layer, while focus is inside the iframe — keydown
+    // there does NOT bubble to the parent window, so the same handler has to
+    // be registered on both documents. Reusing handleEditorKey (rather than
+    // the duplicated undo/find-only subset that lived here) is what makes
+    // Ctrl+B/I/U work while typing, which is where they are actually needed.
+    doc.addEventListener("keydown", iframeKeyHandler);
 
     // Drag a photo straight onto a figure placeholder to fill it in —
     // no need to select the block first and hunt for the "Replace image"
@@ -660,18 +914,16 @@ export default function BookEditor() {
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     });
     doc.addEventListener("dragenter", (e) => {
-      const imgTarget = findImgTarget(e.target as Element);
-      if (imgTarget) imgTarget.style.outline = "3px dashed var(--accent, #6c8bff)";
+      findImgTarget(e.target as Element)?.classList.add(ED.dropTarget);
     });
     doc.addEventListener("dragleave", (e) => {
-      const imgTarget = findImgTarget(e.target as Element);
-      if (imgTarget) imgTarget.style.outline = "";
+      findImgTarget(e.target as Element)?.classList.remove(ED.dropTarget);
     });
     doc.addEventListener("drop", (e) => {
       const imgTarget = findImgTarget(e.target as Element);
       if (!imgTarget) return;
       e.preventDefault();
-      imgTarget.style.outline = "";
+      imgTarget.classList.remove(ED.dropTarget);
       const file = e.dataTransfer?.files?.[0];
       if (!file || !file.type.startsWith("image/")) return;
       fileToDataUrl(file).then((url) => {
@@ -711,16 +963,7 @@ export default function BookEditor() {
       if (placed.dataset.brokenFlagged) {
         delete placed.dataset.brokenFlagged;
         placed.removeAttribute("title");
-        placed.style.display = "";
-        placed.style.alignItems = "";
-        placed.style.justifyContent = "";
-        placed.style.minHeight = "";
-        placed.style.minWidth = "";
-        placed.style.border = "";
-        placed.style.background = "";
-        placed.style.color = "";
-        placed.style.fontSize = "";
-        placed.style.cursor = "";
+        placed.classList.remove(ED.brokenImage);
       }
       setSelectedSubPart(placed);
       markDirty();
@@ -736,7 +979,39 @@ export default function BookEditor() {
     selectedBlockRef.current = selectedBlock;
   }, [selectedBlock]);
 
+  /** Pages of the currently-loaded document — [] in flow mode, where the
+   * concept doesn't apply. Replaces the `.page` selector that was hardcoded
+   * at eleven separate call sites. */
+  function pagesOf(doc: Document): HTMLElement[] {
+    const structure = structureRef.current;
+    return structure ? collectPages(doc, structure) : [];
+  }
+
+  /** Where blocks live inside a page. A packaged chapter puts them in
+   * `.page__cols`; any other paginated document holds them directly, so the
+   * page element itself is the container. */
+  function blockContainerOf(pageEl: HTMLElement): HTMLElement {
+    const selector = structureRef.current?.blockContainerSelectors[0];
+    return (selector ? pageEl.querySelector<HTMLElement>(selector) : null) ?? pageEl;
+  }
+
+  /** Re-stamps ids and re-arms draggability after any structural mutation.
+   * Every mutating action needs the same three calls in the same order; they
+   * were repeated (and in two places mis-indented, in one place duplicated)
+   * at six separate call sites, which is exactly how one of them ends up
+   * quietly missing a step. */
+  function restampAfterMutation(doc: Document) {
+    const structure = structureRef.current;
+    if (!structure) return;
+    stampBlockIds(doc, structure);
+    makeNestedItemsDraggable(doc);
+    makeBlocksDraggable(doc);
+  }
+
   function markDirty() {
+    // Editing while previewing an older version is refused rather than
+    // silently accepted — see previewVersionId.
+    if (previewVersionIdRef.current) return;
     setDirty(true);
     commitToModel();
     checkOverflow();
@@ -752,13 +1027,22 @@ export default function BookEditor() {
    * (drag, insert, page add/duplicate) the attribute is simply absent. */
   function checkOverflow() {
     const doc = getDoc();
-    if (!doc) return;
-    const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".page"));
+    const structure = structureRef.current;
+    if (!doc || !structure) return;
+    // Meaningless in flow mode: content that grows just makes the document
+    // longer, which is correct, not an error to flag.
+    if (structure.mode !== "paginated") {
+      setOverflowPageIndices(new Set());
+      return;
+    }
+    const pageEls = collectPages(doc, structure);
     const overflowing = new Set<number>();
     pageEls.forEach((pageEl, i) => {
       const isOver = isPageOverflowing(pageEl);
-      pageEl.style.outline = isOver ? "4px solid var(--bad, #e05a5a)" : "";
-      pageEl.style.outlineOffset = isOver ? "-4px" : "";
+      // A class rather than an inline outline — the inline version was being
+      // written into every save and export, so a chapter could ship with a
+      // red border burned into the page. See chrome.ts.
+      pageEl.classList.toggle(ED.overflow, isOver);
       if (isOver) overflowing.add(i);
     });
     setOverflowPageIndices(overflowing);
@@ -783,27 +1067,23 @@ export default function BookEditor() {
     let idx = pageIndex;
     const MAX_CASCADE_STEPS = 500; // backstop against a pathological single block that overflows every page on its own
     for (let step = 0; step < MAX_CASCADE_STEPS; step++) {
-      const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".page"));
+      const pageEls = pagesOf(doc);
       const page = pageEls[idx];
       if (!page || !isPageOverflowing(page)) break;
-      const cols = page.querySelector<HTMLElement>(".page__cols");
+      const cols = blockContainerOf(page);
       const lastBlock = cols?.lastElementChild as HTMLElement | null;
       if (!cols || !lastBlock) break;
 
       let nextPage = pageEls[idx + 1];
       if (!nextPage) {
-        nextPage = doc.createElement("div");
-        nextPage.className = "page";
-        nextPage.innerHTML = '<div class="page__cols"></div>';
+        nextPage = makeBlankPageLike(page);
         page.after(nextPage);
       }
-      const nextCols = nextPage.querySelector<HTMLElement>(".page__cols")!;
+      const nextCols = blockContainerOf(nextPage);
       nextCols.insertBefore(lastBlock, nextCols.firstChild);
       idx++; // keep cascading from whichever page just received the overflow, in case it now overflows too
     }
-    stampBlockIds(doc);
-    makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+    restampAfterMutation(doc);
     markDirty();
   }
 
@@ -813,7 +1093,7 @@ export default function BookEditor() {
   function onGlobalFontSize(px: number) {
     const doc = getDoc();
     if (!doc) return;
-    doc.querySelectorAll<HTMLElement>(".page").forEach((p) => p.style.setProperty("--fs-base", `${px}px`));
+    pagesOf(doc).forEach((p) => p.style.setProperty("--fs-base", `${px}px`));
     setPageFontSizePx(px);
   }
 
@@ -832,9 +1112,7 @@ export default function BookEditor() {
     const clone = selectedBlock.cloneNode(true) as HTMLElement;
     clone.removeAttribute("data-block-id");
     selectedBlock.after(clone);
-    stampBlockIds(doc);
-    makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+    restampAfterMutation(doc);
     setSelectedBlock(clone);
     setSelectedSubPart(null);
     setSelectedSubBlock(null);
@@ -844,8 +1122,8 @@ export default function BookEditor() {
   function onMoveBlockToPage(pageIndex: number) {
     const doc = getDoc();
     if (!doc || !selectedBlock) return;
-    const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".page"));
-    const targetCols = pageEls[pageIndex]?.querySelector<HTMLElement>(".page__cols");
+    const pageEls = pagesOf(doc);
+    const targetCols = pageEls[pageIndex] ? blockContainerOf(pageEls[pageIndex]) : null;
     if (!targetCols) return;
     targetCols.appendChild(selectedBlock);
     markDirty();
@@ -858,9 +1136,7 @@ export default function BookEditor() {
     const replacement = fragment.firstElementChild as HTMLElement | null;
     if (replacement) {
       editHtmlTarget.replaceWith(replacement);
-      stampBlockIds(doc);
-      makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+      restampAfterMutation(doc);
       setSelectedBlock(replacement);
       setSelectedSubPart(null);
       setSelectedSubBlock(null);
@@ -871,7 +1147,7 @@ export default function BookEditor() {
 
   function currentPageIndexOf(el: HTMLElement, doc: Document): number {
     const pageEl = el.closest<HTMLElement>(".page");
-    return Array.from(doc.querySelectorAll(".page")).indexOf(pageEl as Element);
+    return pageEl ? pagesOf(doc).indexOf(pageEl) : -1;
   }
 
   // Bulk actions for multi-select — mirror the single-block versions above
@@ -897,17 +1173,15 @@ export default function BookEditor() {
       clone.removeAttribute("data-block-id");
       el.after(clone);
     });
-    stampBlockIds(doc);
-    makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+    restampAfterMutation(doc);
     setMultiSelectedIds(new Set());
     markDirty();
   }
 
   function onBulkMoveToPage(pageIndex: number) {
     const doc = getDoc();
-    const pageEls = doc ? Array.from(doc.querySelectorAll<HTMLElement>(".page")) : [];
-    const targetCols = pageEls[pageIndex]?.querySelector<HTMLElement>(".page__cols");
+    const pageEls = doc ? pagesOf(doc) : [];
+    const targetCols = pageEls[pageIndex] ? blockContainerOf(pageEls[pageIndex]) : null;
     if (!doc || !targetCols) return;
     multiSelectedIdsRef.current.forEach((id) => {
       const el = doc.querySelector<HTMLElement>(`[data-block-id="${id}"]`);
@@ -945,16 +1219,22 @@ export default function BookEditor() {
     stepSelectionFontSize(doc, selectedBlock, deltaEm);
     markDirty();
   }
+  // Both go through the document's detected capabilities: a packaged chapter
+  // gets the pipeline's semantic `.text-color`/`.highlight` spans, and any
+  // other document gets a self-contained inline style. Emitting the class
+  // unconditionally — the old behaviour — meant picking a colour in an
+  // ordinary document produced a span with no styling behind it, so nothing
+  // visibly happened at all.
   function onTextColor(hex: string) {
     const doc = getDoc();
     if (!doc || !selectedBlock) return;
-    wrapSelection(doc, selectedBlock, "text-color", ["--tc-c", hex]);
+    wrapSelection(doc, selectedBlock, capabilities.textColor, hex);
     markDirty();
   }
   function onTextHighlight(hex: string) {
     const doc = getDoc();
     if (!doc || !selectedBlock) return;
-    wrapSelection(doc, selectedBlock, "highlight", ["--hl-c", hex]);
+    wrapSelection(doc, selectedBlock, capabilities.highlight, hex);
     markDirty();
   }
   function onTextClear() {
@@ -1007,7 +1287,12 @@ export default function BookEditor() {
   function onInsertBlock(snippetHtml: string) {
     const doc = getDoc();
     if (!doc) return;
-    const targetCols = selectedBlock?.parentElement ?? doc.querySelector(".page__cols");
+    // Insert next to whatever's selected; with nothing selected, fall back to
+    // the first page's block container, or (flow mode) the content root.
+    const firstPage = pagesOf(doc)[0];
+    const targetCols =
+      selectedBlock?.parentElement ??
+      (firstPage ? blockContainerOf(firstPage) : structureRef.current?.root ?? null);
     if (!targetCols) return;
     const fragment = doc.createRange().createContextualFragment(snippetHtml);
     const inserted = fragment.firstElementChild as HTMLElement | null;
@@ -1017,9 +1302,7 @@ export default function BookEditor() {
       targetCols.appendChild(fragment);
     }
     if (inserted) {
-      stampBlockIds(doc);
-      makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+      restampAfterMutation(doc);
       setSelectedBlock(inserted);
       setSelectedSubPart(null);
       setSelectedSubBlock(null);
@@ -1027,19 +1310,43 @@ export default function BookEditor() {
     markDirty();
   }
 
-  async function onSave() {
+  async function onSave(force = false) {
     const doc = getDoc();
     if (!doc || !bookId) return;
+    if (previewVersionIdRef.current) {
+      pushToast("info", "You're previewing an older version — restore it first to make changes.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const serialized = "<!doctype html>\n" + doc.documentElement.outerHTML;
-      const label = window.prompt("Label this save (optional)", "") ?? undefined;
-      const version = await saveVersion(bookId, serialized, label || undefined, book?.current_version_id ?? undefined);
+      // serializeForSave, never raw outerHTML: the live DOM carries the
+      // editor's own scaffolding, which would otherwise be written into the
+      // stored version and every export. See sanitize.ts.
+      const serialized = serializeForSave(doc);
+      const label = force ? "Overwrote a conflicting save" : window.prompt("Label this save (optional)", "") ?? undefined;
+      const version = await saveVersion(
+        bookId,
+        serialized,
+        label || undefined,
+        book?.current_version_id ?? undefined,
+        force,
+      );
       setDirty(false);
+      setAutosaveFailures(0);
       await load(version.id);
+      pushToast("success", "Saved");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      // A 409 means someone else saved since this session started editing —
+      // recoverable, and worth offering a real choice rather than the same
+      // generic red text as a network failure.
+      if (err instanceof ApiError && err.status === 409) {
+        pushToast("error", err.message, {
+          action: { label: "Overwrite", run: () => void onSave(true) },
+        });
+      } else {
+        pushToast("error", err instanceof Error ? err.message : "Save failed");
+      }
     } finally {
       setSaving(false);
     }
@@ -1057,10 +1364,40 @@ export default function BookEditor() {
     }
   }
 
+  /**
+   * Show an older version WITHOUT adopting it.
+   *
+   * This used to simply call `setHtml` with the old content and nothing
+   * else: no flag, no undo reset, no indication anywhere in the UI. Editing
+   * then marked the document dirty as normal, and Save wrote the OLD
+   * version's HTML with the CURRENT version as its parent — moving the head
+   * backwards and dropping every newer edit from the document, presented as
+   * an ordinary successful save. Two clicks from the history panel.
+   *
+   * Preview is now an explicit, visible, read-only mode: markDirty and
+   * onSave both refuse while it's active, and the only ways out are
+   * "restore this version" or "back to current".
+   */
   function onPreviewVersion(versionId: string) {
     if (!bookId) return;
-    getVersionHtml(bookId, versionId).then(setHtml);
+    if (dirty && !window.confirm("You have unsaved changes. Preview an older version anyway?")) return;
+    getVersionHtml(bookId, versionId).then((h) => {
+      setPreviewVersionId(versionId);
+      setHtml(h);
+      // Undo history belongs to the document being edited, not to the one
+      // being looked at — mixing snapshots from two different versions is
+      // how a "restore" ends up applying half of each.
+      historyRef.current = [];
+      futureRef.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
+    });
     setShowHistory(false);
+  }
+
+  function exitPreview() {
+    setPreviewVersionId(null);
+    void load();
   }
 
   function runFindSearch(query: string) {
@@ -1107,10 +1444,19 @@ export default function BookEditor() {
     runFindSearch(findQuery);
   }
 
+  /** Scrolls the outer canvas so `el` (inside the scaled iframe) comes into
+   * view — used by both the page rail and the outline, the latter of which
+   * has no page numbers to work with in a flow document. */
+  function scrollToElement(el: HTMLElement) {
+    const mainEl = mainRef.current;
+    if (!mainEl) return;
+    mainEl.scrollTo({ top: el.offsetTop * canvasScaleRef.current, behavior: "smooth" });
+  }
+
   function scrollToPage(n: number) {
     const doc = getDoc();
     const mainEl = mainRef.current;
-    const pageEl = doc?.querySelectorAll<HTMLElement>(".page")[n - 1];
+    const pageEl = doc ? pagesOf(doc)[n - 1] : undefined;
     if (!mainEl || !pageEl) return;
     // The iframe is visually scaled, so the real scroll position is the
     // page's native offsetTop scaled down to match — scrollIntoView()
@@ -1125,20 +1471,46 @@ export default function BookEditor() {
    * undo/redo — same reasoning as every block-level action. */
   function withBookContainer(fn: (book: HTMLElement, pageEls: HTMLElement[]) => void) {
     const doc = getDoc();
-    const book = doc?.querySelector<HTMLElement>(".book");
-    if (!doc || !book) return;
-    fn(book, Array.from(book.querySelectorAll<HTMLElement>(".page")));
-    stampBlockIds(doc);
-    makeNestedItemsDraggable(doc);
-    makeBlocksDraggable(doc);
+    const structure = structureRef.current;
+    // The pages' own parent, whatever it is — `.book` was a hardcoded
+    // assumption that simply doesn't hold outside this repo's pipeline, so
+    // every page operation silently did nothing in any other document.
+    const container = doc ? pagesOf(doc)[0]?.parentElement ?? structure?.root : null;
+    if (!doc || !container) return;
+    fn(container as HTMLElement, pagesOf(doc));
+    restampAfterMutation(doc);
     markDirty();
+  }
+
+  /**
+   * A new empty page shaped like an existing one.
+   *
+   * New pages were built as a literal `<div class="page"><div
+   * class="page__cols"></div></div>`. That's correct only for this repo's
+   * own chapters: in any other paginated document those class names mean
+   * nothing, so the "page" had none of the sizing or layout the real ones
+   * get from CSS and appeared as a collapsed sliver. Cloning the structure
+   * of a real page — its classes and attributes, minus its content — gets
+   * it right for every document without knowing any class names.
+   */
+  function makeBlankPageLike(model: HTMLElement): HTMLElement {
+    const blank = model.cloneNode(false) as HTMLElement;
+    blank.removeAttribute("data-page-id");
+    const selector = structureRef.current?.blockContainerSelectors[0];
+    const modelContainer = selector ? model.querySelector<HTMLElement>(selector) : null;
+    if (modelContainer) {
+      const container = modelContainer.cloneNode(false) as HTMLElement;
+      container.removeAttribute("data-block-id");
+      blank.appendChild(container);
+    }
+    return blank;
   }
 
   function onAddPage(afterIndex: number) {
     withBookContainer((book, pageEls) => {
-      const blank = getDoc()!.createElement("div");
-      blank.className = "page";
-      blank.innerHTML = '<div class="page__cols"></div>';
+      const model = pageEls[Math.max(0, afterIndex)] ?? pageEls[0];
+      if (!model) return; // no page to model a new one on (flow document)
+      const blank = makeBlankPageLike(model);
       if (afterIndex < 0 || !pageEls[afterIndex]) {
         book.insertBefore(blank, pageEls[0] ?? null);
       } else {
@@ -1225,14 +1597,14 @@ export default function BookEditor() {
     imageAspect = r.width && r.height ? r.width / r.height : 1;
   }
 
-  const pageCount = doc ? doc.querySelectorAll(".page").length : 0;
+  const pageCount = doc ? pagesOf(doc).length : 0;
   const currentPageIndex = doc && selectedBlock ? currentPageIndexOf(selectedBlock, doc) : -1;
 
   const overflowButtons =
     doc && iframeEl
       ? Array.from(overflowPageIndices)
           .map((idx) => {
-            const pageEl = doc.querySelectorAll<HTMLElement>(".page")[idx];
+            const pageEl = pagesOf(doc)[idx];
             if (!pageEl) return null;
             return { idx, rect: toOuterRect(iframeEl, pageEl.getBoundingClientRect(), canvasScale) };
           })
@@ -1251,11 +1623,62 @@ export default function BookEditor() {
           borderBottom: "1px solid var(--shell-700)",
         }}
       >
-        <button className="btn icon-only" onClick={() => navigate("/")} title="Back to library">←</button>
+        <button
+          className="btn icon-only"
+          // beforeunload only guards closing/reloading the TAB. Navigating
+          // within the app is a plain React Router transition it never sees,
+          // so this button silently discarded up to 20s of unsaved edits.
+          onClick={() => {
+            if (dirty && !window.confirm("You have unsaved changes. Leave anyway?")) return;
+            navigate("/");
+          }}
+          title="Back to library"
+        >
+          ←
+        </button>
         <div style={{ fontSize: 13, fontWeight: 600 }}>{book.title}</div>
-        <div style={{ fontSize: 12, color: dirty ? "var(--warn)" : "var(--ink-500)" }}>
-          {dirty ? "● Unsaved changes" : "✓ All changes saved"}
-        </div>
+        {previewVersionId ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: "var(--warn)",
+                border: "1px solid var(--warn)",
+                borderRadius: 5,
+                padding: "2px 8px",
+              }}
+            >
+              👁 Previewing an older version — read only
+            </span>
+            <button className="btn" style={{ fontSize: 11 }} onClick={exitPreview}>
+              Back to current
+            </button>
+            <button
+              className="btn primary"
+              style={{ fontSize: 11 }}
+              onClick={() => onRevert(previewVersionId)}
+            >
+              Restore this version
+            </button>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: dirty ? "var(--warn)" : "var(--ink-500)" }}>
+            {dirty ? "● Unsaved changes" : "✓ All changes saved"}
+          </div>
+        )}
+        {structure && (
+          <span
+            style={{ fontSize: 10.5, color: "var(--ink-500)", border: "1px solid var(--shell-700)", borderRadius: 4, padding: "1px 6px" }}
+            title={
+              structure.mode === "paginated"
+                ? "Fixed pages detected — page rail and overflow checking are active"
+                : "Continuous document — no fixed pages, so page features are off"
+            }
+          >
+            {structure.mode === "paginated" ? "paginated" : "flow"}
+          </span>
+        )}
         {lastAutosavedAt && (
           <div style={{ fontSize: 11, color: "var(--ink-500)" }} title="Autosave runs every 20s while there are unsaved changes">
             (autosaved at {lastAutosavedAt.toLocaleTimeString()})
@@ -1276,13 +1699,40 @@ export default function BookEditor() {
             style={{ width: 90 }}
           />
         </div>
+        {/* Zoom — the canvas was previously locked to fit-to-width with no
+            way to look closely at anything. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 11, color: "var(--ink-500)" }}>
+          <button
+            className="btn icon-only"
+            title="Zoom out"
+            onClick={() => setZoomOverride(Math.max(0.2, (zoomOverride ?? fitScale) - 0.1))}
+          >
+            −
+          </button>
+          <button
+            className="btn"
+            style={{ padding: "6px 8px", minWidth: 54 }}
+            title="Reset to fit width"
+            onClick={() => setZoomOverride(null)}
+          >
+            {zoomOverride === null ? "Fit" : `${Math.round(canvasScale * 100)}%`}
+          </button>
+          <button
+            className="btn icon-only"
+            title="Zoom in"
+            onClick={() => setZoomOverride(Math.min(3, (zoomOverride ?? fitScale) + 0.1))}
+          >
+            +
+          </button>
+        </div>
         <button className="btn icon-only" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)">↶</button>
         <button className="btn icon-only" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">↷</button>
         <button
           className="btn"
           onClick={() => {
             const doc = getDoc();
-            setTocEntries((cur) => (cur ? null : doc ? buildToc(doc) : []));
+            const structure = structureRef.current;
+            setTocEntries((cur) => (cur ? null : doc && structure ? buildToc(doc, structure) : []));
           }}
         >
           Outline
@@ -1292,21 +1742,39 @@ export default function BookEditor() {
         <a className="btn" href={exportUrl(book.id, "html", book.current_version_id ?? undefined)} target="_blank" rel="noreferrer">
           Export HTML
         </a>
-        <button className="btn primary" onClick={onSave} disabled={saving || !dirty}>
+        <button
+          className="btn primary"
+          onClick={() => void onSave()}
+          disabled={saving || !dirty || !!previewVersionId}
+          title="Save version (Ctrl+S)"
+        >
           {saving ? "Saving…" : "Save version"}
         </button>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "76px 1fr", minHeight: 0, position: "relative" }}>
-        <PageThumbnailRail
-          pages={pages}
-          activePage={activePage}
-          onSelect={scrollToPage}
-          onReorder={onReorderPages}
-          onAdd={onAddPage}
-          onDuplicate={onDuplicatePage}
-          onDelete={onDeletePage}
-        />
+      {/* The page rail only exists in a paginated document — in flow mode
+          there are no pages to show, so the column collapses entirely rather
+          than reserving space for an empty rail. */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: structure?.mode === "paginated" ? "76px 1fr" : "1fr",
+          minHeight: 0,
+          position: "relative",
+        }}
+      >
+        {structure?.mode === "paginated" && (
+          <PageThumbnailRail
+            pages={pages}
+            renderHtml={renderPageHtml}
+            activePage={activePage}
+            onSelect={scrollToPage}
+            onReorder={onReorderPages}
+            onAdd={onAddPage}
+            onDuplicate={onDuplicatePage}
+            onDelete={onDeletePage}
+          />
+        )}
 
         <main
           ref={mainRef}
@@ -1328,6 +1796,22 @@ export default function BookEditor() {
               <iframe
                 ref={iframeRef}
                 title="chapter-editor"
+                // SECURITY: the canvas is written via document.write and so
+                // inherits this app's origin. Without a sandbox, any
+                // <script> in an uploaded document executes with full access
+                // to parent.localStorage — where the access and refresh
+                // tokens live — making a malicious upload a complete account
+                // takeover. That was survivable only while every document
+                // came from this repo's own script-free pipeline; it stops
+                // being survivable the moment arbitrary HTML is accepted.
+                //
+                // `allow-same-origin` WITHOUT `allow-scripts` is the exact
+                // combination needed: the parent can still read and mutate
+                // contentDocument (which is the whole editing mechanism),
+                // while scripts inside the document never run. Markup is
+                // preserved untouched, so a document's own scripts survive
+                // a round-trip through the editor without ever executing.
+                sandbox="allow-same-origin"
                 style={{
                   width: PAGE_W,
                   height: contentHeight,
@@ -1346,6 +1830,7 @@ export default function BookEditor() {
             doc={doc}
             block={propertyEntity}
             subPart={selectedSubPart}
+            capabilities={capabilities}
             onRemoveBlock={onRemoveBlock}
             onChanged={markDirty}
             onImageReplaced={(newEl) => {
@@ -1428,8 +1913,11 @@ export default function BookEditor() {
           <TocPanel
             entries={tocEntries}
             onClose={() => setTocEntries(null)}
-            onJump={(pageIndex) => {
-              scrollToPage(pageIndex + 1); // scrollToPage is 1-indexed, TocEntry.pageIndex is 0-indexed
+            onJump={(entry) => {
+              // Jump by element, not by page number — a flow document has no
+              // pages, and jumping to the heading itself is more precise than
+              // "the top of the page it happens to be on" even when it does.
+              scrollToElement(entry.el);
               setTocEntries(null);
             }}
           />
@@ -1484,6 +1972,24 @@ export default function BookEditor() {
         </button>
       </div>
 
+      {contextMenu && selectedBlock && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          label={registryEntry?.label ?? "Block"}
+          pageCount={pageCount}
+          currentPageIndex={currentPageIndex}
+          onDuplicate={onDuplicateBlock}
+          onDelete={onRemoveBlock}
+          onMoveToPage={onMoveBlockToPage}
+          onEditHtml={() => setEditHtmlTarget(selectedBlock)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Replaces the single never-dismissing line of red text in the corner
+          that could only ever show one problem at a time. */}
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
       {error && (
         <div style={{ position: "fixed", bottom: 16, left: 16, color: "var(--bad)", fontSize: 13 }}>{error}</div>
       )}

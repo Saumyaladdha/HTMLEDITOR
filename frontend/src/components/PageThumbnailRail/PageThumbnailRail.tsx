@@ -2,15 +2,20 @@ import { useEffect, useRef, useState } from "react";
 
 export interface PageEntry {
   id: string;
-  /** Standalone single-page HTML (same CSS/fonts, just one page's markup)
-   * — rendered lazily into this thumbnail's own mini-iframe only once it
-   * scrolls near the viewport, so a 39-page chapter doesn't eagerly parse
-   * the ~3MB inlined stylesheet 39 times on mount. */
-  html: string;
+  index: number;
 }
 
 interface Props {
   pages: PageEntry[];
+  /** Builds the standalone single-page HTML for one page, on demand.
+   *
+   * The rail used to receive every page's fully-rendered HTML up front. Each
+   * of those strings carries the document's entire inlined stylesheet, so a
+   * 39-page chapter rebuilt ~120MB of strings on every edit to feed
+   * thumbnails that are lazily mounted anyway and mostly never visible.
+   * Passing a callback means a page is only ever serialized at the moment
+   * its thumbnail scrolls into view. */
+  renderHtml: (index: number) => string;
   activePage: number; // 1-indexed
   onSelect: (pageIndex: number) => void; // 1-indexed
   onReorder: (fromIndex: number, toIndex: number) => void; // 0-indexed
@@ -21,7 +26,7 @@ interface Props {
 
 const THUMB_WIDTH = 210 * 0.28; // scale factor applied below matches this
 
-function Thumbnail({ entry }: { entry: PageEntry }) {
+function Thumbnail({ entry, renderHtml }: { entry: PageEntry; renderHtml: (index: number) => string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [visible, setVisible] = useState(false);
@@ -48,10 +53,13 @@ function Thumbnail({ entry }: { entry: PageEntry }) {
     if (!iframe) return;
     const doc = iframe.contentDocument;
     if (!doc) return;
+    // Serialized here, at the moment this thumbnail is actually on screen —
+    // not up front for all pages at once. See the renderHtml prop.
     doc.open();
-    doc.write(entry.html);
+    doc.write(renderHtml(entry.index));
     doc.close();
-  }, [visible, entry.html]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, entry.index, renderHtml]);
 
   return (
     <div ref={containerRef} style={{ width: "100%", aspectRatio: "210 / 297", overflow: "hidden", position: "relative", background: "var(--paper)" }}>
@@ -73,7 +81,7 @@ function Thumbnail({ entry }: { entry: PageEntry }) {
   );
 }
 
-export default function PageThumbnailRail({ pages, activePage, onSelect, onReorder, onAdd, onDuplicate, onDelete }: Props) {
+export default function PageThumbnailRail({ pages, renderHtml, activePage, onSelect, onReorder, onAdd, onDuplicate, onDelete }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [menuFor, setMenuFor] = useState<number | null>(null);
@@ -135,7 +143,7 @@ export default function PageThumbnailRail({ pages, activePage, onSelect, onReord
                 opacity: dragIndex === i ? 0.4 : 1,
               }}
             >
-              <Thumbnail entry={entry} />
+              <Thumbnail entry={entry} renderHtml={renderHtml} />
               <div
                 style={{
                   position: "absolute",

@@ -11,11 +11,27 @@ import { applyImageToFigureSlot } from "../../editor/selection";
 import { fileToDataUrl, listenForPastedImage } from "../../editor/imageSwap";
 import { setContentEditable, unwrapAncestor, wrapSelection } from "../../editor/textEditing";
 import { ScreenRect } from "../../editor/geometry";
+import type { DocumentCapabilities } from "../../editor/capabilities";
+import StyleInspector from "../StyleInspector/StyleInspector";
+
+/** Unwraps a span the editor created via the inline-style fallback (no class
+ * to match on) — replaces it with its own children. The class-based path uses
+ * unwrapAncestor instead. */
+function unwrapElement(el: HTMLElement) {
+  const parent = el.parentNode;
+  if (!parent) return;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  parent.removeChild(el);
+}
 
 interface Props {
   doc: Document | null;
   block: HTMLElement | null;
   subPart: HTMLElement | null;
+  /** Which inline-formatting mechanism this document supports — see
+   * capabilities.ts. Colouring a word wrote a `.text-color` span
+   * unconditionally, which is invisible in any document lacking that CSS. */
+  capabilities: DocumentCapabilities;
   onRemoveBlock: () => void;
   onChanged: () => void; // call after any DOM mutation so parent can mark "unsaved"
   /** Image replacement can swap the sub-part's actual DOM node (a raw
@@ -59,7 +75,7 @@ function Swatches({
   );
 }
 
-export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onChanged, onImageReplaced, anchorRect }: Props) {
+export default function PropertyPanel({ doc, block, subPart, capabilities, onRemoveBlock, onChanged, onImageReplaced, anchorRect }: Props) {
   const [, bump] = useState(0);
   const [picker, setPicker] = useState<"color" | "highlight" | null>(null);
   useEffect(() => setPicker(null), [block, subPart]);
@@ -69,18 +85,33 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
 
   const { entry } = registryEntryFor(block);
 
-  // Sub-part: inline text-color / highlight span selected inside the block.
-  if (subPart && subPart.classList.contains("text-color")) {
-    const activeHex = subPart.style.getPropertyValue("--tc-c") || null;
+  // Sub-part: a coloured or highlighted inline span selected inside the
+  // block. Recognised through EITHER mechanism — the pipeline's semantic
+  // class, or the plain inline-styled span the editor emits in documents
+  // that don't define those classes. Matching on class alone meant a span
+  // the editor had just created in an ordinary document could never be
+  // re-selected to change or remove its colour.
+  const isColorSpan =
+    !!subPart && (subPart.classList.contains("text-color") || !!subPart.style.color);
+  const isHighlightSpan =
+    !!subPart && (subPart.classList.contains("highlight") || !!subPart.style.backgroundColor);
+
+  if (subPart && isColorSpan) {
+    const activeHex = subPart.style.getPropertyValue("--tc-c") || subPart.style.color || null;
+    const classed = subPart.classList.contains("text-color");
     return (
       <aside style={floatingPanelStyle()}>
-        <PanelHeader title="Coloured text" sub="text-color span" />
+        <PanelHeader title="Coloured text" sub={classed ? "text-color span" : "inline colour"} />
         <Group label="Colour">
           <Swatches
             palette={TEXT_COLOR_PALETTE}
             activeHex={activeHex}
             onPick={(hex) => {
-              subPart.style.setProperty("--tc-c", hex);
+              if (classed && capabilities.textColor.cssVar) {
+                subPart.style.setProperty(capabilities.textColor.cssVar, hex);
+              } else {
+                subPart.style.color = hex;
+              }
               onChanged();
               rerender();
             }}
@@ -90,24 +121,31 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
           danger
           label="Remove colour"
           onClick={() => {
-            unwrapAncestor(block, subPart, "text-color");
+            if (classed) unwrapAncestor(block, subPart, "text-color");
+            else unwrapElement(subPart);
             onChanged();
           }}
         />
       </aside>
     );
   }
-  if (subPart && subPart.classList.contains("highlight")) {
-    const activeHex = subPart.style.getPropertyValue("--hl-c") || null;
+  if (subPart && isHighlightSpan) {
+    const activeHex =
+      subPart.style.getPropertyValue("--hl-c") || subPart.style.backgroundColor || null;
+    const classed = subPart.classList.contains("highlight");
     return (
       <aside style={floatingPanelStyle()}>
-        <PanelHeader title="Highlighted text" sub="highlight span" />
+        <PanelHeader title="Highlighted text" sub={classed ? "highlight span" : "inline highlight"} />
         <Group label="Highlight colour">
           <Swatches
             palette={HIGHLIGHT_PALETTE}
             activeHex={activeHex}
             onPick={(hex) => {
-              subPart.style.setProperty("--hl-c", hex);
+              if (classed && capabilities.highlight.cssVar) {
+                subPart.style.setProperty(capabilities.highlight.cssVar, hex);
+              } else {
+                subPart.style.backgroundColor = hex;
+              }
               onChanged();
               rerender();
             }}
@@ -117,7 +155,8 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
           danger
           label="Remove highlight"
           onClick={() => {
-            unwrapAncestor(block, subPart, "highlight");
+            if (classed) unwrapAncestor(block, subPart, "highlight");
+            else unwrapElement(subPart);
             onChanged();
           }}
         />
@@ -166,7 +205,7 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
                 palette={TEXT_COLOR_PALETTE}
                 activeHex={null}
                 onPick={(hex) => {
-                  wrapSelection(doc, block, "text-color", ["--tc-c", hex]);
+                  wrapSelection(doc, block, capabilities.textColor, hex);
                   setPicker(null);
                   onChanged();
                   rerender();
@@ -183,7 +222,7 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
                 palette={HIGHLIGHT_PALETTE}
                 activeHex={null}
                 onPick={(hex) => {
-                  wrapSelection(doc, block, "highlight", ["--hl-c", hex]);
+                  wrapSelection(doc, block, capabilities.highlight, hex);
                   setPicker(null);
                   onChanged();
                   rerender();
@@ -278,19 +317,12 @@ export default function PropertyPanel({ doc, block, subPart, onRemoveBlock, onCh
         </Group>
       )}
 
-      <Group label="Space above/below">
-        <SliderRow
-          unit="px"
-          min={0}
-          max={48}
-          value={parseFloat(block.style.marginBlock as string) || 16}
-          onChange={(v) => {
-            block.style.marginBlock = `${v}px`;
-            rerender();
-          }}
-          onCommit={onChanged}
-        />
-      </Group>
+      {/* Universal controls, available on EVERY element regardless of whether
+          the registry recognises its type. Without these, the thirty-one
+          library elements with no registry entry — and the whole of any
+          document the editor didn't generate — offered nothing beyond "edit
+          text / remove". */}
+      <StyleInspector el={block} onChange={rerender} onCommit={onChanged} />
 
       <div style={{ borderTop: "1px solid var(--shell-700)", paddingTop: 16, marginTop: 24 }}>
         <FieldBtn danger label="🗑  Remove block" onClick={onRemoveBlock} />

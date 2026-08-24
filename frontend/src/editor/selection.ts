@@ -9,21 +9,23 @@
  * IDs are only stable for the current editing session.
  */
 
-export function stampBlockIds(doc: Document) {
+import { collectBlocks, type DocumentStructure } from "./structure";
+
+/**
+ * Marks every editable block with a data-block-id.
+ *
+ * Which elements those ARE is decided by structure.ts, not by this module:
+ * a packaged chapter uses the direct children of `.page__cols`/`.page__full`
+ * (preserving the granularity those chapters were authored with), while any
+ * other document gets structurally inferred blocks. Hardcoding the two
+ * pipeline selectors here — the previous behaviour — meant that in any other
+ * document precisely nothing was stamped, so nothing was clickable and the
+ * editor was inert.
+ */
+export function stampBlockIds(doc: Document, structure: DocumentStructure) {
   let counter = 0;
-  // .page__full is a full-width area some pages have ABOVE the two-column
-  // body — page 1's chapter title (.title-1) and "भाग 1" heading
-  // (.part-head) live there, not in .page__cols. Without stamping it too,
-  // those elements have no data-block-id at all and are simply
-  // unclickable — see model.ts's Page.fullBlocks doc comment for the
-  // matching fix on the model side (it used to also get silently dropped
-  // from the model on every undo/redo round-trip).
-  doc.querySelectorAll(".page__cols, .page__full").forEach((container) => {
-    Array.from(container.children).forEach((child) => {
-      if (!(child as HTMLElement).dataset.blockId) {
-        (child as HTMLElement).dataset.blockId = `b-${counter++}`;
-      }
-    });
+  collectBlocks(doc, structure).forEach((el) => {
+    if (!el.dataset.blockId) el.dataset.blockId = `b-${counter++}`;
   });
 }
 
@@ -62,11 +64,27 @@ export function findSubPart(
   return null;
 }
 
-/** Also treat inline text-color/highlight spans as always-selectable
+/** Also treat inline coloured/highlighted spans as always-selectable
  * sub-parts (they exist inside almost any text-bearing block, not just
- * ones with a registry entry naming them explicitly). */
+ * ones with a registry entry naming them explicitly).
+ *
+ * Matches BOTH formatting mechanisms: the pipeline's semantic classes, and
+ * the plain inline-styled <span> the editor emits in documents that don't
+ * define those classes (see capabilities.ts). Class-only matching meant that
+ * in any non-pipeline document, a span the editor had just created could
+ * never be re-selected to change or remove its colour. */
 export function findInlineSpan(target: Element, block: HTMLElement): HTMLElement | null {
-  return findSubPart(target, block, ["text-color", "highlight"]);
+  const classed = findSubPart(target, block, ["text-color", "highlight"]);
+  if (classed) return classed;
+
+  let node: Element | null = target;
+  while (node && node !== block.parentElement) {
+    const el = node as HTMLElement;
+    if (el.tagName === "SPAN" && (el.style?.color || el.style?.backgroundColor)) return el;
+    if (node === block) break;
+    node = node.parentElement;
+  }
+  return null;
 }
 
 /**

@@ -1,5 +1,16 @@
 const BASE = "/api";
 
+/** Carries the HTTP status alongside the message, so callers can tell a
+ * recoverable, specific failure apart from a generic one — a 409 from a
+ * concurrent save needs an "overwrite?" prompt, not the same red toast as a
+ * network blip. A plain Error threw all of that away. */
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 let accessToken: string | null = localStorage.getItem("access_token");
 let refreshToken: string | null = localStorage.getItem("refresh_token");
 
@@ -72,7 +83,7 @@ export async function apiFetch<T>(path: string, opts: RequestOpts = {}, _retried
     } catch {
       /* response wasn't JSON, keep statusText */
     }
-    throw new Error(detail);
+    throw new ApiError(detail, res.status);
   }
 
   if (res.status === 204) return undefined as T;

@@ -10,12 +10,18 @@
  * there's no cross-frame drag complexity to deal with.
  */
 
+import { ED } from "./chrome";
+import type { DocumentStructure } from "./structure";
+
 const DRAG_MIME = "application/x-block-id";
 
 export function makeBlocksDraggable(doc: Document) {
   doc.querySelectorAll<HTMLElement>("[data-block-id]").forEach((el) => {
     el.draggable = true;
-    el.style.cursor = "grab";
+    // A class, not `el.style.cursor = "grab"` — inline styles written onto
+    // the user's own elements end up serialized into every save and export.
+    // See chrome.ts.
+    el.classList.add(ED.block);
   });
 }
 
@@ -28,15 +34,12 @@ export function makeBlocksDraggable(doc: Document) {
  * full opacity — changing it immediately would make the ghost itself look
  * dim while dragging, which looks like a rendering glitch. */
 function dimWhileDragging(el: HTMLElement) {
-  el.style.cursor = "grabbing";
   setTimeout(() => {
-    el.style.opacity = "0.35";
+    el.classList.add(ED.dragging);
   }, 0);
 }
 function undim(el: HTMLElement | null) {
-  if (!el) return;
-  el.style.opacity = "";
-  el.style.cursor = "grab";
+  el?.classList.remove(ED.dragging);
 }
 
 /** A thin, glowing line inserted into the DOM to show where a dropped
@@ -82,7 +85,7 @@ const ITEM_SELECTOR = ".figure-grid > .figure, .bullet-list__items > li, .list--
 export function makeNestedItemsDraggable(doc: Document) {
   doc.querySelectorAll<HTMLElement>(ITEM_SELECTOR).forEach((el) => {
     el.draggable = true;
-    el.style.cursor = "grab";
+    el.classList.add(ED.nestedItem);
   });
 }
 
@@ -206,8 +209,25 @@ export function attachNestedItemReorder(doc: Document, onMoved: () => void) {
   });
 }
 
-export function attachDragReorder(doc: Document, onMoved: () => void) {
+export function attachDragReorder(doc: Document, structure: DocumentStructure, onMoved: () => void) {
   let draggedId: string | null = null;
+
+  // Which element counts as "somewhere a block can be dropped".
+  //
+  // This used to be hardcoded to `.page__cols`, with two consequences: no
+  // drag worked at all in a document that has no such container (i.e. any
+  // document not from this repo's pipeline), and blocks living in
+  // `.page__full` — the chapter title, the "भाग 1" heading — were draggable
+  // but could never be dropped anywhere, because their own container didn't
+  // match the selector the drop handler required.
+  const containerSelector = structure.blockContainerSelectors.join(", ");
+  const containerFrom = (el: Element | null): HTMLElement | null => {
+    if (!el) return null;
+    if (containerSelector) return el.closest<HTMLElement>(containerSelector);
+    // Flow mode: a block's own parent is its container, whatever it is.
+    const block = el.closest<HTMLElement>("[data-block-id]");
+    return (block?.parentElement as HTMLElement | null) ?? null;
+  };
 
   doc.addEventListener("dragstart", (e) => {
     const block = (e.target as Element).closest<HTMLElement>("[data-block-id]");
@@ -221,7 +241,7 @@ export function attachDragReorder(doc: Document, onMoved: () => void) {
   doc.addEventListener("dragover", (e) => {
     if (!draggedId) return;
     const target = (e.target as Element).closest<HTMLElement>("[data-block-id]");
-    const container = (e.target as Element).closest<HTMLElement>(".page__cols");
+    const container = containerFrom(e.target as Element);
     if (!target && !container) return;
     e.preventDefault();
 
@@ -272,7 +292,7 @@ export function attachDragReorder(doc: Document, onMoved: () => void) {
   });
 
   doc.addEventListener("drop", (e) => {
-    const container = (e.target as Element).closest<HTMLElement>(".page__cols");
+    const container = containerFrom(e.target as Element);
     if (!draggedId || !container) return;
     e.preventDefault();
 

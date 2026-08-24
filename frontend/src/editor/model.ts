@@ -115,6 +115,32 @@ function nextId(): string {
   return `blk-${_idCounter++}`;
 }
 
+/**
+ * Interning for the document shell (`prefix`/`suffix`).
+ *
+ * `prefix` holds the entire inlined <style> block, which for a real packaged
+ * chapter is several MB, and `parseDocument` runs on EVERY commit — every
+ * slider release, text blur, drag and image swap. Each run produced fresh
+ * strings via `shell.slice(...)`, and the undo stack retains up to 50
+ * snapshots, so a single chapter could hold ~50 separate copies of the same
+ * multi-MB stylesheet in memory (~150MB) purely because the strings were
+ * structurally equal but not identical.
+ *
+ * The shell is immutable during editing — only pages change — so a commit
+ * whose shell matches the previous one reuses the exact same string
+ * references. Every snapshot then shares one copy. Comparing two large
+ * strings is a single fast memcmp, run once per commit, versus allocating
+ * and retaining megabytes per snapshot.
+ */
+let _shellCache: { prefix: string; suffix: string } | null = null;
+function internShell(prefix: string, suffix: string): { prefix: string; suffix: string } {
+  if (_shellCache && _shellCache.prefix === prefix && _shellCache.suffix === suffix) {
+    return _shellCache;
+  }
+  _shellCache = { prefix, suffix };
+  return _shellCache;
+}
+
 /** Infers a readable type label for a block the registry doesn't know —
  * strips BEM __part/--variant suffixes down to the base block name (e.g.
  * "table-sutra--wide" -> "table-sutra") so an unrecognized component still
@@ -214,7 +240,9 @@ export function parseDocument(html: string): BookDocument {
     }
   }
 
-  return { pages, prefix, suffix };
+  // Share one copy of the shell across every snapshot — see internShell.
+  const shell = internShell(prefix, suffix);
+  return { pages, prefix: shell.prefix, suffix: shell.suffix };
 }
 
 /** Rebuilds the full HTML string from the model — prefix + each page's
@@ -258,134 +286,23 @@ export function renderSinglePageHtml(doc: BookDocument, pageIndex: number): stri
   return doc.prefix + renderPage(page) + doc.suffix;
 }
 
-let _pageIdCounter = 0;
-function nextPageId(): string {
-  return `page-${Date.now()}-${_pageIdCounter++}`;
-}
-
-export function addBlankPage(doc: BookDocument, afterIndex: number): BookDocument {
-  const pages = [...doc.pages];
-  pages.splice(afterIndex + 1, 0, { id: nextPageId(), blocks: [], fullBlocks: [], attrs: { class: "page" }, trailingGap: "" });
-  return { ...doc, pages };
-}
-
-export function duplicatePage(doc: BookDocument, index: number): BookDocument {
-  const source = doc.pages[index];
-  if (!source) return doc;
-  const clone: Page = {
-    id: nextPageId(),
-    blocks: source.blocks.map((b) => ({ ...b, id: nextId() })),
-    fullBlocks: source.fullBlocks.map((b) => ({ ...b, id: nextId() })),
-    attrs: { ...source.attrs },
-    // Deliberately NOT source.trailingGap — that's shared/incidental
-    // content (e.g. a stray stylesheet) that happened to trail the
-    // ORIGINAL page, not something duplicating a page should also clone.
-    trailingGap: "",
-  };
-  const pages = [...doc.pages];
-  pages.splice(index + 1, 0, clone);
-  return { ...doc, pages };
-}
-
-export function deletePage(doc: BookDocument, index: number): BookDocument {
-  return { ...doc, pages: doc.pages.filter((_, i) => i !== index) };
-}
-
-export function reorderPages(doc: BookDocument, fromIndex: number, toIndex: number): BookDocument {
-  const pages = [...doc.pages];
-  const [moved] = pages.splice(fromIndex, 1);
-  pages.splice(toIndex, 0, moved);
-  return { ...doc, pages };
-}
-
-/** Immutable update: replaces one block's html by id, for undo-snapshot-
- * friendly state updates (never mutate a Block/Page/BookDocument in place). */
-export function updateBlockHtml(doc: BookDocument, blockId: string, newHtml: string): BookDocument {
-  return {
-    ...doc,
-    pages: doc.pages.map((page) => ({
-      ...page,
-      blocks: page.blocks.map((b) => (b.id === blockId ? { ...b, html: newHtml } : b)),
-    })),
-  };
-}
-
-export function removeBlock(doc: BookDocument, blockId: string): BookDocument {
-  return {
-    ...doc,
-    pages: doc.pages.map((page) => ({
-      ...page,
-      blocks: page.blocks.filter((b) => b.id !== blockId),
-    })),
-  };
-}
-
-export function findBlock(doc: BookDocument, blockId: string): Block | null {
-  for (const page of doc.pages) {
-    const b = page.blocks.find((x) => x.id === blockId);
-    if (b) return b;
-  }
-  return null;
-}
-
-/** Inserts `html` as a new block immediately after `afterBlockId` (or at
- * the end of the first page if afterBlockId is null), returning the new
- * block's id alongside the updated document. */
-export function insertBlockAfter(
-  doc: BookDocument,
-  afterBlockId: string | null,
-  html: string,
-): { doc: BookDocument; newId: string } {
-  const newId = nextId();
-  const newBlock: Block = { id: newId, type: inferGenericTypeFromHtml(html), html };
-
-  if (!afterBlockId) {
-    const pages = doc.pages.map((p, i) =>
-      i === 0 ? { ...p, blocks: [...p.blocks, newBlock] } : p,
-    );
-    return { doc: { ...doc, pages }, newId };
-  }
-
-  const pages = doc.pages.map((page) => {
-    const idx = page.blocks.findIndex((b) => b.id === afterBlockId);
-    if (idx === -1) return page;
-    const blocks = [...page.blocks];
-    blocks.splice(idx + 1, 0, newBlock);
-    return { ...page, blocks };
-  });
-  return { doc: { ...doc, pages }, newId };
-}
-
-function inferGenericTypeFromHtml(html: string): string {
-  const el = new DOMParser().parseFromString(html, "text/html").body.firstElementChild;
-  return el ? blockTypeFor(el) : "generic";
-}
-
-/** Moves a block (by id) to a new position: before `beforeBlockId` in
- * whichever page currently contains it, or to the end of `targetPageId`
- * if beforeBlockId is null — the single primitive both same-page reorder
- * and cross-page move share. */
-export function moveBlock(
-  doc: BookDocument,
-  blockId: string,
-  targetPageId: string,
-  beforeBlockId: string | null,
-): BookDocument {
-  let moving: Block | null = null;
-  const withoutMoved = doc.pages.map((page) => {
-    const idx = page.blocks.findIndex((b) => b.id === blockId);
-    if (idx === -1) return page;
-    moving = page.blocks[idx];
-    return { ...page, blocks: page.blocks.filter((b) => b.id !== blockId) };
-  });
-  if (!moving) return doc;
-
-  const pages = withoutMoved.map((page) => {
-    if (page.id !== targetPageId) return page;
-    const blocks = [...page.blocks];
-    const insertIdx = beforeBlockId ? blocks.findIndex((b) => b.id === beforeBlockId) : blocks.length;
-    blocks.splice(insertIdx === -1 ? blocks.length : insertIdx, 0, moving as Block);
-    return { ...page, blocks };
-  });
-  return { ...doc, pages };
-}
+/**
+ * NOTE — page and block MUTATIONS deliberately do not live in this module.
+ *
+ * It used to also export addBlankPage / duplicatePage / deletePage /
+ * reorderPages / updateBlockHtml / removeBlock / findBlock /
+ * insertBlockAfter / moveBlock: a complete immutable model-mutation API,
+ * carefully written, with zero call sites anywhere in the app. Every one of
+ * those operations is actually performed against the live iframe DOM (see
+ * BookEditor's withBookContainer, onDuplicateBlock, onInsertBlock, ...) and
+ * then re-absorbed here via commitToModel, because direct DOM manipulation
+ * is what gives instant visual feedback without a full re-render.
+ *
+ * Two parallel implementations of the same operations, only one reachable,
+ * is a trap: the dead one drifts out of sync (these never learned about
+ * `fullBlocks`, so using them would have silently dropped every chapter
+ * title) and the next reader cannot tell which is authoritative.
+ *
+ * This module's job is parse -> snapshot -> serialize. Mutation belongs to
+ * the DOM.
+ */
