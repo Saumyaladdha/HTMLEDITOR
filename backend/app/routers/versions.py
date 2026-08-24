@@ -10,7 +10,7 @@ from app.models.book_version import BookVersion
 from app.models.user import User
 from app.routers.books import _get_owned_book
 from app.schemas.book import BookVersionOut, CreateVersionRequest
-from app.services import s3_service
+from app.services import storage
 from app.services.html_sanitize import strip_editor_chrome
 from app.services.html_validate import count_pages, validate_saved_html
 
@@ -56,7 +56,7 @@ def get_version_html(
 ):
     book = _get_owned_book(db, book_id, user)
     version = _get_version(db, book, version_id)
-    html = s3_service.get_html(version.s3_key)
+    html = storage.get_html(version.s3_key)
     return Response(content=html, media_type="text/html; charset=utf-8")
 
 
@@ -94,8 +94,8 @@ def create_version(
     html = strip_editor_chrome(validate_saved_html(body.html))
 
     version_id = uuid.uuid4()
-    key = s3_service.version_key(user.id, book.id, version_id)
-    size = s3_service.put_html(key, html)
+    key = storage.version_key(user.id, book.id, version_id)
+    size = storage.put_html(key, html)
 
     version = BookVersion(
         id=version_id,
@@ -128,11 +128,11 @@ def revert_to_version(
     version chain linear and append-only."""
     book = _get_owned_book(db, book_id, user)
     old_version = _get_version(db, book, version_id)
-    html = s3_service.get_html(old_version.s3_key)
+    html = storage.get_html(old_version.s3_key)
 
     new_id = uuid.uuid4()
-    key = s3_service.version_key(user.id, book.id, new_id)
-    size = s3_service.put_html(key, html)
+    key = storage.version_key(user.id, book.id, new_id)
+    size = storage.put_html(key, html)
 
     new_version = BookVersion(
         id=new_id,

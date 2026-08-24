@@ -12,7 +12,7 @@ from app.models.book import Book
 from app.models.user import User
 from app.routers.books import _get_owned_book
 from app.routers.versions import _get_version
-from app.services import s3_service
+from app.services import storage
 
 router = APIRouter(prefix="/books/{book_id}/export", tags=["export"])
 
@@ -65,7 +65,7 @@ def export_book(
     if target_version_id is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This book has no saved versions yet")
     version = _get_version(db, book, target_version_id)
-    html = s3_service.get_html(version.s3_key)
+    html = storage.get_html(version.s3_key)
 
     if format == "html":
         return Response(

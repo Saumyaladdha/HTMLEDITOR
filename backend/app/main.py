@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.session import Base, engine, get_db
 from app.routers import auth, books, export, versions
-from app.services import s3_service
+from app.services import storage
 
 logging.basicConfig(
     level=logging.INFO,
@@ -106,13 +106,15 @@ def health(db: Session = Depends(get_db)):
         checks["database"] = f"error: {type(exc).__name__}"
 
     try:
-        s3_service.check_access()
-        checks["s3"] = "ok"
+        storage.check_access()
+        checks["storage"] = f"ok ({storage.describe()})"
     except Exception as exc:
         # Overwhelmingly the expired-credentials case in practice, which is
         # otherwise invisible until a teacher's save silently fails.
-        logger.exception("health: s3 check failed")
-        checks["s3"] = f"error: {type(exc).__name__}"
+        logger.exception("health: storage check failed")
+        checks["storage"] = f"error: {type(exc).__name__}"
 
-    overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+    # startswith, not equality: a check may append detail ("ok (LocalStorage)")
+    # and an exact match would report a fully healthy service as degraded.
+    overall = "ok" if all(v.startswith("ok") for v in checks.values()) else "degraded"
     return {"status": overall, "checks": checks}

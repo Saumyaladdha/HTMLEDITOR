@@ -9,7 +9,7 @@ from app.models.book import Book
 from app.models.book_version import BookVersion
 from app.models.user import User
 from app.schemas.book import BookOut
-from app.services import s3_service
+from app.services import storage
 from app.services.html_flatten import flatten_if_needed
 from app.services.html_ingest import is_script_rendered
 from app.services.html_validate import count_pages, validate_upload
@@ -54,14 +54,14 @@ async def upload_book(
 
     book_id = uuid.uuid4()
     version_id = uuid.uuid4()
-    original_key = s3_service.original_key(user.id, book_id)
-    version_s3_key = s3_service.version_key(user.id, book_id, version_id)
+    original_key = storage.original_key(user.id, book_id)
+    version_s3_key = storage.version_key(user.id, book_id, version_id)
 
-    s3_service.put_html(original_key, html)
+    storage.put_html(original_key, html)
     # The version's recorded size must describe what the VERSION holds, not
     # the original upload — those differ whenever flattening changed the
     # document, and version history reports this number to the user.
-    size = s3_service.put_html(version_s3_key, editable_html)
+    size = storage.put_html(version_s3_key, editable_html)
 
     book = Book(id=book_id, owner_id=user.id, title=title, original_s3_key=original_key)
     db.add(book)
@@ -115,6 +115,6 @@ def delete_book(book_id: uuid.UUID, db: Session = Depends(get_db), user: User = 
     # not enforcement order at delete time).
     book.current_version_id = None
     db.flush()
-    s3_service.delete_prefix(user.id, book.id)
+    storage.delete_prefix(user.id, book.id)
     db.delete(book)
     db.commit()
