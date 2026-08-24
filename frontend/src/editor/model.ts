@@ -261,8 +261,15 @@ function renderPage(page: Page): string {
   // and is only emitted at all when the page actually had one, so an
   // ordinary page's re-rendered HTML doesn't grow an empty wrapper it
   // never had.
+  // The trailing newline matters: the source has whitespace between
+  // `</div>` (page__full) and `<div class="page__cols">`, and emitting them
+  // flush against each other dropped that text node on every round trip.
+  // Harmless between two block-level divs, but it made the round trip
+  // non-identity — and a round trip that isn't an identity is one that can't
+  // be tested for one, which is how the fullBlocks/attrs/trailingGap losses
+  // went unnoticed in the first place.
   const fullHtml = page.fullBlocks.length
-    ? `<div class="page__full">${page.fullBlocks.map((b) => b.html).join("\n")}</div>`
+    ? `<div class="page__full">${page.fullBlocks.map((b) => b.html).join("\n")}</div>\n`
     : "";
   // Reconstruct the page div's ORIGINAL attributes (class, and crucially
   // style="--fs-base: ...px") instead of a hardcoded `class="page"` —

@@ -30,11 +30,11 @@ const EDITOR_ELEMENT_IDS = ["__drop_indicator__", "__nested_drop_indicator__", C
 /** Strips editor scaffolding from a detached clone, in place. */
 function stripInto(root: Document | Element) {
   EDITOR_ELEMENT_IDS.forEach((id) => {
-    // getElementById only exists on Document; a cloned <html> element needs
-    // the attribute-selector form.
-    const el =
-      "getElementById" in root ? root.getElementById(id) : root.querySelector(`#${CSS.escape(id)}`);
-    el?.remove();
+    // An attribute selector rather than `#id`: it needs no escaping (so no
+    // dependency on CSS.escape, which isn't defined in every environment
+    // this runs in), and getElementById isn't available here anyway — `root`
+    // is a cloned <html> ELEMENT, not a Document.
+    root.querySelectorAll(`[id="${id}"]`).forEach((el) => el.remove());
   });
 
   // The throwaway <input type="file"> that openImagePickerFor appends to the

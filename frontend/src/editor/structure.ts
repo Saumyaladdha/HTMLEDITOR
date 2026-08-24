@@ -153,9 +153,13 @@ function detectPageSelector(doc: Document): { selector: string; els: HTMLElement
   );
   if (looksLikeRepeatedPages(children)) {
     const cls = children[0].classList[0];
+    // An attribute selector avoids depending on CSS.escape (absent in some
+    // environments) while still handling class names containing characters
+    // that would need escaping in `.class` form.
     if (cls) {
-      const els = Array.from(doc.querySelectorAll<HTMLElement>(`.${CSS.escape(cls)}`));
-      if (els.length === children.length) return { selector: `.${CSS.escape(cls)}`, els };
+      const selector = `[class~="${cls.replace(/"/g, '\\"')}"]`;
+      const els = Array.from(doc.querySelectorAll<HTMLElement>(selector));
+      if (els.length === children.length) return { selector, els };
     }
   }
   return null;
