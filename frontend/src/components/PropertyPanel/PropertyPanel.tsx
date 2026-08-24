@@ -13,6 +13,7 @@ import { setContentEditable, unwrapAncestor, wrapSelection } from "../../editor/
 import { ScreenRect } from "../../editor/geometry";
 import type { DocumentCapabilities } from "../../editor/capabilities";
 import StyleInspector from "../StyleInspector/StyleInspector";
+import TableControls from "../TableControls/TableControls";
 
 /** Unwraps a span the editor created via the inline-style fallback (no class
  * to match on) — replaces it with its own children. The class-based path uses
@@ -170,6 +171,14 @@ export default function PropertyPanel({ doc, block, subPart, capabilities, onRem
   // replace/paste controls apply.
   const imageTarget = isImageSubPart(block, subPart, entry) ? subPart : null;
 
+  // The table to operate on: the block itself when it IS a table, otherwise
+  // one nested inside it (this pipeline wraps its eight table elements in a
+  // styled container, so the block is the wrapper, not the <table>).
+  const tableEl =
+    block.tagName === "TABLE"
+      ? (block as HTMLTableElement)
+      : block.querySelector<HTMLTableElement>("table");
+
   return (
     <aside style={floatingPanelStyle()}>
       <PanelHeader title={entry.label} sub={Array.from(block.classList).join(" ")} />
@@ -316,6 +325,11 @@ export default function PropertyPanel({ doc, block, subPart, capabilities, onRem
           </div>
         </Group>
       )}
+
+      {/* Row/column editing whenever the selection is (or contains) a table —
+          previously a table could only be moved, deleted, or hand-edited as
+          raw HTML. */}
+      {tableEl && <TableControls doc={doc} table={tableEl} onChanged={onChanged} />}
 
       {/* Universal controls, available on EVERY element regardless of whether
           the registry recognises its type. Without these, the thirty-one

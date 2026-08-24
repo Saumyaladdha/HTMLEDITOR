@@ -10,6 +10,8 @@ from app.models.book_version import BookVersion
 from app.models.user import User
 from app.schemas.book import BookOut
 from app.services import s3_service
+from app.services.html_flatten import flatten_if_needed
+from app.services.html_ingest import is_script_rendered
 from app.services.html_validate import count_pages, validate_upload
 
 router = APIRouter(prefix="/books", tags=["books"])
@@ -34,13 +36,32 @@ async def upload_book(
     raw = await file.read()
     html = validate_upload(raw)
 
+    # Some single-file exports carry no editable markup at all: the content is
+    # unpacked and rendered by JavaScript on load, so the file itself is one
+    # "this page requires JavaScript" line plus a few hundred KB of bundled
+    # modules. The editor cannot run that script (the canvas is same-origin
+    # with the app, so untrusted code there would reach the user's session),
+    # which means such a document would open as a blank page with no
+    # explanation. Rendering it ONCE here — server-side, in a throwaway
+    # headless browser — turns it into ordinary HTML the editor handles well.
+    #
+    # The original bytes are stored unchanged under original_s3_key regardless,
+    # so flattening only ever adds an editable representation.
+    note: str | None = None
+    editable_html = html
+    if is_script_rendered(html):
+        editable_html, note = flatten_if_needed(html)
+
     book_id = uuid.uuid4()
     version_id = uuid.uuid4()
     original_key = s3_service.original_key(user.id, book_id)
     version_s3_key = s3_service.version_key(user.id, book_id, version_id)
 
-    size = s3_service.put_html(original_key, html)
-    s3_service.put_html(version_s3_key, html)
+    s3_service.put_html(original_key, html)
+    # The version's recorded size must describe what the VERSION holds, not
+    # the original upload — those differ whenever flattening changed the
+    # document, and version history reports this number to the user.
+    size = s3_service.put_html(version_s3_key, editable_html)
 
     book = Book(id=book_id, owner_id=user.id, title=title, original_s3_key=original_key)
     db.add(book)
@@ -51,8 +72,8 @@ async def upload_book(
         book_id=book.id,
         s3_key=version_s3_key,
         parent_version_id=None,
-        label="Uploaded",
-        page_count=count_pages(html),
+        label="Uploaded (converted from a JavaScript-rendered page)" if note else "Uploaded",
+        page_count=count_pages(editable_html),
         size_bytes=size,
         created_by=user.id,
     )
@@ -62,6 +83,10 @@ async def upload_book(
     book.current_version_id = version.id
     db.commit()
     db.refresh(book)
+    # `note` rides along on the response so the client can explain what
+    # happened; BookOut ignores unknown attributes, so it is attached only
+    # for the schema field declared for it.
+    book.ingest_note = note
     return book
 
 

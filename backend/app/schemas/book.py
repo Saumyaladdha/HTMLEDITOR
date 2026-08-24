@@ -10,6 +10,9 @@ class BookOut(BaseModel):
     current_version_id: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
+    # Set only on upload, when something about the file needed explaining —
+    # e.g. it was a JavaScript-rendered bundle that had to be converted.
+    ingest_note: str | None = None
 
     class Config:
         from_attributes = True

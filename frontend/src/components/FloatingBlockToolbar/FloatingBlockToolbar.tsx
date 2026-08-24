@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ScreenRect } from "../../editor/geometry";
+import { BLOCK_TYPES } from "../../editor/blockEditing";
 
 interface Props {
   rect: ScreenRect;
@@ -7,6 +8,11 @@ interface Props {
   pageCount: number;
   currentPageIndex: number;
   multiCount: number; // 1 when a single block is selected
+  /** Current tag, lowercased — drives the type picker's active state. */
+  currentTag: string;
+  /** Whether pagination applies; hides "move to page" in a flow document. */
+  paginated: boolean;
+  onConvertType: (tag: string) => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onMoveToPage: (pageIndex: number) => void;
@@ -34,6 +40,9 @@ export default function FloatingBlockToolbar({
   pageCount,
   currentPageIndex,
   multiCount,
+  currentTag,
+  paginated,
+  onConvertType,
   onDuplicate,
   onDelete,
   onMoveToPage,
@@ -41,6 +50,8 @@ export default function FloatingBlockToolbar({
   onInsertAfter,
 }: Props) {
   const [movePickerOpen, setMovePickerOpen] = useState(false);
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
+  const activeType = BLOCK_TYPES.find((t) => t.tag === currentTag);
 
   return (
     <div
@@ -67,9 +78,69 @@ export default function FloatingBlockToolbar({
       <span style={{ padding: "0 6px 0 0", color: "#8f8fa0", whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>
         {multiCount > 1 ? `${multiCount} blocks` : label}
       </span>
+      {/* Block type — turning a paragraph into a heading is the most common
+          operation in any document editor and had no control at all. */}
+      {multiCount <= 1 && (
+        <div style={{ position: "relative" }}>
+          <button
+            style={{ ...iconBtn, width: "auto", padding: "0 7px", gap: 3 }}
+            aria-label="Change block type"
+            aria-expanded={typePickerOpen}
+            title="Change block type"
+            onClick={() => setTypePickerOpen((o) => !o)}
+          >
+            {activeType ? activeType.label.replace("Heading ", "H") : currentTag.toUpperCase()} ▾
+          </button>
+          {typePickerOpen && (
+            <div
+              role="menu"
+              style={{
+                position: "absolute",
+                top: 28,
+                left: 0,
+                background: "#22222a",
+                border: "1px solid #33333c",
+                borderRadius: 6,
+                boxShadow: "0 10px 24px -6px rgba(0,0,0,0.5)",
+                minWidth: 150,
+                zIndex: 41,
+                overflow: "hidden",
+              }}
+            >
+              {BLOCK_TYPES.map((t) => (
+                <button
+                  key={t.tag}
+                  onClick={() => {
+                    onConvertType(t.tag);
+                    setTypePickerOpen(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "6px 10px",
+                    background: t.tag === currentTag ? "#2f3550" : "transparent",
+                    border: "none",
+                    color: "#c9c9d4",
+                    cursor: "pointer",
+                    fontSize: 11,
+                  }}
+                >
+                  <span>{t.label}</span>
+                  {t.shortcut && <span style={{ color: "#6a6a78" }}>{t.shortcut.replace("Ctrl+Alt+", "⌥")}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <button style={iconBtn} aria-label="Insert block after" title="Insert block after" onClick={onInsertAfter}>+</button>
       <button style={iconBtn} aria-label="Duplicate block" title="Duplicate (Ctrl+D)" onClick={onDuplicate}>⧉</button>
-      <div style={{ position: "relative" }}>
+      {/* Only meaningful in a paginated document — a flow document has no
+          pages to move a block to. */}
+      <div style={{ position: "relative", display: paginated ? undefined : "none" }}>
         <button style={iconBtn} aria-label="Move to page" title="Move to page…" onClick={() => setMovePickerOpen((o) => !o)}>⇥</button>
         {movePickerOpen && (
           <div

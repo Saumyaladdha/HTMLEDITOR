@@ -55,6 +55,23 @@ export interface Page {
    * that variant controlled something structural, could make content look
    * like it vanished) the moment the model got serialized back to HTML. */
   attrs: Record<string, string>;
+  /** The `.page__cols` wrapper's own attributes, or null when this page has
+   * no such wrapper and its blocks are direct children of the page itself.
+   *
+   * renderPage used to emit a hardcoded `<div class="page__cols">` around
+   * every page's blocks. Two things broke as a result:
+   *
+   *  - A document using `class="page"` WITHOUT this pipeline's `.page__cols`
+   *    convention — and `page` is about as common a class name as exists —
+   *    had every one of its pages replaced by an empty `.page__cols` div on
+   *    the first save. All content inside the pages was destroyed.
+   *  - A `.page__cols` carrying extra classes or an inline style had them
+   *    silently reset, the same class of bug already fixed for `.page`
+   *    itself (see `attrs`).
+   *
+   * Capturing the real wrapper — or recording that there isn't one — makes
+   * the round trip faithful either way. */
+  colsAttrs: Record<string, string> | null;
   /** Raw markup that sits AFTER this page's own closing tag but BEFORE the
    * next page (or, on the last page, before the document's trailing
    * suffix) — e.g. a stray `<style>` block some packaged chapters place
@@ -190,10 +207,38 @@ export function parseDocument(html: string): BookDocument {
   const pageElSet = new Set<Element>(pageEls);
 
   const pages: Page[] = pageEls.map((pageEl) => {
-    const blocks = blocksFromContainer(pageEl.querySelector(".page__cols"));
-    const fullBlocks = blocksFromContainer(pageEl.querySelector(".page__full"));
+    const colsEl = pageEl.querySelector(".page__cols");
+    const fullEl = pageEl.querySelector(".page__full");
+    const fullBlocks = blocksFromContainer(fullEl);
+
+    // With no `.page__cols` wrapper, the page's own direct children are its
+    // blocks (excluding a `.page__full` area, which is captured separately).
+    // Assuming the wrapper always exists destroyed the contents of any page
+    // that didn't have one — see the colsAttrs doc comment.
+    let blocks: Block[];
+    let colsAttrs: Record<string, string> | null;
+    if (colsEl) {
+      blocks = blocksFromContainer(colsEl);
+      colsAttrs = capturePageAttrs(colsEl);
+    } else {
+      const direct = Array.from(pageEl.children).filter((el) => el !== fullEl);
+      blocks = direct.map((el) => {
+        const id = (el as HTMLElement).dataset.blockId || nextId();
+        (el as HTMLElement).dataset.blockId = id;
+        return { id, type: blockTypeFor(el), html: (el as HTMLElement).outerHTML };
+      });
+      colsAttrs = null;
+    }
+
     const attrs = capturePageAttrs(pageEl);
-    return { id: (pageEl as HTMLElement).dataset.pageId || nextId(), blocks, fullBlocks, attrs, trailingGap: "" };
+    return {
+      id: (pageEl as HTMLElement).dataset.pageId || nextId(),
+      blocks,
+      fullBlocks,
+      attrs,
+      colsAttrs,
+      trailingGap: "",
+    };
   });
 
   // Any page's non-page siblings (within whatever actually contains the
@@ -278,10 +323,18 @@ function renderPage(page: Page): string {
   // is captured from the live element in parseDocument, so data-page-id
   // is added back on top rather than assumed present in it.
   const attrs = { ...page.attrs, "data-page-id": page.id };
+  // Reproduce the page's ACTUAL inner shape: the real `.page__cols` wrapper
+  // with its own attributes when there was one, and the blocks directly
+  // inside the page when there wasn't. Emitting a hardcoded
+  // `<div class="page__cols">` regardless wiped the contents of every page
+  // in any document not following this pipeline's convention.
+  const body = page.colsAttrs
+    ? `<div ${serializeAttrs(page.colsAttrs)}>${blocksHtml}</div>`
+    : blocksHtml;
   // trailingGap re-emits whatever non-page content (a stray in-body
   // <style> block, comments, etc.) originally followed this page — see
   // the Page.trailingGap doc comment.
-  return `<div ${serializeAttrs(attrs)}>${fullHtml}<div class="page__cols">${blocksHtml}</div></div>${page.trailingGap}`;
+  return `<div ${serializeAttrs(attrs)}>${fullHtml}${body}</div>${page.trailingGap}`;
 }
 
 /** A standalone single-page document — same prefix/suffix (so identical

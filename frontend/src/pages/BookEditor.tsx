@@ -61,7 +61,20 @@ import {
   type DocumentStructure,
 } from "../editor/structure";
 import { detectCapabilities, NO_CAPABILITIES, type DocumentCapabilities } from "../editor/capabilities";
-import { attachPasteSanitizer } from "../editor/textEditing";
+import { applyLink, attachPasteSanitizer, currentLink, removeLink } from "../editor/textEditing";
+import {
+  BLOCK_TYPES,
+  caretPosition,
+  convertBlockType,
+  currentListItem,
+  exitListFromEmptyItem,
+  indentListItem,
+  isAtomicBlock,
+  mergeWithNext,
+  mergeWithPrevious,
+  outdentListItem,
+  splitBlockAtCaret,
+} from "../editor/blockEditing";
 import { discoverTemplates, type BlockTemplate } from "../editor/blockTemplates";
 
 export default function BookEditor() {
@@ -104,6 +117,8 @@ export default function BookEditor() {
   const [zoomOverride, setZoomOverride] = useState<number | null>(null);
 
   const [autosaveFailures, setAutosaveFailures] = useState(0);
+  // Link editor popover, opened either from the toolbar or by Ctrl+K.
+  const [linkEditorOpen, setLinkEditorOpen] = useState(false);
 
   // Components the open document actually uses, offered in the insert
   // palette alongside the semantic defaults — so the palette reflects THIS
@@ -539,12 +554,137 @@ export default function BookEditor() {
   // block was selected when that dependency last changed rather than the one
   // selected now. Recreated every render, and reached through a ref (below)
   // so listeners never need re-registering.
+  /**
+   * Enter / Backspace / Delete / Tab inside an editable block.
+   *
+   * Returns true when it handled the key. Split/merge/indent all mutate the
+   * live DOM, then re-stamp and commit once — see blockEditing.ts for why
+   * these need to exist at all (short version: without them you cannot add
+   * or remove a paragraph by typing).
+   */
+  function handleBlockKey(e: KeyboardEvent, block: HTMLElement): boolean {
+    const doc = getDoc();
+    if (!doc) return false;
+
+    const finish = (focus: HTMLElement, caretAtStart?: boolean) => {
+      restampAfterMutation(doc);
+      setContentEditable(focus, true);
+      if (caretAtStart) {
+        const range = doc.createRange();
+        range.selectNodeContents(focus);
+        range.collapse(true);
+        const sel = doc.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      setSelectedBlock(focus);
+      setSelectedSubPart(null);
+      setSelectedSubBlock(null);
+      markDirty();
+    };
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      const li = currentListItem(doc, block);
+      if (li) {
+        // Inside a list the browser's own Enter already does the right thing
+        // (a new <li>), so only the exception is handled here: an empty item
+        // means "I'm done with this list".
+        if (!li.textContent?.trim()) {
+          e.preventDefault();
+          const created = exitListFromEmptyItem(doc, block, li);
+          finish(created ?? block);
+          return true;
+        }
+        return false; // let the browser create the next <li>
+      }
+      if (isAtomicBlock(block)) return false;
+      e.preventDefault();
+      const created = splitBlockAtCaret(doc, block);
+      if (created) finish(created, true);
+      return true;
+    }
+
+    if (e.key === "Backspace") {
+      const pos = caretPosition(doc, block);
+      if (!pos?.atStart || !pos.collapsed) return false;
+      const li = currentListItem(doc, block);
+      if (li) {
+        // Backspace at the start of a nested item outdents rather than
+        // merging text across list levels.
+        if (outdentListItem(doc, li)) {
+          e.preventDefault();
+          finish(block);
+          return true;
+        }
+        return false;
+      }
+      const result = mergeWithPrevious(doc, block);
+      if (!result) return false;
+      e.preventDefault();
+      finish(result.focusBlock);
+      return true;
+    }
+
+    if (e.key === "Delete") {
+      const pos = caretPosition(doc, block);
+      if (!pos?.atEnd || !pos.collapsed) return false;
+      const result = mergeWithNext(doc, block);
+      if (!result) return false;
+      e.preventDefault();
+      finish(result.focusBlock);
+      return true;
+    }
+
+    if (e.key === "Tab") {
+      const li = currentListItem(doc, block);
+      if (!li) return false;
+      const moved = e.shiftKey ? outdentListItem(doc, li) : indentListItem(doc, li);
+      if (!moved) return false;
+      e.preventDefault();
+      finish(block);
+      return true;
+    }
+
+    return false;
+  }
+
+  function onConvertBlockType(tagName: string) {
+    const doc = getDoc();
+    if (!doc || !selectedBlock) return;
+    const replacement = convertBlockType(doc, selectedBlock, tagName);
+    restampAfterMutation(doc);
+    setSelectedBlock(replacement);
+    setSelectedSubPart(null);
+    setSelectedSubBlock(null);
+    markDirty();
+  }
+
   const handleEditorKey =
     (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
       const target = e.target as HTMLElement | null;
       const typing = !!target?.isContentEditable || ["INPUT", "TEXTAREA"].includes(target?.tagName ?? "");
+
+      // Block structure keys come first — they only apply while actually
+      // editing text inside a block, and must run before the block-level
+      // Delete shortcut below (which deletes the WHOLE block).
+      const editingBlock =
+        target?.isContentEditable && target.closest<HTMLElement>("[data-block-id]");
+      if (editingBlock && !mod && handleBlockKey(e, editingBlock)) return;
+
+      // Ctrl+Alt+<n> changes block type — the standard binding, and the only
+      // one that doesn't collide with browser or OS shortcuts.
+      if (mod && e.altKey) {
+        const match = BLOCK_TYPES.find(
+          (t) => t.shortcut && t.shortcut.toLowerCase().endsWith(key),
+        );
+        if (match) {
+          e.preventDefault();
+          onConvertBlockType(match.tag);
+          return;
+        }
+      }
 
       if (!mod) {
         if (e.key === "Escape") {
@@ -585,6 +725,13 @@ export default function BookEditor() {
         case "f":
           e.preventDefault();
           setShowFind(true);
+          break;
+        case "k":
+          // Ctrl+K is the universal "make this a link" binding.
+          if (selectedBlockRef.current) {
+            e.preventDefault();
+            setLinkEditorOpen(true);
+          }
           break;
         case "s":
           e.preventDefault();
@@ -1259,6 +1406,25 @@ export default function BookEditor() {
     markDirty();
   }
 
+  function onApplyLink(href: string) {
+    const doc = getDoc();
+    if (!doc || !selectedBlock) return;
+    if (!applyLink(doc, selectedBlock, href)) {
+      pushToast("error", "That doesn't look like a usable web address.");
+      return;
+    }
+    setLinkEditorOpen(false);
+    markDirty();
+  }
+
+  function onRemoveLink() {
+    const doc = getDoc();
+    if (!doc || !selectedBlock) return;
+    removeLink(doc, selectedBlock);
+    setLinkEditorOpen(false);
+    markDirty();
+  }
+
   // Image resize (drag corner handle) — for a figure's image, keep using
   // the same --fig-w CSS-var pattern the property panel's slider already
   // writes, so both controls stay in sync and export identically; any
@@ -1584,6 +1750,11 @@ export default function BookEditor() {
     }
   }
 
+  // Read live at render time, like every other selection-derived value here,
+  // so the link button reflects whatever the caret is currently inside.
+  const existingLinkHref =
+    doc && selectedBlock ? currentLink(doc, selectedBlock)?.getAttribute("href") ?? null : null;
+
   let blockToolbarRect: ScreenRect | null = null;
   let panelAnchorRect: ScreenRect | null = null;
   if (doc && iframeEl && selectedBlock) {
@@ -1859,6 +2030,11 @@ export default function BookEditor() {
         {textToolbarRect && singleSelected && (
           <FloatingTextToolbar
             rect={textToolbarRect}
+            existingHref={existingLinkHref}
+            linkEditorOpen={linkEditorOpen}
+            onLinkEditorOpenChange={setLinkEditorOpen}
+            onApplyLink={onApplyLink}
+            onRemoveLink={onRemoveLink}
             onBold={onTextBold}
             onItalic={onTextItalic}
             onUnderline={onTextUnderline}
@@ -1873,6 +2049,9 @@ export default function BookEditor() {
           <FloatingBlockToolbar
             rect={blockToolbarRect}
             label={registryEntry?.label ?? "Block"}
+            currentTag={selectedBlock.tagName.toLowerCase()}
+            paginated={structure?.mode === "paginated"}
+            onConvertType={onConvertBlockType}
             pageCount={pageCount}
             currentPageIndex={currentPageIndex}
             multiCount={multiSelectedIds.size || 1}

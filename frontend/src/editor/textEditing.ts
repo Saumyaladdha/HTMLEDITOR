@@ -118,6 +118,70 @@ export function stepSelectionFontSize(doc: Document, container: HTMLElement, del
   sel.removeAllRanges();
 }
 
+/** The <a> the caret/selection currently sits inside, if any. */
+export function currentLink(doc: Document, container: HTMLElement): HTMLAnchorElement | null {
+  const sel = doc.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const node = sel.getRangeAt(0).commonAncestorContainer;
+  const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  const anchor = el?.closest("a") ?? null;
+  return anchor && container.contains(anchor) ? (anchor as HTMLAnchorElement) : null;
+}
+
+/** Normalises what a person types into a usable href — `example.com` is
+ * meant as a web address, not a relative path, and a bare `href` beginning
+ * `javascript:` is never acceptable. */
+export function normaliseHref(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^javascript:/i.test(trimmed) || /^data:/i.test(trimmed)) return null;
+  if (/^(https?:|mailto:|tel:|#|\/)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/**
+ * Applies a hyperlink to the current selection, or updates the one the caret
+ * is already inside. There was previously no way to create, edit or remove a
+ * link at all — arguably the most basic thing missing from a document editor.
+ */
+export function applyLink(doc: Document, container: HTMLElement, href: string): boolean {
+  const safe = normaliseHref(href);
+  if (!safe) return false;
+
+  const existing = currentLink(doc, container);
+  if (existing) {
+    existing.setAttribute("href", safe);
+    return true;
+  }
+
+  const sel = doc.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  if (!container.contains(range.commonAncestorContainer)) return false;
+
+  const anchor = doc.createElement("a");
+  anchor.setAttribute("href", safe);
+  try {
+    range.surroundContents(anchor);
+  } catch {
+    anchor.appendChild(range.extractContents());
+    range.insertNode(anchor);
+  }
+  sel.removeAllRanges();
+  return true;
+}
+
+/** Unwraps the link under the caret, keeping its text. */
+export function removeLink(doc: Document, container: HTMLElement): boolean {
+  const anchor = currentLink(doc, container);
+  if (!anchor) return false;
+  const parent = anchor.parentNode;
+  if (!parent) return false;
+  while (anchor.firstChild) parent.insertBefore(anchor.firstChild, anchor);
+  parent.removeChild(anchor);
+  return true;
+}
+
 /** Tags worth preserving from pasted rich text. Everything else becomes its
  * own text content — the point is to keep MEANING (emphasis, list structure,
  * links) while discarding the source's appearance. */
