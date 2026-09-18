@@ -1,0 +1,19 @@
+{
+ "decisions": [
+  {
+   "id": "6a1769422c61",
+   "kind": "para",
+   "why": "'या,' is 'or,' — a one-word connective joining two equivalent algebraic forms, sitting between two display equations. Prose. NOTE: this id covers TWO different blocks in the chapter (AB=2l/OA=OB=l, and the (d-x)^2=3x^2 step): step03 runs before step04 assigns ids, so it falls back to hashing the block text, and two blocks whose text is both 'या,' collide. Both are the same construct, so one verdict is correct for both here — but the collision is real and a future 'या,' wanting a different tag could not be addressed separately."
+  },
+  {
+   "id": "605f5b519dda",
+   "kind": "para",
+   "why": "Not options. The lead-in directly above is 'विशेष दशाएँ—' ('special cases—'), and (i)/(ii) enumerate the two special cases of the dipole-potential derivation: theta=0 gives V max, theta=90 gives V=0. Each is a Hindi clause carrying its own display equation, not a choice the student picks from. Tagged options it would render as a 2-col MCQ grid inside a derivation."
+  },
+  {
+   "id": "cb2a4f013d52",
+   "kind": "para",
+   "why": "Same block as 605f5b519dda — special case (ii), theta=90 deg. Hindi clause plus its display equation."
+  }
+ ]
+}

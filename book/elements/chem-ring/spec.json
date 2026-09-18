@@ -1,0 +1,12 @@
+{
+ "id": "chem-ring",
+ "ir_kind": "ring",
+ "tag": "span",
+ "classes": "cring",
+ "when": "A ring compound (benzene and its substituted forms) the source names or describes, where a real 2D structure reads better than the `◯` placeholder circle or a supplied figure. Rendered by RDKit from a SMILES string the agent writes — see book/format/ring.py and pipeline/subjects/chemistry/step07_formatting_agent/SKILL.md.",
+ "signals": [
+  "\\bigcirc लेबल बेन्जीन, प्रतिस्थापियों के साथ",
+  "$o$-क्लोरोटॉलूईन", "$p$-डाइक्लोरोबेन्जीन"
+ ],
+ "notes": "Not a guess from the Hindi name to the ring — the agent decides the SMILES the same deliberate way `chem-structure` decides a chain branch's position, and the code renders exactly that SMILES. Falls back to the plain `◯` circle (the `sp` element) when RDKit is unavailable or the SMILES fails to parse, never to a blank space. Reserved for a ring the agent can name exactly; the chapter's 79 supplied figures still own any diagram with curved arrows, a reaction happening ON the ring, or ambiguity about substitution pattern."
+}

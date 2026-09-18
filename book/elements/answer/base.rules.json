@@ -1,0 +1,38 @@
+[
+ {
+  "i": 137,
+  "css": ".ansrow { display:flex; align-items:flex-start; gap:12px; margin:10px 0 6px; }"
+ },
+ {
+  "i": 137,
+  "css": "/* An answer whose whole body is a drawing — the chip is a LEAD-IN to\n   the block beneath it, not a row with content of its own. The\n   default 6px bottom margin plus the drawing's own top margin left a\n   gap that read as an empty answer; see `components/question.answer`. */\n.ansrow.ans-lead { margin-bottom:0; }"
+ },
+ {
+  "i": 138,
+  "css": ".anslabel { position:relative; display:inline-block; padding:2px 14px; flex:none; }"
+ },
+ {
+  "i": 139,
+  "css": ".anslabel>i { position:absolute; top:0; left:-5px; right:-5px; bottom:0; background-size:100% 100%;\n    background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2040%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M6,9C40,3,70,13,100,7C130,2,160,12,194,7L196,22C188,28,168,35,138,31C108,37,68,29,38,34C22,37,8,32,5,27Z%27%20fill=%27%232fa356%27%20fill-opacity=%27.95%27/%3E%3Cpath%20d=%27M10,12C45,7,80,15,115,10C145,6,175,14,192,11L194,24C180,30,150,36,120,32C90,36,55,31,25,34C14,35,8,30,8,26Z%27%20fill=%27%232fa356%27%20fill-opacity=%27.6%27/%3E%3C/svg%3E\"); }"
+ },
+ {
+  "i": 140,
+  "css": ".anslabel>b { position:relative; font-size:17.5px; font-weight:700; color:#fff; }"
+ },
+ {
+  "i": 141,
+  "css": "/* NORMAL WEIGHT.\n   This was font-weight:700 — the whole opening statement of every\n   answer set bold. On a page where each answer runs four or five\n   lines that is not emphasis, it is a paragraph in bold, and it read\n   as though someone had gone over the page. The one thing carrying\n   weight in an answer now is the bracketed technical term (b.term);\n   the prose around it is ordinary text. The size stays up a little,\n   because the opening statement IS the answer and a reader should\n   land on it — size says that without shouting. */\n.anstext { font-size:18px; line-height:1.68; font-weight:400; }"
+ },
+ {
+  "i": 140,
+  "css": "/* A key term in an answer's opening statement: the author's own\n   **bold**, given a soft wash so a student can find it at a glance.\n   Painted with box-decoration-break so a term that wraps keeps its\n   wash on both lines instead of losing it on the second. */\n.anstext b.kw { background:linear-gradient(180deg,transparent 52%,#fdf0a8 52%,#fdf0a8 94%,transparent 94%);\n          padding:0 2px; border-radius:2px;\n          -webkit-box-decoration-break:clone; box-decoration-break:clone; }"
+ },
+ {
+  "i": 141,
+  "css": "/* A named division inside a long answer. Set as a bold sentence it was\n   indistinguishable from the emphasis in the prose around it, so a\n   17-block answer had nothing dividing it. The rule above it is what\n   does the dividing; the heading only names the part. */\n.anssub { font-weight:700; font-size:17px; color:#1f3b6d;\n          margin:16px 0 6px; padding-top:9px;\n          border-top:1.5px solid #dfe6f2; }\n.acol .anssub { font-size:16px; }"
+ },
+ {
+  "i": 25,
+  "css": "/* A key term BEYOND the wash cap: dark and firm, no highlighter.\n   The author marked it bold and that is worth keeping, but only the\n   first two terms in an answer get the wash — see\n   KEYWORD_MAX_PER_ANSWER. Deep ink rather than a background, so a\n   paragraph with six terms in it still reads as a paragraph. */\n.anstext b.term { color:#123a5e; font-weight:700; }"
+ }
+]

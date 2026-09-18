@@ -1,0 +1,11 @@
+{
+ "id": "srcnote",
+ "ir_kind": "srcnote",
+ "tag": "div",
+ "classes": "srcnote",
+ "when": "A dashed grey source note.",
+ "signals": [
+  "`⚠ **पुस्तक से बाहर …**` / `⚠️ **स्रोत-नोट:**`"
+ ],
+ "notes": ""
+}

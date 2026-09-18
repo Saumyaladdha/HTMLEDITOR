@@ -1,0 +1,28 @@
+{
+ "decisions": [
+  {
+   "id": "81344e9f83ca",
+   "verdict": "parser",
+   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
+   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.7 · (i) 17,23 और 29 — this one sits after **उत्तर:**, so it is the ANSWER's own part label.]"
+  },
+  {
+   "id": "d9cd859e6581",
+   "verdict": "parser",
+   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
+   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.6 · (iii) 6, 72 और 120]"
+  },
+  {
+   "id": "521d3b8c33e3",
+   "verdict": "parser",
+   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
+   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.5 · (iv) 12, 15, 21 का HCF.]"
+  },
+  {
+   "id": "9d7005b9b7b0",
+   "verdict": "parser",
+   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
+   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.3 · (iii) 6, 72 और 120]"
+  }
+ ]
+}

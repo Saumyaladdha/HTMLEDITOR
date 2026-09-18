@@ -1,0 +1,14 @@
+[
+ {
+  "i": 111,
+  "css": ".figcard { border:2.5px dashed #7ba7d4; background:#f4f8fd; border-radius:16px;\n           padding:12px 18px; margin:16px 0; }"
+ },
+ {
+  "i": 112,
+  "css": ".figcard>.fh { display:flex; align-items:center; gap:9px; font-weight:700; font-size:17px;\n               color:#23558f; margin-bottom:5px; }"
+ },
+ {
+  "i": 113,
+  "css": ".figcard>.fd { font-size:16px; line-height:1.6; color:#4d5666; }"
+ }
+]

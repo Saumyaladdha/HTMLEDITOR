@@ -1,0 +1,6 @@
+[
+ {
+  "i": 411,
+  "css": "/* A GENERATED STRUCTURE, SET LIKE THE ONES AROUND IT.\n   `.cst-name` (chem-structure) is the reference for the same job —\n   caption under a drawing, slightly faded, book's own type. `.cring`\n   just adds the ring drawing itself: RDKit's SVG, sized to sit on the\n   baseline like `.sp` does, so a ring can appear inline in a sentence\n   or centred in a `.dm` display line without special-casing either. */\n.cring { display:inline-flex; flex-direction:column; align-items:center;\n         vertical-align:middle; margin:0 5px; }\n.cring svg { display:block; }\n.cring-name { font-size:15px; line-height:1.2; opacity:.86;\n              font-style:normal; margin-top:2px; text-align:center; }\n.subj-chemistry .cring-name { font-size:15px; }\n.acol .cring svg { width:78%; height:auto; max-width:100%; }\n.cring { break-inside:avoid; }"
+ }
+]

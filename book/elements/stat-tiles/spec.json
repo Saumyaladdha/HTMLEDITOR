@@ -1,0 +1,13 @@
+{
+ "id": "stat-tiles",
+ "ir_kind": "stat_tiles",
+ "tag": "div",
+ "classes": "cvtiles",
+ "when": "Three-or-so headline numbers with a label and an optional note — the cover's `पेपर सेट · उसमें इस चैप्टर के कितने अंक थे` block.",
+ "signals": [
+  "a table with SHORT numeric values in every row (`4 अंक | सबसे हल्का सेट | 2023 · 2025`)",
+  "OR prose stating several comparable figures ('सबसे हल्के सेट में 4 और सबसे भारी में 13')",
+  "the numbers must be COMPARABLE — same unit, same thing measured. A table of unrelated facts is a list, not tiles."
+ ],
+ "notes": "Tiles are only legible with short values: `4` sets at 34px in a 100px box, a sentence does not. When the data is not tile-shaped the component degrades to a compact list rather than forcing the layout. When the figures exist only in PROSE the deterministic path cannot extract them reliably in Hindi — it raises a review item and step03_content_tagger's agent supplies [{value, unit, label, note}] as a decision."
+}

@@ -1,0 +1,22 @@
+/* A सूत्र panel with enough rows to fill two columns must CLEAR the floated
+   note column. Squeezed beside it the card is 624px — under `columns:370px`
+   — so eleven formulas stacked in one column and ate a whole page. Clearing
+   gives it the full 944px, and `columns` then makes two.
+
+   `!important` is deliberate: `.flowwrap .fcard` sets `display:flow-root`
+   from the archive, and a flow-root beside a float narrows rather than
+   clearing. This has to win. */
+.flowwrap .fcard-wide { clear: right !important; }
+
+/* A PAIRED ROW: two short results side by side.
+   `columns:370px` above needs 766px before the browser makes two columns,
+   and a Part-2 answer column is 440px — so short results sat one per row
+   with most of the measure empty. `fcard()` pairs two consecutive short
+   ones into a single `.frow.frow-pair`; this lays that row out as two
+   equal halves. `.frow` itself is `display:flex`, which would size the two
+   boxes to their content and leave the rag uneven, so the pair overrides
+   it with a grid. */
+.frow.frow-pair { display:grid; grid-template-columns:1fr 1fr;
+          gap:6px 14px; align-items:stretch; }
+.frow.frow-pair > .fx { flex:initial; width:100%; text-align:center;
+          box-sizing:border-box; }

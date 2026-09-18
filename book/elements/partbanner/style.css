@@ -1,0 +1,12 @@
+/* ===== shared ===== */
+.partbanner { margin:28px 0 18px; border-radius:22px; padding:22px 28px; text-align:center;
+              background:linear-gradient(100deg,#fdf3b4,#fde7c8); border:2.5px solid #e2b93b; }
+.partbanner .pt { font-size:30px; font-weight:700; color:#8a5a00; letter-spacing:.5px; }
+.partbanner .ps { font-family:'Caveat',cursive; font-size:23.5px; font-weight:700;
+                  color:#c2337a; margin-top:2px; }
+/* ===== A4 print only ===== */
+.flowwrap .partbanner, .flowwrap .callout:not(.sticky), .flowwrap .figcard,
+.flowwrap .fcard, .flowwrap .note, .flowwrap .night, .flowwrap .mirror,
+.flowwrap .banner, .flowwrap .given, .flowwrap .srcnote { display:flow-root; }
+.partbanner { margin:4px 0 11px; padding:12px 24px; }
+.flowwrap:not(.cover) .partbanner { padding:13px 18px; margin:2px 0 12px; }

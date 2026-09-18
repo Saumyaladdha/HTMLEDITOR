@@ -1,0 +1,13 @@
+{
+ "id": "working",
+ "ir_kind": "para",
+ "tag": "p",
+ "classes": "work",
+ "when": "A short standalone maths step inside an answer.",
+ "signals": [
+  "no Devanagari at all",
+  "<= ~26 characters",
+  "one relation, e.g. σ = 1/ρ"
+ ],
+ "notes": "Georgia italic, LEFT aligned. All 56 in the reference are in Part 2."
+}

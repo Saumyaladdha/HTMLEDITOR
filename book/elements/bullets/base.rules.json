@@ -1,0 +1,14 @@
+[
+ {
+  "i": 54,
+  "css": "ul.bl { margin:7px 0; padding:0; list-style:none; }"
+ },
+ {
+  "i": 55,
+  "css": "ul.bl>li { display:flex; gap:11px; font-size:18px; line-height:1.65; margin:7px 0; }"
+ },
+ {
+  "i": 56,
+  "css": "ul.bl>li::before { content:\"\"; width:9px; height:9px; border-radius:50%; flex:none;\n                   margin-top:11px; background:var(--acc,#2fa356); }"
+ }
+]

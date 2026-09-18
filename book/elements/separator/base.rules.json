@@ -1,0 +1,10 @@
+[
+ {
+  "i": 155,
+  "css": ".rule { height:9px; border-radius:6px; background:linear-gradient(90deg,#f6c945,#ef8e2a);\n        margin:12px 0 4px; }"
+ },
+ {
+  "i": 156,
+  "css": "hr.sep { border:none; border-top:2px dashed #e2dccb; margin:24px 0; }"
+ }
+]

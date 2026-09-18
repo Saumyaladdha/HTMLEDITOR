@@ -1,0 +1,11 @@
+{
+ "id": "figcard",
+ "ir_kind": "figure",
+ "tag": "figure",
+ "classes": "figcard figbox",
+ "when": "A figure: caption plus a reserved empty plate.",
+ "signals": [
+  "`[चित्र बनाना है] …`, `![…](path)`, `[FIGURE: …]`, `[IMAGE: …]`"
+ ],
+ "notes": "`fig-solo` (66%, centred) only at full page width; never inside a column."
+}

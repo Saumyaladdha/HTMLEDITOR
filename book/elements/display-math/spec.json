@@ -1,0 +1,12 @@
+{
+ "id": "display-math",
+ "ir_kind": "formula",
+ "tag": "div",
+ "classes": "dm",
+ "when": "A displayed equation on its own line.",
+ "signals": [
+  "no Devanagari, or only a leading connective (∴ ⇒ या)",
+  "longer than a working step"
+ ],
+ "notes": "Georgia italic, CENTRED. All 257 in the reference are in Part 2."
+}

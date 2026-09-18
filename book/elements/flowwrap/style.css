@@ -1,0 +1,34 @@
+/* ===== A4 print only ===== */
+.flowwrap { display:block; }
+.flowwrap > .u:first-of-type > *:first-child { margin-top:0 !important; }
+.flowwrap ul.bl > li { display:block; padding-left:20px; text-indent:-20px; }
+.flowwrap ul.bl > li::before { display:inline-block; margin-top:0; margin-right:11px;
+                               vertical-align:2px; }
+.flowwrap ul.bl > li > span, .flowwrap .fr, .flowwrap .vec { text-indent:0; }
+.flowwrap:not(.cover) p, .flowwrap:not(.cover) .para,
+.flowwrap:not(.cover) .def, .flowwrap:not(.cover) .deflead,
+.flowwrap:not(.cover) ul.bl > li,
+.flowwrap:not(.cover) ol.nl { line-height:1.55; font-size:18px; }
+.flowwrap:not(.cover) p, .flowwrap:not(.cover) .para { margin:5px 0; }
+.flowwrap:not(.cover) .def { margin:4px 0; }
+.flowwrap:not(.cover) .deflead { margin:6px 0 2px; }
+.flowwrap:not(.cover) ul.bl { margin:4px 0; }
+.flowwrap:not(.cover) ul.bl > li { margin:5px 0; }
+.flowwrap:not(.cover) .sechead { margin:13px 0 8px; gap:9px; }
+.flowwrap:not(.cover) .fcard { padding:9px 15px 10px; margin:8px 0;
+                               columns:370px; column-gap:26px;
+                               column-rule:2px dashed #ddd0f2; }
+.flowwrap:not(.cover) .fcard > .ft { column-span:all; }
+.flowwrap:not(.cover) .fcard > .ft { margin-bottom:3px; }
+.flowwrap:not(.cover) .frow { padding:4px 0; gap:8px; line-height:1.45; }
+.flowwrap:not(.cover) .trio { margin:7px 0; padding:5px 12px; }
+.flowwrap:not(.cover) .po { margin:7px 0; padding:8px 12px; line-height:1.5; }
+.flowwrap:not(.cover) .note { margin:8px 0; padding:8px 13px; line-height:1.5; }
+.flowwrap:not(.cover) .srcnote { margin:6px 0; padding:5px 12px; }
+.flowwrap:not(.cover) .dm { margin:8px 0; }
+.flowwrap:not(.cover) hr.sep { margin:10px 0; }
+.flowwrap:not(.cover) .figcard { margin:8px 0; }
+.flowwrap:not(.cover) .night, .flowwrap:not(.cover) .mirror { padding:13px 18px; margin:10px 0; }
+.flowwrap:not(.cover) ol.nl { margin:6px 0 6px 2px; }
+.flowwrap:not(.cover) ol.nl > li { margin:5px 0; }
+.flowwrap:not(.cover) .poflat { font-size:18px; line-height:1.55; margin:8px 0; }

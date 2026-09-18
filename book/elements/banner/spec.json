@@ -1,0 +1,11 @@
+{
+ "id": "banner",
+ "ir_kind": "_inline",
+ "tag": "div",
+ "classes": "banner",
+ "when": "The green strip that closes a group.",
+ "signals": [
+  "`> ✅ **… cover।**`"
+ ],
+ "notes": ""
+}

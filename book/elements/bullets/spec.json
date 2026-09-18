@@ -1,0 +1,11 @@
+{
+ "id": "bullets",
+ "ir_kind": "bullets",
+ "tag": "ul",
+ "classes": "bl",
+ "when": "A bulleted list. Dots take the section accent.",
+ "signals": [
+  "`- ` lines"
+ ],
+ "notes": ""
+}

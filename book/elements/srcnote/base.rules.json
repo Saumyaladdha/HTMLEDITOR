@@ -1,0 +1,10 @@
+[
+ {
+  "i": 110,
+  "css": ".srcnote { background:#faf8f1; border:1.5px dashed #b9b3a4; border-radius:12px;\n           padding:7px 14px; font-size:15.5px; color:#6b6450; margin:9px 0; }"
+ },
+ {
+  "i": 149,
+  "css": ".note { background:#fffbe9; border:2px solid #e8dca8; border-radius:14px; padding:11px 18px;\n        font-size:17px; line-height:1.6; margin:14px 0; }"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "id": "answer",
+ "ir_kind": "answer",
+ "tag": "div",
+ "classes": "ansrow",
+ "when": "The answer, opened by **उत्तर:**.",
+ "signals": [
+  "`**उत्तर:**` line"
+ ],
+ "notes": ""
+}

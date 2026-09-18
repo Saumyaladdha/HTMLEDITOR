@@ -1,0 +1,11 @@
+/* ===== A4 print only ===== */
+.cvtiles { flex:none; display:flex; gap:11.5px; flex-wrap:wrap; width:329.5px; }
+.cvtile { flex:1; background:#fff; border:2px solid #ded8c8; border-radius:14px;
+          padding:9.5px 5px; text-align:center; }
+.cvtv { font-size:34px; font-weight:700; line-height:1.1; }
+.cvtu { font-size:15px; font-weight:700; margin-left:3px; }
+.cvty { font-size:13.5px; font-weight:700; margin-top:3px; padding-top:3px;
+        border-top:1.5px dashed #e6e0d0; white-space:nowrap; }
+.cvtl { font-size:14px; color:#6b6450; line-height:1.25; margin-top:1px; }
+.cvtcap { width:100%; text-align:center; font-size:14.5px; color:#8a8372;
+          font-weight:700; margin-bottom:1px; }

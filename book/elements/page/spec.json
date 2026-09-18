@@ -1,0 +1,11 @@
+{
+ "id": "page",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "page",
+ "when": "One A4 sheet, 1080x1527, overflow:hidden.",
+ "signals": [
+  "structural — emitted by the assembler, never by content"
+ ],
+ "notes": "overflow:hidden means an overrun is CLIPPED, not reflowed."
+}

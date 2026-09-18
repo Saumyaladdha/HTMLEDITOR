@@ -1,0 +1,12 @@
+{
+ "id": "flow",
+ "ir_kind": "flow",
+ "tag": "div",
+ "classes": "flow flow-{dir}",
+ "when": "A biology process chain — the stages of a process in order.",
+ "signals": [
+  "A backtick run containing → inside a **क्रम:** or **संबंध:** line",
+  "`बीजाणुजन ऊतक → पराग मातृ कोशिका → लघुबीजाणु चतुष्क → परागकण`"
+ ],
+ "notes": "UPRIGHT body text, never the italic maths face. These are Hindi nouns naming stages, not variables. Horizontal while the chain is short; vertical once it is long, because a horizontal chain that wraps mid-way stops reading as a sequence."
+}

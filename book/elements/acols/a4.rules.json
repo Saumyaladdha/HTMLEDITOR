@@ -1,0 +1,42 @@
+[
+ {
+  "i": 2,
+  "css": ".acols { display:flex; position:relative; }"
+ },
+ {
+  "i": 3,
+  "css": ".acol  { flex:1; min-width:0; display:flex; flex-direction:column; }"
+ },
+ {
+  "i": 4,
+  "css": "/* A WIDER GUTTER.\n   22px + 21px put 43px between the two text columns, and the\n   dashed rule sits in the middle of it — so each column cleared\n   the rule by about 20px. That was enough while every block was\n   text, and stopped being enough once matrices arrived: a grid\n   reaches its full width with no rag, so the two columns met the\n   rule squarely and read as one block of content with a line\n   drawn through it. 32px a side gives 64px, and costs each\n   column 10px of measure. */\n.acol:first-child { padding-right:32px; }\n.acols::after { content:\"\"; position:absolute; top:0; height:1432px;\n          left:calc((100% - 2.5px) / 2); width:0;\n          border-left:2.5px dashed #5b8dd6; pointer-events:none; }"
+ },
+ {
+  "i": 5,
+  "css": ".acol:last-child  { padding-left:32px; }"
+ },
+ {
+  "i": 7,
+  "css": ".acol  > .u:first-child > *:first-child { margin-top:0 !important; }"
+ },
+ {
+  "i": 37,
+  "css": ".acol .dm  { font-size:18.5px; margin:8px 0; overflow-x:hidden; }"
+ },
+ {
+  "i": 38,
+  "css": "/* TABLE BODY IS READING TEXT.\n   14.5px prints at 10.6px — under the 11px floor, and a table in a\n   column is the densest reading on the page: rows a student scans\n   for a value. 15.2px prints at 11.2px. This accounted for 164 of\n   the 200 findings the corrected legibility gate surfaced. */\n.acol .tbl { font-size:15.2px; }"
+ },
+ {
+  "i": 39,
+  "css": ".acol .tbl th, .acol .tbl td { padding:4px 7px; }"
+ },
+ {
+  "i": 40,
+  "css": ".acol .opts { gap:6px 12px; }"
+ },
+ {
+  "i": 41,
+  "css": ".stickyinline { margin:12px 0; display:flex; justify-content:center; }\n.acol .stickyinline .sticky { width:100%; max-width:100%; transform:none; margin:0; }"
+ }
+]

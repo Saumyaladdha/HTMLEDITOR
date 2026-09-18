@@ -1,0 +1,10 @@
+[
+ {
+  "i": 57,
+  "css": "ol.nl { margin:7px 0 7px 4px; padding-left:22px; font-size:18px; line-height:1.6; }"
+ },
+ {
+  "i": 58,
+  "css": "ol.nl>li { margin:7px 0; padding-left:4px; }"
+ }
+]

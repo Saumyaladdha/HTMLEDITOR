@@ -1,0 +1,11 @@
+{
+ "id": "flowwrap",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "flowwrap",
+ "when": "Part-1 float flow: text wraps around the note column.",
+ "signals": [
+  "structural"
+ ],
+ "notes": "Nothing inside may establish a BFC or it sits beside the float as one block."
+}

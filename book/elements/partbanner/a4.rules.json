@@ -1,0 +1,14 @@
+[
+ {
+  "i": 15,
+  "css": ".flowwrap .partbanner, .flowwrap .callout:not(.sticky), .flowwrap .figcard,\n.flowwrap .fcard, .flowwrap .note, .flowwrap .night, .flowwrap .mirror,\n.flowwrap .banner, .flowwrap .given, .flowwrap .srcnote { display:flow-root; }"
+ },
+ {
+  "i": 28,
+  "css": ".partbanner { margin:4px 0 11px; padding:12px 24px; }"
+ },
+ {
+  "i": 71,
+  "css": ".flowwrap:not(.cover) .partbanner { padding:13px 18px; margin:2px 0 12px; }"
+ }
+]

@@ -1,0 +1,42 @@
+[
+ {
+  "i": 120,
+  "css": ".mx { display:inline-flex; align-items:stretch; vertical-align:middle;\n      margin:0 7px; font-style:normal; }"
+ },
+ {
+  "i": 121,
+  "css": ".mx>i { flex:none; width:6px; border:1.8px solid #2b3a55;\n      border-right:none; border-radius:3px 0 0 3px; }"
+ },
+ {
+  "i": 122,
+  "css": ".mx>i:last-child { border:1.8px solid #2b3a55; border-left:none;\n      border-radius:0 3px 3px 3px; }"
+ },
+ {
+  "i": 123,
+  "css": ".mx>.mxg { display:grid; grid-template-columns:repeat(var(--c),auto);\n      gap:7px 13px; padding:6px 10px; justify-items:end;\n      align-items:center; }"
+ },
+ {
+  "i": 124,
+  "css": ".mx>.mxg>span { font-variant-numeric:tabular-nums;\n      font-size:16.5px; line-height:1.4; white-space:nowrap;\n      font-style:normal; }"
+ },
+ {
+  "i": 125,
+  "css": ".mx-det>i, .mx-det>i:last-child { width:0; border-left-width:1.7px;\n      border-right-width:1.7px; border-top:none; border-bottom:none; border-radius:0; }"
+ },
+ {
+  "i": 126,
+  "css": ".mxrow { display:flex; flex-wrap:wrap; align-items:center; gap:6px;\n      margin:7px 0; }"
+ },
+ {
+  "i": 127,
+  "css": ".mxrow>.op { font-size:17px; font-weight:600; color:#2b3a55; font-style:normal; }"
+ },
+ {
+  "i": 128,
+  "css": ".mx>.mxg>span.aug { border-right:1.6px solid #2b3a55;\n      padding-right:11px; margin-right:2px; }"
+ },
+ {
+  "i": 129,
+  "css": "/* A DENSE MATRIX STEPS DOWN ONE SIZE, AND ONLY A DENSE ONE.\n   A 3x3 whose cells hold `21 - 30 + 7 + 2` needs about 148px a cell\n   at 18px; a 440px column leaves 140px once the gaps and rules are\n   paid for, so the cell wrapped mid-sum. Shrinking EVERY matrix to\n   fix that is what makes a short `[1 2; 3 4]` look tiny beside its\n   neighbours, so the step is scoped to the matrices that earn it --\n   see `_DENSE_CELL` in format/matrix.py. 16px prints at 11.74px,\n   clear of the 11px floor; 15px would print at 11.01px and still not\n   fit, which is why the step stops here rather than going smaller. */\n.mx-dense>.mxg>span { font-size:16px; }\n.mx-dense>.mxg { gap:6px 11px; padding:5px 8px; }"
+ }
+]

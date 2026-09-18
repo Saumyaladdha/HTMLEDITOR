@@ -1,0 +1,46 @@
+[
+ {
+  "i": 140,
+  "css": "/* A DERIVATION STEP IS CENTRED, and has room.\n   A maths answer is a chain of equalities — `A² = A·A = [..]`, then\n   `= [..]`, then `= O` — and the chain only reads as one if each step sits\n   on the column's centre line. Left-aligned against a rule it reads as a\n   list of unrelated equations, which is how ours looked beside the\n   reference. Scoped to .subj-maths: physics sets 490 display equations\n   against a rule and its pagination is tested with them there. */\n.subj-maths .dm { text-align:center; margin:11px 0; }"
+ },
+ {
+  "i": 141,
+  "css": ".subj-maths .acol .dm { margin:9px 0; padding-left:0; }"
+ },
+ {
+  "i": 142,
+  "css": "/* Side-by-side matrices are a step too, and centre with the rest. */\n.subj-maths .mxrow { justify-content:center; margin:11px 0; }"
+ },
+ {
+  "i": 143,
+  "css": "/* The step rule, kept but quietened: with every step centred, a heavy\n   left bar competes with the alignment it used to provide. */\n.subj-maths .dm-step { text-align:center; }"
+ },
+ {
+  "i": 144,
+  "css": "/* `इति सिद्धम्` — the end of a proof.\n   The reference boxes it, and it earns that: it is the one line in an\n   answer that says the argument is complete. Plain bold text among four\n   other bold phrases said nothing. */\n.qed { display:inline-block; font-weight:700; color:#123a5e;\n      background:#eef3fb; border:1.4px solid #c3d6ea; border-radius:7px;\n      padding:3px 12px; margin:4px 0; }"
+ },
+ {
+  "i": 145,
+  "css": "/* An equation number sits at the END of its step, not adrift on the next\n   line. */\n.subj-maths .dm>.k { margin-left:10px; white-space:nowrap; }"
+ },
+ {
+  "i": 146,
+  "css": "/* LARGER MATHS, AND A FLOOR UNDER THE SMALL PARTS.\n   Maths is the subject where the notation IS the content. Worse, it\n   NESTS: a matrix cell holds a fraction, and that fraction can hold\n   another. Each level multiplies, and at the old sizes a nested\n   fraction inside a matrix inside a column came out at 13.3px —\n   which is 9.8px on paper once PRINT_ZOOM (0.734) is applied, below\n   the 11px legibility floor. The gate did not catch it because it\n   measures the unzoomed size, where 13.3px passes.\n   Sized so the SMALLEST thing on the page still clears the floor:\n   18 x .95 x .97 = 16.6px, which prints at 12.2px. */\n.subj-maths .dm { font-size:19px; }\n.subj-maths .acol .dm { font-size:17.5px; }\n.subj-maths .mx>.mxg>span { font-size:19px; }\n.subj-maths .acol .mx>.mxg>span { font-size:18px; }\n/* Gentler steps for the nested levels, for the same reason. */\n.subj-maths .fr { font-size:.95em; }\n.subj-maths .fr .fr { font-size:.97em; }"
+ },
+ {
+  "i": 147,
+  "css": "/* MORE AIR BETWEEN THE BOXES.\n   Eleven boxed results stacked at the default spacing read as one\n   striped block; the gap is what makes each a separate fact. */\n.subj-maths .fcard>.frow { margin:7px 0; padding-bottom:7px; }\n.subj-maths .fcard { padding:14px 16px; }"
+ },
+ {
+  "i": 148,
+  "css": "/* A MATRIX MUST NOT RUN OFF THE PAGE.\n   A 3x3 whose cells hold `cos x cos y - sin x sin y + 0` is wider\n   than a 440px column, and `nowrap` on the cells meant it simply\n   extended past the sheet edge — the right-hand columns were cut\n   off in print with no error, because the page's scrollHeight never\n   grew. Letting a long cell wrap keeps every entry on the paper;\n   the grid stays aligned because the cells are still grid items. */\n.subj-maths .mx { max-width:100%; }\n.subj-maths .mx>.mxg { max-width:100%; }\n.subj-maths .mx>.mxg>span { white-space:normal;\n      overflow-wrap:break-word; }"
+ },
+ {
+  "i": 149,
+  "css": "/* A LONG EQUATION WRAPS. IT MUST NEVER BE CUT OFF.\n   `.acol .dm` carries `overflow-x:hidden` (elements/acols) so a display\n   equation cannot push a horizontal scrollbar into a two-column page. On\n   screen that hides the overflow; on PAPER it deletes it, and nothing\n   errors — the page's scrollHeight never grows, so step09's clip check and\n   step15's overflow check both pass while the reader loses the end of the\n   line.\n\n   Measured on `physics_edited.md`'s 2025 associativity proof, whose RHS is\n   one unbroken chain:\n     RHS = {(hog) of}(x) = (hog)[f(x)] = h[g{f(x)}] = h[g(2x)]\n           = h[3(2x)+4] = h(6x+4) = sin(6x+4)\n   It ended at `sin(6x` on the page. The remaining `+4)` was simply gone.\n\n   FORMAT_SPEC 8.2 already settles what to do, for the matrix case: let it\n   WRAP at its own boundary, never shrink the font — a visibly smaller\n   equation beside normal ones reads as a bug even when the shrink is\n   consistent. Same answer here. `overflow-wrap:break-word` is the rule\n   chemistry already uses on `.dm` for its wide reaction lines; this is\n   that rule for maths, plus restoring `overflow-x` so nothing is clipped\n   while it wraps.\n\n   `max-width:100%` keeps the box inside the column so the wrap actually\n   triggers, mirroring what `.subj-maths .mx` above does for a wide matrix. */\n.subj-maths .dm, .subj-maths .acol .dm {\n    overflow-x:visible; overflow-wrap:break-word; max-width:100%; }"
+ },
+ {
+  "i": 150,
+  "css": "/* The dense step has to out-rank `.subj-maths .acol .mx>.mxg>span`,\n   which is four classes deep and sets 18px. Same shape plus the\n   marker class, so it wins on specificity rather than !important. */\n.subj-maths .mx.mx-dense>.mxg>span { font-size:16px; }\n.subj-maths .acol .mx.mx-dense>.mxg>span { font-size:16px; }"
+ }
+]

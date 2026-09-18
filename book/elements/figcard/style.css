@@ -1,0 +1,15 @@
+/* ===== shared ===== */
+.figcard { border:2.5px dashed #7ba7d4; background:#f4f8fd; border-radius:16px;
+           padding:12px 18px; margin:16px 0; }
+.figcard>.fh { display:flex; align-items:center; gap:9px; font-weight:700; font-size:17px;
+               color:#23558f; margin-bottom:5px; }
+.figcard>.fd { font-size:16px; line-height:1.6; color:#4d5666; }
+/* ===== A4 print only ===== */
+.figcard, .fcard, .note, .tbl { margin:8px 0; }
+.acol .figcard, .acol .fcard { padding:10px 14px; }
+.figbox { background:#fbfcfe; }
+.figbox > .fh { margin-bottom:8px; }
+.figspace { border:1.5px dashed #c3d6ea; border-radius:11px; background:#fff; }
+.figrow { display:flex; gap:12px; align-items:flex-start; margin:5px 0; }
+.figrow > .figcard { flex:1; min-width:0; margin:0; }
+.fig-solo { width:66%; margin-left:auto; margin-right:auto; }

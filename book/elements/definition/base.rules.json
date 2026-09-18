@@ -1,0 +1,22 @@
+[
+ {
+  "i": 49,
+  "css": ".def { font-size:18px; line-height:1.7; margin:9px 0; padding-left:14px;\n       border-left:3px solid #e6dfcc; }"
+ },
+ {
+  "i": 50,
+  "css": ".deflead { font-size:18px; margin:10px 0 3px; }"
+ },
+ {
+  "i": 51,
+  "css": ".dl { color:#2b3a8f; }"
+ },
+ {
+  "i": 52,
+  "css": ".hlp { background:#fbdce8; padding:0 5px; border-radius:6px 8px 5px 7px;\n       -webkit-box-decoration-break:clone; box-decoration-break:clone; }"
+ },
+ {
+  "i": 53,
+  "css": ".hlb { background:#d9e8fb; padding:0 5px; border-radius:7px 5px 8px 6px;\n       -webkit-box-decoration-break:clone; box-decoration-break:clone; }"
+ }
+]

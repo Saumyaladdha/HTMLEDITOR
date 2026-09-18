@@ -1,0 +1,11 @@
+{
+ "id": "partbanner",
+ "ir_kind": "part",
+ "tag": "div",
+ "classes": "partbanner",
+ "when": "The wide gold banner that opens a part.",
+ "signals": [
+  "`# PART 1 · …`"
+ ],
+ "notes": ""
+}

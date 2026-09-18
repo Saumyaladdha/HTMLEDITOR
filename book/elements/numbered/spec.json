@@ -1,0 +1,11 @@
+{
+ "id": "numbered",
+ "ir_kind": "numbered",
+ "tag": "ol",
+ "classes": "nl",
+ "when": "A numbered list.",
+ "signals": [
+  "`1. ` lines"
+ ],
+ "notes": ""
+}

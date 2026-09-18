@@ -1,0 +1,10 @@
+/* ===== shared ===== */
+.sechead { display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:8px;
+           margin:22px 0 11px; scroll-margin-top:70px; }
+.sechead .hdu>b { font-size:25.5px; font-weight:700; }
+.secno { width:40px; height:40px; border:3px solid; border-radius:50% 46% 52% 48%;
+         display:flex; align-items:center; justify-content:center; font-weight:700;
+         font-size:18.5px; flex:none; }
+.basetag { font-family:'Caveat',cursive; font-size:19.5px; font-weight:700; color:#8a8372; }
+/* ===== A4 print only ===== */
+.sechead    { margin:14px 0 8px; }

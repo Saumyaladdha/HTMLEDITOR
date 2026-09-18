@@ -1,0 +1,10 @@
+[
+ {
+  "i": 142,
+  "css": ".givenlabel { color:#e5326e; font-size:18.5px; font-weight:700; }"
+ },
+ {
+  "i": 143,
+  "css": ".given { background:#fdf7f9; border-left:4px solid #f0a9c2; border-radius:0 12px 12px 0;\n         padding:8px 16px; margin:10px 0; font-size:17.5px; line-height:1.6; }"
+ }
+]

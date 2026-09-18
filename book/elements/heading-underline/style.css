@@ -1,0 +1,11 @@
+/* ===== shared ===== */
+.hdu { position:relative; display:inline-block; padding:3px 4px 1px; }
+.hdu>i { position:absolute; left:-2px; right:-2px; bottom:-4px; height:9px;
+         background-size:100% 100%; background-repeat:no-repeat; }
+.hdu>b { position:relative; }
+.hd-pink>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%23e23b6d%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}
+.hd-blue>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%233b74d8%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}
+.hd-green>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%233fae4e%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}
+.hd-orange>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%23ef8e2a%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}
+.hd-purple>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%239a5fd0%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}
+.hd-teal>i{background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2012%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M3,7C40,3,80,10,120,6C155,3,180,9,197,5%27%20fill=%27none%27%20stroke=%27%2318a8bf%27%20stroke-width=%274.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);}

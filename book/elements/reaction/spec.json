@@ -1,0 +1,14 @@
+{
+ "id": "reaction",
+ "ir_kind": "inline",
+ "tag": "span",
+ "classes": "rxn sp ovl",
+ "when": "A chemical reaction arrow, or a species carrying a name or a charge off the line of the equation. Chemistry chapter 6 (organic) carries 419 of them; chapter 4 (inorganic) 81.",
+ "signals": [
+  "$A \\xrightarrow[\\Delta]{KOH\\ (alc)} B$",
+  "$\\underset{\\text{1-ब्रोमोप्रोपेन}}{\\mathrm{CH}_3\\mathrm{CH}_2\\mathrm{CH}_2\\mathrm{Br}}$",
+  "$\\overset{+}{\\mathrm{C}}\\mathrm{H}_3$  — a carbocation",
+  "$R-X \\overset{\\text{मन्द}}{\\rightleftharpoons} R^+ + X^-$"
+ ],
+ "notes": "The arrow is DRAWN with a border and a CSS arrowhead rather than typed as a glyph, so it stretches to whichever of its two labels is wider — a six-word reagent over a fixed-width arrow overhung it on both sides. Reagent above, condition below: that placement IS the answer to 'complete the equation', and printed inline it is unreadable. `overset` has two meanings and they are not styled alike: a label over an ARROW, and a charge over an ATOM, where the charge must sit tight against the letter because a carbocation's + a full line up reads as a separate term. See book/format/reaction.py for why all 500 were destroyed before this existed."
+}

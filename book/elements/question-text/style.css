@@ -1,0 +1,12 @@
+/* ===== shared ===== */
+.q { font-size:18.5px; line-height:1.65; margin:8px 0; }
+.qmarks { background:#fdf3b4; border:1.5px solid #e2b93b; border-radius:8px; padding:1px 9px;
+          font-size:14px; font-weight:700; white-space:nowrap; margin-left:6px;
+          display:inline-block; }
+.marksrow { text-align:right; margin:2px 0 4px; }
+/* The `— स्रोत:` trailer closing a question. Folded into the head's chip
+   when it names ONE paper; a question repeated across three or four papers
+   keeps every code and stays a line of its own here. At `.q`'s 18.5px it
+   read as another sentence of the question. */
+.srccite { font-size:15.5px; line-height:1.5; color:#6b6656; margin:6px 0 2px; }
+.srccite .ref { font-weight:700; }

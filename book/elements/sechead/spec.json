@@ -1,0 +1,11 @@
+{
+ "id": "sechead",
+ "ir_kind": "section",
+ "tag": "div",
+ "classes": "sechead",
+ "when": "A numbered section head: accent circle + underlined title + exam stamps.",
+ "signals": [
+  "`### N.M Title (English) · **[UP …]**`"
+ ],
+ "notes": ""
+}

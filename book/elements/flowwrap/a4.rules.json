@@ -1,0 +1,110 @@
+[
+ {
+  "i": 9,
+  "css": ".flowwrap { display:block; }"
+ },
+ {
+  "i": 11,
+  "css": ".flowwrap > .u:first-of-type > *:first-child { margin-top:0 !important; }"
+ },
+ {
+  "i": 12,
+  "css": ".flowwrap ul.bl > li { display:block; padding-left:20px; text-indent:-20px; }"
+ },
+ {
+  "i": 13,
+  "css": ".flowwrap ul.bl > li::before { display:inline-block; margin-top:0; margin-right:11px;\n                               vertical-align:2px; }"
+ },
+ {
+  "i": 14,
+  "css": ".flowwrap ul.bl > li > span, .flowwrap .fr, .flowwrap .vec { text-indent:0; }"
+ },
+ {
+  "i": 48,
+  "css": ".flowwrap:not(.cover) p, .flowwrap:not(.cover) .para,\n.flowwrap:not(.cover) .def, .flowwrap:not(.cover) .deflead,\n.flowwrap:not(.cover) ul.bl > li,\n.flowwrap:not(.cover) ol.nl { line-height:1.55; font-size:18px; }"
+ },
+ {
+  "i": 49,
+  "css": ".flowwrap:not(.cover) p, .flowwrap:not(.cover) .para { margin:5px 0; }"
+ },
+ {
+  "i": 50,
+  "css": ".flowwrap:not(.cover) .def { margin:4px 0; }"
+ },
+ {
+  "i": 51,
+  "css": ".flowwrap:not(.cover) .deflead { margin:6px 0 2px; }"
+ },
+ {
+  "i": 52,
+  "css": ".flowwrap:not(.cover) ul.bl { margin:4px 0; }"
+ },
+ {
+  "i": 53,
+  "css": ".flowwrap:not(.cover) ul.bl > li { margin:5px 0; }"
+ },
+ {
+  "i": 54,
+  "css": ".flowwrap:not(.cover) .sechead { margin:13px 0 8px; gap:9px; }"
+ },
+ {
+  "i": 55,
+  "css": ".flowwrap:not(.cover) .fcard { padding:9px 15px 10px; margin:8px 0;\n                               columns:370px; column-gap:26px;\n                               column-rule:2px dashed #ddd0f2; }"
+ },
+ {
+  "i": 56,
+  "css": ".flowwrap:not(.cover) .fcard > .ft { column-span:all; }"
+ },
+ {
+  "i": 62,
+  "css": ".flowwrap:not(.cover) .fcard > .ft { margin-bottom:3px; }"
+ },
+ {
+  "i": 63,
+  "css": ".flowwrap:not(.cover) .frow { padding:4px 0; gap:8px; line-height:1.45; }"
+ },
+ {
+  "i": 64,
+  "css": ".flowwrap:not(.cover) .trio { margin:7px 0; padding:5px 12px; }"
+ },
+ {
+  "i": 65,
+  "css": ".flowwrap:not(.cover) .po { margin:7px 0; padding:8px 12px; line-height:1.5; }"
+ },
+ {
+  "i": 66,
+  "css": ".flowwrap:not(.cover) .note { margin:8px 0; padding:8px 13px; line-height:1.5; }"
+ },
+ {
+  "i": 67,
+  "css": ".flowwrap:not(.cover) .srcnote { margin:6px 0; padding:5px 12px; }"
+ },
+ {
+  "i": 68,
+  "css": ".flowwrap:not(.cover) .dm { margin:8px 0; }"
+ },
+ {
+  "i": 69,
+  "css": ".flowwrap:not(.cover) hr.sep { margin:10px 0; }"
+ },
+ {
+  "i": 70,
+  "css": ".flowwrap:not(.cover) .figcard { margin:8px 0; }"
+ },
+ {
+  "i": 72,
+  "css": ".flowwrap:not(.cover) .night, .flowwrap:not(.cover) .mirror { padding:13px 18px; margin:10px 0; }"
+ },
+ {
+  "i": 73,
+  "css": ".flowwrap:not(.cover) ol.nl { margin:6px 0 6px 2px; }"
+ },
+ {
+  "i": 74,
+  "css": ".flowwrap:not(.cover) ol.nl > li { margin:5px 0; }"
+ },
+ {
+  "i": 76,
+  "css": ".flowwrap:not(.cover) .poflat { font-size:18px; line-height:1.55; margin:8px 0; }"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "id": "yearhead",
+ "ir_kind": "qgroup",
+ "tag": "div",
+ "classes": "yearhead",
+ "when": "The big highlighted group label that opens a Part-2 group.",
+ "signals": [
+  "`### 2026` or any `###` inside a question part"
+ ],
+ "notes": ""
+}

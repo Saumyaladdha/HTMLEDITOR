@@ -1,0 +1,66 @@
+[
+ {
+  "i": 96,
+  "css": ".flow { display:flex; flex-wrap:wrap; align-items:center; gap:7px 9px;\n      margin:9px 0; padding:12px 14px; border:1.5px solid #cfe3d6;\n      border-radius:14px; background:#f7fbf8; }"
+ },
+ {
+  "i": 97,
+  "css": ".flow>.st { display:inline-block; padding:5px 11px; border:1.5px solid #b9d9c6;\n      border-radius:9px; background:#fff; font-size:16px; line-height:1.45;\n      font-style:normal; font-weight:600; color:#1d3a2a; }"
+ },
+ {
+  "i": 98,
+  "css": ".flow>.ar { flex:none; color:#2fa356; font-size:17px; font-weight:700; line-height:1; }"
+ },
+ {
+  "i": 99,
+  "css": ".flow>.ft { flex-basis:100%; margin-bottom:5px; line-height:1; }"
+ },
+ {
+  "i": 99,
+  "css": ".flow>.ft>span { display:inline-block; font-size:15.5px; font-weight:700; letter-spacing:0.05em; color:#14532d; background:#d7efe0; border-radius:5px; padding:3px 8px; }"
+ },
+ {
+  "i": 100,
+  "css": ".flow-down { flex-direction:column; align-items:stretch; gap:0; }"
+ },
+ {
+  "i": 101,
+  "css": ".flow-down>.st { display:block; }"
+ },
+ {
+  "i": 102,
+  "css": ".flow-down>.ar { align-self:center; margin:3px 0; }"
+ },
+ {
+  "i": 103,
+  "css": ".fstep { position:relative; display:flex; align-items:center; gap:0;\n      padding:5px 0 5px 0; }"
+ },
+ {
+  "i": 104,
+  "css": ".fstep>.no { position:relative; z-index:2; flex:none; width:34px; height:34px;\n      border-radius:50%; background:#1b6b3a; border:3px solid #d7efe0;\n      color:#fff; font-size:13.5px; font-weight:700; font-style:normal;\n      display:flex; align-items:center; justify-content:center;\n      font-variant-numeric:tabular-nums; }"
+ },
+ {
+  "i": 105,
+  "css": ".fstep::before { content:\"\"; position:absolute; left:16px; top:0; bottom:0;\n      width:3px; background:#1b6b3a; z-index:1; }"
+ },
+ {
+  "i": 106,
+  "css": ".fstep:first-of-type::before { top:50%; }"
+ },
+ {
+  "i": 107,
+  "css": ".fstep:last-of-type::before { bottom:50%; }"
+ },
+ {
+  "i": 108,
+  "css": ".fstep::after { content:\"\"; position:absolute; left:34px; top:50%; width:20px;\n      height:2px; background:#9ec9b0; transform:translateY(-50%); z-index:1; }"
+ },
+ {
+  "i": 109,
+  "css": ".fstep>.st { flex:1; min-width:0; margin-left:20px; background:#fff;\n      border:1.5px solid #d8e8de; border-radius:11px; padding:9px 13px;\n      font-size:16.5px; }"
+ },
+ {
+  "i": 110,
+  "css": ".fstep>.st::before { content:\"\"; display:inline-block; width:5px; height:5px;\n      border-radius:50%; background:#1b6b3a; vertical-align:middle;\n      margin-right:9px; }"
+ }
+]

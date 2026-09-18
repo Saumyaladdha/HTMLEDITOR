@@ -1,0 +1,16 @@
+/* ===== shared ===== */
+.callout { border:2.5px solid; border-radius:18px; padding:10px 18px 12px; margin:13px 0; }
+.callout>.ch { font-family:'Caveat',cursive; font-size:25.5px; font-weight:700;
+               display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+.callout>div.ci { font-size:17px; line-height:1.62; margin:6px 0; display:flex; gap:10px; }
+.callout>div.ci>span.b { flex:none; font-weight:700; }
+/* ===== A4 print only ===== */
+.callout.sticky { box-shadow:2px 5px 14px rgba(0,0,0,.18); border-radius:16px;
+                  padding:14px 17px 16px; position:relative; margin:0; }
+.callout.sticky:nth-child(odd)  { transform:rotate(-1.3deg); }
+.callout.sticky:nth-child(even) { transform:rotate(1.4deg); }
+.callout.sticky > .pin { position:absolute; top:-9px; right:38px; width:17px; height:17px;
+                         border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,.35); }
+.pin.red  { background:radial-gradient(circle at 35% 30%,#ff7b6e,#c81e1e); }
+.pin.blue { background:radial-gradient(circle at 35% 30%,#7ec4ff,#1e56c8); }
+.callout    { margin:9px 0; }

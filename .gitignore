@@ -1,0 +1,17 @@
+build/
+.cache/
+__pycache__/
+*.pyc
+content/*.ir.json
+.env
+.DS_Store
+
+# .claude/skills/ is GENERATED from pipeline/*/AGENT.md by
+# tools/install_agents.py. It is committed on purpose so that
+# unzipping the project and opening it just works — but the
+# canonical copy is always pipeline/<step>/AGENT.md.
+book/elements/__pycache__/
+
+# The project virtualenv — RDKit alone is 170MB.
+.venv/
+venv/

@@ -1,0 +1,14 @@
+[
+ {
+  "i": 33,
+  "css": ".starline { display:inline-flex; align-items:center; gap:8px; background:#fdf3b4;\n            border:2px solid #e2b93b; border-radius:12px 16px 10px 14px;\n            padding:3px 14px; font-weight:700; font-size:15.5px; margin:2px 0 10px; }"
+ },
+ {
+  "i": 129,
+  "css": ".stars { color:#c2337a; font-weight:700; font-size:15.5px; }"
+ },
+ {
+  "i": 130,
+  "css": ".starnote { font-family:'Caveat',cursive; font-size:18.5px; color:#c2337a; font-weight:700; }"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "id": "unit",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "u",
+ "when": "Wrapper around every flow item.",
+ "signals": [
+  "structural"
+ ],
+ "notes": "flow-root in a column, 0.02px padding in .flowwrap — both stop margins collapsing through, so a MEASURED height equals the height occupied."
+}

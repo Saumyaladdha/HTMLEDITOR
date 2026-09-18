@@ -1,0 +1,10 @@
+[
+ {
+  "i": 8,
+  "css": ".qsep { border-top:2.5px dashed #e5a8bc; margin:6px 0 9px; }"
+ },
+ {
+  "i": 33,
+  "css": "hr.sep { margin:11px 0; }"
+ }
+]

@@ -1,0 +1,19 @@
+/* ===== shared ===== */
+.fcard { border:2.5px solid #9b6fd8; background:#faf7fe; border-radius:16px;
+         padding:12px 18px; margin:14px 0; }
+.fcard>.ft { font-family:'Caveat',cursive; font-size:22.5px; font-weight:700;
+             color:#6b3fb0; margin-bottom:6px; }
+.frow { display:flex; gap:10px; align-items:baseline; font-size:17px; line-height:1.6;
+        padding:6px 0; border-top:1.5px dashed #ded8f0; }
+.frow:first-of-type { border-top:none; }
+.frow>.fx { font-family:Georgia,serif; font-style:italic; font-size:18.5px; flex:none;
+            background:#fff; border:1.5px solid #d9cff0; border-radius:9px; padding:2px 11px; }
+.cond { background:#f4eefc; border-radius:7px; padding:0 7px; font-size:15.5px; }
+/* ===== A4 print only ===== */
+.frow { display:block; break-inside:avoid; padding:7px 0 8px; }
+.frow > .fx { display:inline-block; margin:0 0 4px; border-width:2px; }
+.frow > .fd { display:block; line-height:1.45; }
+.frow > .fc { display:block; margin-top:4px; padding:1px 0 1px 9px;
+              border-left:3px solid; background:#faf7fe; border-radius:0 8px 8px 0;
+              line-height:1.4; }
+.frow > .fc > b { color:#6b3fb0; }

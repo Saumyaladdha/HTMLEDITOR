@@ -1,0 +1,42 @@
+[
+ {
+  "i": 1,
+  "css": "/* REACTION ARROW — a grid, because the notation is two-dimensional.\n   The three rows are reagent / arrow / condition. `inline-grid` keeps the\n   whole thing on the equation's baseline while letting the labels sit off\n   it, which is the one thing a linear run of text cannot do. */\n.rxn { display:inline-grid; grid-template-rows:auto auto auto;\n       align-items:center; justify-items:center; vertical-align:middle;\n       margin:0 5px; min-width:44px; }"
+ },
+ {
+  "i": 2,
+  "css": "/* The arrow is DRAWN, not set as a glyph, so it stretches to whichever\n   label is wider. A six-word reagent over a fixed-width `⟶` overhung it on\n   both sides and stopped reading as attached to it. */\n.rxn>.rxn-a { position:relative; width:100%; height:0;\n              border-top:1.4px solid currentColor; margin:2px 0; }\n.rxn>.rxn-a::after { content:''; position:absolute; right:-1px; top:-4px;\n       border-left:7px solid currentColor; border-top:4px solid transparent;\n       border-bottom:4px solid transparent; }"
+ },
+ {
+  "i": 3,
+  "css": "/* Reverse and equilibrium arrows. An equilibrium is two half-arrows,\n   which is not the same statement as one arrow with a barb at each end —\n   `⇌` means the reaction runs both ways at once, `↔` is resonance.\n\n   NAMED `rxn-harpoon`, NOT `rxn-eq`. The whole-equation wrapper is ALSO\n   `.rxn-eq` (`display:inline-flex`, laying reactant/arrow/product side by\n   side) — see `.rxn-eq` in acols.rules.json. An equilibrium ARROW used to\n   carry that same class name as its kind modifier, so it matched its own\n   wrapper's selector too: `display:inline-flex` overrode `.rxn`'s own\n   `display:inline-grid`, collapsing the label/arrow/label rows into one\n   flex line. The label above the arrow (a slow-step tag such as `मन्द`)\n   sat inline before the glyph instead of stacked over it — measured on the\n   built page: `.rxn.rxn-eq` computed to `display:flex`, where every other\n   arrow kind computed to `display:grid`. Renamed so the arrow's own class\n   can never collide with the wrapper's. */\n.rxn-back>.rxn-a::after { right:auto; left:-1px;\n       border-left:0; border-right:7px solid currentColor; }\n.rxn-harpoon>.rxn-a { border-top:0; height:auto; }\n.rxn-harpoon>.rxn-a::after { content:'\\21cc'; position:static; border:0;\n       font-size:1.15em; line-height:1; }\n.rxn-both>.rxn-a::after { content:'\\27f7'; position:static; border:0;\n       font-size:1.05em; line-height:1; }"
+ },
+ {
+  "i": 4,
+  "css": "/* THE ARROW MUST SIT AT THE SAME HEIGHT IN EVERY REACTION.\n   `display:none` on an empty label made the grid asymmetric about\n   the arrow row, so `vertical-align:middle` centred a different\n   box each time. Measured at 19px: the arrow sat 1px below the\n   text baseline with a top label only, 9px with both, and 18px\n   with a bottom label only — a 17px swing, so in one answer no\n   two arrows lined up with each other or with the species either\n   side of them. That is what read as reactions not being on one\n   line.\n   An empty label now KEEPS its row at the label's own height, so\n   the grid is always three symmetric rows and the arrow is always\n   the middle one. */\n.rxn>.rxn-t, .rxn>.rxn-b { min-height:1.16em; }\n.rxn>.rxn-t:empty, .rxn>.rxn-b:empty { min-height:1.16em; }"
+ },
+ {
+  "i": 5,
+  "css": "/* AN ATOM STAYS ON THE BASELINE; ITS LABELS HANG OFF IT.\n   This is the rule that makes a structure a structure.\n   The source numbers a chain as\n   `\\overset{3}{CH_3}-\\overset{2}{CH}-\\overset{1}{CH_2}-Br` — 52 of\n   them — and the bond dashes between the atoms are ordinary text\n   sitting on the text baseline. An inline-grid takes its baseline\n   from its FIRST row, so with the number in row 1 the grid aligned\n   the NUMBER to the baseline and pushed every atom below it: the\n   dashes ran between the numbers instead of between the carbons,\n   the atoms looked detached, and a substituent's vertical bond met\n   nothing.\n   So the atom is row 1 — the grid's baseline row, level with the\n   dashes either side of it — and a number or charge is positioned\n   ABSOLUTELY above it. Absolute because a carbon number must not\n   take part in layout at all: it is anchored to its own atom and\n   cannot be moved independently of it, which is exactly the\n   complaint. A name below stays in flow, because a name is wide\n   and does need its width reserved. */\n.sp { display:inline-grid; grid-template-rows:auto auto;\n      justify-items:center; position:relative; white-space:nowrap;\n      vertical-align:baseline; margin:0 1px; }\n.sp>.sp-c { grid-row:1; white-space:nowrap; }"
+ },
+ {
+  "i": 6,
+  "css": "/* The NAME under a species — prose face, and IN FLOW.\n   Unlike a number, a name (`1-ब्रोमोप्रोपेन`) is wider than the\n   formula it labels, so its width has to be reserved or it would\n   overlap the next species. Row 2, which leaves row 1 — the atom —\n   as the grid's baseline row. */\n.sp>.sp-u { grid-row:2; font-size:.72em; line-height:1.2;\n      font-style:normal; font-family:inherit; text-align:center;\n      opacity:.86; padding-top:1px; }"
+ },
+ {
+  "i": 7,
+  "css": "/* A NUMBER OR CHARGE OVER AN ATOM — anchored, not floating.\n   Absolutely positioned against the atom's own box and centred on\n   it, so it cannot drift and takes no part in the line's layout.\n   `CH₃⁺` is a different species from `CH₃`, and a `+` that has\n   drifted a line up reads as a separate term in the equation. */\n.sp>.sp-o { position:absolute; left:50%; bottom:100%;\n      transform:translateX(-50%); font-size:.66em; line-height:1;\n      font-weight:600; white-space:nowrap; }"
+ },
+ {
+  "i": 8,
+  "css": "/* A BOND drawn under an atom. The chapter writes a substituent hanging\n   below a chain as `\\underset{\\displaystyle |}{NH}`; that pipe IS a bond\n   line, so it is drawn as one rather than left as punctuation. */\n.sp>.sp-u:only-child, .sp>.sp-u { }\n.sp .bond, .sp>.sp-u:has(>.bond) { font-family:inherit; }"
+ },
+ {
+  "i": 9,
+  "css": "/* `\\overline{O}H` — the bar marking a lone pair or a charge. The generic\n   converter drops overlines as decoration; in chemistry it distinguishes\n   the hydroxide ION from the atom, so it is drawn. */\n.ovl { text-decoration:overline; text-decoration-thickness:1.2px;\n       text-underline-offset:2px; }"
+ },
+ {
+  "i": 10,
+  "css": "/* A reaction must never run off the sheet. A three-species equation with\n   named reactants is wider than a 440px column, and the page is\n   `overflow:hidden` — the right-hand side was simply cut off in print with\n   no error, because the page's scrollHeight never grew. Wrapping at the `+`\n   keeps every species on the paper. */\n.dm .rxn, .dm .sp { max-width:100%; }\n.subj-chemistry .dm { overflow-wrap:break-word; }"
+ }
+]

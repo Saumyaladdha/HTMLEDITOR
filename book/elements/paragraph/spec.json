@@ -1,0 +1,11 @@
+{
+ "id": "paragraph",
+ "ir_kind": "para",
+ "tag": "p",
+ "classes": "para",
+ "when": "Prose in Part 1, outside any question.",
+ "signals": [
+  "sits under a section head, not under a question head"
+ ],
+ "notes": "18px. Same tag as .q — only the CONTEXT differs."
+}

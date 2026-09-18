@@ -1,0 +1,6 @@
+[
+ {
+  "i": 110,
+  "css": "/* NO SLIDER ON A PRINTED PAGE.\n   `.tblwrap` is `overflow-x:auto`, which on screen gives a\n   horizontal scrollbar and on paper simply loses everything to the\n   right of the column — the reader cannot scroll a sheet of paper.\n   A comparison table has to FIT: fixed layout so the columns share\n   the width, and cells that wrap instead of pushing the table wider.\n   Scoped to chemistry, whose two-column comparisons are the widest\n   tables in the book. */\n.subj-chemistry .tblwrap { overflow-x:visible; }\n.subj-chemistry .tbl { table-layout:fixed; width:100%; }\n.subj-chemistry .tbl th, .subj-chemistry .tbl td\n  { overflow-wrap:break-word; word-break:normal; padding:6px 9px;\n    vertical-align:top; }\n.subj-chemistry .acol .tbl { font-size:15.2px; }"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "id": "qcard",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "qcard",
+ "when": "Question wrapper — borderless in A4.",
+ "signals": [
+  "structural"
+ ],
+ "notes": "In A4 the border/background are removed; .qsep separates instead."
+}

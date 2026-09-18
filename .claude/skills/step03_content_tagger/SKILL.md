@@ -1,0 +1,1 @@
+../../../pipeline/subjects/physics/step03_content_tagger/SKILL.md

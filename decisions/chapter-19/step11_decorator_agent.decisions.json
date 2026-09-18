@@ -1,0 +1,16 @@
+{"decisions": [
+  {"id": "b524e31338be", "accept": false,
+   "why": "Page 13 is not slack, it is a PAGINATION artefact: Part 1 closes with a five-line list that lands alone on a sheet because Part 2 opens the next one. 1217px is far past what a 90-180px character can make read as deliberate — art here would look like an apology for an empty page. Fix the packing instead."},
+
+  {"id": "6e3024f61664", "accept": true, "role": "character",
+   "why": "540px at the foot of a Q&A column, after the last answer of a group. A natural pause, and the widest slack in Part 2 — a character reads as deliberate here."},
+
+  {"id": "37f214bfff64", "accept": true, "role": "doodle-lg",
+   "why": "466px under the close of a group. Adjacent to page 41's character, so a doodle rather than a second character keeps the density falling as the policy requires."},
+
+  {"id": "7163d1df2793", "accept": true, "role": "doodle-lg",
+   "why": "424px at the end of a Part 1 section, under short content. Exactly the case the policy calls slack."},
+
+  {"id": "32698cb9c490", "accept": false,
+   "why": "Page 1 is the cover. Its 411px is a measurement artefact of the .cvfit transform, which leaves the layout box at full height while the painted content is scaled to 71%; the sheet is in fact full. The cover also carries its own emblem and seal, so a doodle would compete with them."}
+]}

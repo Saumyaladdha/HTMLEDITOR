@@ -1,0 +1,11 @@
+{
+ "id": "pointer",
+ "ir_kind": "callout",
+ "tag": "div",
+ "classes": "po po-{type}",
+ "when": "A one-line advice strip. 19 variants.",
+ "signals": [
+  "`<emoji> **Label:** text` on one line"
+ ],
+ "notes": "Icon and colour come from the TYPE, never from the markdown."
+}

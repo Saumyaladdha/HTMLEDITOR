@@ -1,0 +1,22 @@
+[
+ {
+  "i": 0,
+  "css": "body { background:#cfcabd; margin:0; padding:0; }"
+ },
+ {
+  "i": 1,
+  "css": ".page { width:1080px; height:1527px; overflow:hidden; position:relative;\n        background:#fdfcf7; border-radius:0; margin:22px auto;\n        box-shadow:0 6px 30px rgba(0,0,0,.25);\n        padding:40px 68px 55px; }"
+ },
+ {
+  "i": 129,
+  "css": "pre#OVERFLOW { display:none; }"
+ },
+ {
+  "i": 130,
+  "css": "@media print {\n  @page { size: A4; margin: 0; }\n  body { background:#fff; }\n  /* PRINT_ZOOM must leave the page box strictly SMALLER than the sheet.\n     At 0.7352 the 1080x1527 box scaled to 794.016 x 1122.650 against A4's\n     793.701 x 1122.520, over on BOTH axes by a fraction of a pixel. Each page\n     then spilled that sliver onto the next sheet, and because every .page also\n     carries break-before:page, the result was a blank sheet after every printed\n     one. The ceiling is 793.701/1080 = 0.734908; 0.734 keeps about a pixel of\n     slack for sub-pixel rounding, at a fifth of a percent smaller print. */\n  .page { margin:0 auto; box-shadow:none; break-before:page; zoom:0.734; }\n  body > .page:first-child { break-before:auto; }\n}"
+ },
+ {
+  "i": 131,
+  "css": "@media print {\n  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }\n}"
+ }
+]

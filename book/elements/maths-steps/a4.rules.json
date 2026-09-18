@@ -1,0 +1,10 @@
+[
+ {
+  "i": 140,
+  "css": ".subj-maths .acol .dm { margin:8px 0; }"
+ },
+ {
+  "i": 142,
+  "css": ".subj-maths .acol .mxrow { margin:8px 0; gap:5px; }"
+ }
+]

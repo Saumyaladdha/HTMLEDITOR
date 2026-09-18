@@ -1,0 +1,66 @@
+[
+ {
+  "i": 36,
+  "css": ".m { font-family:'Times New Roman',Times,serif; font-style:italic; font-variant-numeric:lining-nums; }"
+ },
+ {
+  "i": 37,
+  "css": ".up { font-style:normal; }"
+ },
+ {
+  "i": 38,
+  "css": ".k { font-family:'Kalam',cursive; font-style:normal; }"
+ },
+ {
+  "i": 39,
+  "css": ".fr { display:inline-flex; flex-direction:column; align-items:stretch; text-align:center;\n      line-height:1.14;\n      vertical-align:middle; font-size:.86em; font-family:'Times New Roman',Times,serif; font-style:italic; }"
+ },
+ {
+  "i": 40,
+  "css": ".fr>.dn { border-top:1.6px solid #1f2430; padding:3px 6px 3px; }"
+ },
+ {
+  "i": 41,
+  "css": ".fr>span:first-child { padding-bottom:2px; }"
+ },
+ {
+  "i": 42,
+  "css": ".vec { position:relative; display:inline-block; }"
+ },
+ {
+  "i": 43,
+  "css": ".vec::after { content:\"\\2192\"; position:absolute; left:0; right:0; top:-.66em;\n              font-size:.6em; text-align:center; line-height:1; font-style:normal; }"
+ },
+ {
+  "i": 44,
+  "css": "sup, sub { line-height:0; }"
+ },
+ {
+  "i": 45,
+  "css": ".sqb { border-top:1.4px solid #1f2430; padding:0 4px 0 1px; margin-left:-1px;\n       display:inline-block; line-height:1; }"
+ },
+ {
+  "i": 46,
+  "css": ".ovl { border-top:1.4px solid #1f2430; }"
+ },
+ {
+  "i": 170,
+  "css": "/* A paper reference — `2025/set_jv`. Plain text in the body face, so\n   it reads as a citation rather than as an expression. */\n.ref { font-family:inherit; font-style:normal;\n       color:#6b6656; white-space:nowrap; }"
+ },
+ {
+  "i": 171,
+  "css": "/* A unit written as a fraction in ordinary prose — `न्यूटन` over\n   `ऐम्पियर·मीटर`. It keeps the BODY face, upright: it is a unit name,\n   not an algebraic operand, and the maths italic made it read as a\n   formula dropped into the middle of a Devanagari sentence. */\n.fr-unit { font-family:inherit; font-style:normal;\n           font-size:0.95em; }\n.fr-unit > span, .fr-unit > .dn { font-style:normal; }"
+ },
+ {
+  "i": 118,
+  "css": ".m .mt, .mt { font-style:normal; font-family:inherit; font-weight:inherit; }"
+ },
+ {
+  "i": 119,
+  "css": "/* A FRACTION INSIDE A FRACTION.\n   `.fr` is already .86em, so two levels compound to .74 and three\n   to .64 — small enough that a nested denominator stops being\n   readable in print. An inner level takes a gentler step down and\n   keeps the rule it needs to read as a fraction at all. */\n.fr .fr { font-size:.94em; }\n.fr>.dn { border-top:1.1px solid currentColor; margin-top:1px;\n          padding-top:1px; }\n/* The nested case needs a touch more room, or the inner rule and\n   the outer one sit on top of each other. */\n.fr .fr>.dn { margin-top:2px; padding-top:1px; }\n.fr:has(.fr)>span { padding:1px 3px; }"
+ },
+ {
+  "i": 172,
+  "css": "/* THE NOTATION FACE: LESS SLANT, A LITTLE MORE WEIGHT. EVERY SUBJECT.\n   `.m`/`.dm` were Times New Roman ITALIC. Times's italic is steeply\n   slanted and, at this size, very light — and the page prints at\n   PRINT_ZOOM 0.734, which thins it again. Beside the Hindi prose (a solid\n   sans) every equation read as faint and tilted.\n\n   Deliberately NOT scoped to a subject. The notation is the same object\n   in every chapter — physics sets 490 display equations, chemistry its\n   formulae, biology the occasional ratio — and scoping the face to maths\n   would mean the SAME `$f(x)$` rendered two different ways depending on\n   which chapter it appeared in. That is the class of inconsistency the\n   callout-icon rule exists to prevent elsewhere: a property of the\n   element, not of the chapter it sits in.\n\n   Two changes, both small:\n\n   1. Charter's italic is a far more upright cut than Times's, with lining\n      figures matching the `font-variant-numeric:lining-nums` already set\n      on `.m`. Variables stay italic — correct maths typography, and the\n      upright digits/operators (`.up`) are untouched — they just no longer\n      lean off the line. Times stays in the stack as the fallback, so a\n      machine without Charter renders exactly as before. Pagination is\n      safe either way because the packer MEASURES with this same\n      stylesheet in the same browser that renders it.\n\n   2. `-webkit-text-stroke` rather than `font-weight`. The next real weight\n      up is 700 — far too heavy for running notation, and it would change\n      every glyph's advance width and so re-measure every line. A 0.2px\n      stroke thickens the strokes just enough to match the prose's colour\n      without moving anything, the same reason the book sets its Kalam\n      bold synthetically.\n\n   CHEMISTRY KEEPS ITS UPRIGHT POSTURE. `.subj-chemistry .m/.dm` sets\n   `font-style:normal` (an element symbol is roman: SOCl2, not slanted),\n   and nothing here sets `font-style`, so that rule is unaffected —\n   chemistry gains the face and the weight and stays upright.\n\n   Applied to the nested levels too (`.fr`, matrix cells), or a fraction\n   inside an equation would be the one thin, slanted thing left on the\n   page. */\n.m, .dm, .fr, .mx>.mxg>span {\n    font-family:Charter,'Bitstream Charter','Iowan Old Style',\n                'Times New Roman',Times,serif;\n    -webkit-text-stroke:.2px currentColor; }\n/* The `.k` equation label is a reference, not notation — already upright\n   and 700, and a stroke on top of that turns it to a blob. */\n.dm>.k { -webkit-text-stroke:0; }"
+ }
+]

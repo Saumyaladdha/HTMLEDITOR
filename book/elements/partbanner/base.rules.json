@@ -1,0 +1,14 @@
+[
+ {
+  "i": 114,
+  "css": ".partbanner { margin:28px 0 18px; border-radius:22px; padding:22px 28px; text-align:center;\n              background:linear-gradient(100deg,#fdf3b4,#fde7c8); border:2.5px solid #e2b93b; }"
+ },
+ {
+  "i": 115,
+  "css": ".partbanner .pt { font-size:30px; font-weight:700; color:#8a5a00; letter-spacing:.5px; }"
+ },
+ {
+  "i": 116,
+  "css": ".partbanner .ps { font-family:'Caveat',cursive; font-size:23.5px; font-weight:700;\n                  color:#c2337a; margin-top:2px; }"
+ }
+]

@@ -1,0 +1,26 @@
+[
+ {
+  "i": 0,
+  "css": "* { box-sizing:border-box; }"
+ },
+ {
+  "i": 1,
+  "css": "body { margin:0; background:#e8e4da; color:#1f2430;\n       font-family:'Kalam',cursive; -webkit-font-smoothing:antialiased; }"
+ },
+ {
+  "i": 6,
+  "css": ".shell { display:grid; grid-template-columns:250px minmax(0,1fr); gap:30px;\n         max-width:1240px; margin:0 auto; padding:26px 22px 70px; align-items:start; }"
+ },
+ {
+  "i": 14,
+  "css": ".page { background:#fdfcf7; border-radius:20px; box-shadow:0 8px 34px rgba(0,0,0,.13);\n        padding:38px 48px 46px; }"
+ },
+ {
+  "i": 157,
+  "css": "@media (max-width:1100px) {\n  .shell { grid-template-columns:minmax(0,1fr); }\n  .toc { display:none; }\n  .page { padding:26px 22px 34px; }\n  .booktitle { font-size:31px; }\n  .opts { grid-template-columns:1fr; }\n}"
+ },
+ {
+  "i": 158,
+  "css": "@media print {\n  body { background:#fff; }\n  .topbar, .toc { display:none; }\n  .shell { display:block; max-width:none; padding:0; }\n  .page { box-shadow:none; border-radius:0; padding:0 6mm; }\n  .qcard, .callout, .figcard, .fcard { break-inside:avoid; }\n  .sechead, .yearhead { break-after:avoid; }\n}"
+ }
+]

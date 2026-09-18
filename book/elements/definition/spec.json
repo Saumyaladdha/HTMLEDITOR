@@ -1,0 +1,11 @@
+{
+ "id": "definition",
+ "ir_kind": "definition",
+ "tag": "div",
+ "classes": "def",
+ "when": "A definition body, introduced by **परिभाषा:**.",
+ "signals": [
+  "follows a `**<term>:**` lead-in"
+ ],
+ "notes": "Left rule. Do NOT emit a .deflead wrapper — the reference has none."
+}

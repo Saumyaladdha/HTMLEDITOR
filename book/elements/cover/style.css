@@ -1,0 +1,62 @@
+/* ===== A4 print only ===== */
+.cover { font-size:18px; }
+.cvhero { display:flex; align-items:center; gap:24.5px;
+          border-bottom:3px dashed #ded8c8; padding-bottom:18.5px; }
+.cvtitle { flex:1; min-width:0; }
+.cvch { display:inline-block; background:#2b3a8f; color:#fff; font-weight:700;
+        font-size:17px; letter-spacing:.6px; border-radius:9px 13px 8px 12px;
+        padding:2px 13px; transform:rotate(-1deg); }
+.cvname { position:relative; font-size:56px; font-weight:700; color:#2b3a8f;
+          line-height:1.15; margin-top:5px; padding-bottom:6px; }
+.cvswipe { position:absolute; left:0; bottom:0; width:min(100%,470px); height:14.5px; }
+.cvlead { font-size:21px; margin-top:11.5px; }
+.cvseal { flex:none; width:130px; height:130px; border-radius:50% 47% 53% 48%;
+          background:radial-gradient(circle at 34% 28%,#fdf3b4,#f6c945);
+          border:3px solid #e2b93b; display:flex; flex-direction:column;
+          align-items:center; justify-content:center; transform:rotate(-4deg);
+          box-shadow:2px 5px 14px rgba(0,0,0,.18); }
+.cvsn { font-size:53px; font-weight:700; color:#8a5a00; line-height:1; }
+.cvsl { font-size:20px; font-weight:700; color:#8a5a00; margin-top:-2px; }
+.cvgrid { display:flex; gap:22.5px; margin-top:20.5px; align-items:flex-start; }
+.cvcol { flex:1; min-width:0; display:flex; flex-direction:column; gap:16.5px; }
+.cvcard { border:2.5px solid; border-radius:18px; padding:16.5px 20px 18px; }
+.cvc-pink  { border-color:#e78aa8; background:#fdeef3; }
+.cvc-gold  { border-color:#e2b93b; background:#fdf6d8; }
+.cvc-green { border-color:#8fd18f; background:#eefaee; }
+.cvc-plain { border-color:#c9c3b4; background:#faf8f1; margin-top:20.5px; }
+.cvh { font-family:'Caveat',cursive; font-weight:700; font-size:31px; color:#2b3a8f;
+       margin-bottom:11px; line-height:1.1; }
+.cvhead { display:flex; justify-content:space-between; gap:12.5px; font-size:14.5px;
+          font-weight:700; color:#8a8372; border-bottom:2px solid currentColor;
+          padding-bottom:3px; margin-bottom:5px; opacity:.85; }
+.cvrow { font-size:18px; line-height:1.4; padding:8px 0;
+         border-top:1.5px dashed #e9cdd8; }
+.cvrow:first-of-type { border-top:none; padding-top:2px; }
+.cvrl { display:flex; align-items:baseline; gap:10.5px; justify-content:space-between; }
+.cvtopic { min-width:0; }
+.cvtrack { height:13.5px; border-radius:7px; background:#f7dfe8; margin-top:6px; }
+.cvbar { display:block; height:100%; border-radius:7px; }
+.cvmk { flex:none; white-space:nowrap; font-size:17px; }
+.cvtotal { display:flex; justify-content:space-between; align-items:center;
+           margin-top:9.5px; padding-top:9px; border-top:2.5px solid #e78aa8;
+           font-size:19.5px; font-weight:700; color:#c2337a; }
+.cvnote { display:flex; gap:12.5px; border:2px solid; border-radius:16px;
+          padding:13.5px 17px; font-size:17.5px; line-height:1.55; }
+.cvnote .cvi { flex:none; font-size:22px; line-height:1.3; }
+.cvn-red  { border-color:#ec9baa; background:#fdecef; }
+.cvn-blue { border-color:#8fb4e8; background:#eef4fd; }
+.cvformula { text-align:center; font-family:Georgia,serif; font-style:italic;
+             font-size:38px; font-weight:700; color:#8a5a00; background:#fffdf3;
+             border:2px dashed #e2b93b; border-radius:14px; padding:9.5px 0; }
+.cvchips { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-top:11.5px; }
+.cvchip { background:#fff; border:1.5px solid #d9c88a; border-radius:9px;
+          padding:3px 13px; font-size:16.5px; font-weight:700; white-space:nowrap; }
+.cvchip-hot { background:#c0392b; color:#fff; border-color:#a5301f; }
+.cvtxt { font-size:17.5px; line-height:1.6; margin-top:11.5px; }
+.cvsteps { display:flex; flex-direction:column; gap:9.5px; }
+.cvstep { display:flex; gap:11.5px; font-size:17.5px; line-height:1.45; }
+.cvstep .cvn { flex:none; width:28px; height:28px; border-radius:50% 45% 52% 47%;
+               background:#3fae4e; color:#fff; font-size:16px; font-weight:700;
+               display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.cvstats { display:flex; gap:22.5px; align-items:flex-start; }
+.cvflex { flex:1; min-width:0; margin-top:0; }

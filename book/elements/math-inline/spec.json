@@ -1,0 +1,11 @@
+{
+ "id": "math-inline",
+ "ir_kind": "_inline",
+ "tag": "span",
+ "classes": "m",
+ "when": "Inline maths.",
+ "signals": [
+  "backticks or $…$"
+ ],
+ "notes": "Georgia italic. Digits/operators/π go in .up so they stay upright; variables stay italic."
+}

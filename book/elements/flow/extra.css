@@ -1,0 +1,3 @@
+/* Nothing extra. The stage chips carry their own border, so no rule here
+   should assume anything about the text inside them — a stage may be a
+   phrase, a count ("4 गुरुबीजाणु") or a ploidy ("8-केन्द्रकीय भ्रूणकोष"). */

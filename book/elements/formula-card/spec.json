@@ -1,0 +1,11 @@
+{
+ "id": "formula-card",
+ "ir_kind": "formula_card",
+ "tag": "div",
+ "classes": "fcard",
+ "when": "The सूत्र panel — a section's formulas collected in one bordered card.",
+ "signals": [
+  "a `**सूत्र:**` lead-in immediately followed by a bullet list"
+ ],
+ "notes": "Each bullet splits on ' · ' into .fx (boxed formula) / .fd (caption) / .fc (शर्त condition)."
+}

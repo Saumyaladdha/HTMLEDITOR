@@ -1,0 +1,12 @@
+{
+ "id": "trio",
+ "ir_kind": "trio",
+ "tag": "div",
+ "classes": "trio",
+ "when": "The compact unit / dimension / quantity strip (**त्रिक:**).",
+ "signals": [
+  "lead-in contains त्रिक",
+  "reads as `मात्रक … · विमीय सूत्र … · अदिश/सदिश`"
+ ],
+ "notes": ""
+}

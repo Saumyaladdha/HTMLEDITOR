@@ -1,0 +1,16 @@
+/* ===== shared ===== */
+.m { font-family:Georgia,serif; font-style:italic; }
+.up { font-style:normal; }
+.k { font-family:'Kalam',cursive; font-style:normal; }
+.fr { display:inline-flex; flex-direction:column; align-items:stretch; text-align:center;
+      line-height:1.14;
+      vertical-align:middle; font-size:.86em; font-family:Georgia,serif; font-style:italic; }
+.fr>.dn { border-top:1.6px solid #1f2430; padding:3px 6px 0; }
+.fr>span:first-child { padding-bottom:2px; }
+.vec { position:relative; display:inline-block; }
+.vec::after { content:"\2192"; position:absolute; left:0; right:0; top:-.66em;
+              font-size:.6em; text-align:center; line-height:1; font-style:normal; }
+sup, sub { line-height:0; }
+.sqb { border-top:1.4px solid #1f2430; padding:0 4px 0 1px; margin-left:-1px;
+       display:inline-block; line-height:1; }
+.ovl { border-top:1.4px solid #1f2430; }

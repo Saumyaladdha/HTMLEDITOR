@@ -1,0 +1,11 @@
+{
+ "id": "night",
+ "ir_kind": "section",
+ "tag": "div",
+ "classes": "night",
+ "when": "The closing 'night before the exam' / आईना panel.",
+ "signals": [
+  "a `### 🌙 …` or `## 🪞 …` section"
+ ],
+ "notes": ""
+}

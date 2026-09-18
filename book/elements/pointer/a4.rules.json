@@ -1,0 +1,22 @@
+[
+ {
+  "i": 32,
+  "css": ".po { margin:6px 0; }"
+ },
+ {
+  "i": 77,
+  "css": ".poflat > .ic { font-size:18.5px; margin-right:7px; }"
+ },
+ {
+  "i": 78,
+  "css": ".poflat b.t { padding:1px 7px; border-radius:7px 10px 6px 9px;\n              -webkit-box-decoration-break:clone; box-decoration-break:clone; }"
+ },
+ {
+  "i": 79,
+  "css": ".pf-warn b.t { background:#fbd0da; color:#9c1330; }"
+ },
+ {
+  "i": 80,
+  "css": ".pf-tip  b.t { background:#fdefa4; color:#7d5200; }"
+ }
+]

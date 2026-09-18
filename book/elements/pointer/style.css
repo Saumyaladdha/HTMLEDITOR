@@ -1,0 +1,51 @@
+/* ===== shared ===== */
+.po { display:flex; align-items:flex-start; gap:11px; border:2px solid; border-radius:15px;
+      padding:10px 15px; font-size:16.5px; line-height:1.55; margin:9px 0; }
+.po>.ic { font-size:19.5px; flex:none; line-height:1.35; }
+.po b.t { color:#d32f2f; }
+.po-mark { background:#fdecef; border-color:#ec9baa; }
+.po-mark b.t{color:#c2185b;}
+.po-warn { background:#fdecef; border-color:#ec9baa; }
+.po-trap { background:#fef3e2; border-color:#f0b96b; }
+.po-trap b.t{color:#c26a00;}
+.po-write{ background:#eef4fd; border-color:#8fb4e8; }
+.po-write b.t{color:#2456c9;}
+.po-num  { background:#eef4fd; border-color:#8fb4e8; }
+.po-num b.t{color:#2456c9;}
+.po-opt  { background:#eef4fd; border-color:#8fb4e8; }
+.po-opt b.t{color:#2456c9;}
+.po-save { background:#e8f8f8; border-color:#79c8d4; }
+.po-save b.t{color:#0e7c8c;}
+.po-key  { background:#e8f8f8; border-color:#79c8d4; }
+.po-key b.t{color:#0e7c8c;}
+.po-line { background:#f4eefc; border-color:#b899ec; }
+.po-line b.t{color:#7b3fd0;}
+.po-turn { background:#f4eefc; border-color:#b899ec; }
+.po-turn b.t{color:#7b3fd0;}
+.po-link { background:#eefaee; border-color:#8fd18f; }
+.po-link b.t{color:#1f6e3c;}
+.po-step { background:#eefaee; border-color:#8fd18f; }
+.po-step b.t{color:#1f6e3c;}
+.po-concl { background:#eafbf0; border-color:#5cbf87; }
+.po-concl b.t{color:#178a4c;}
+.po-conf { background:#fdf6d8; border-color:#e2c93b; }
+.po-conf b.t{color:#8a6d00;}
+.po-tip  { background:#fdf6d8; border-color:#e2c93b; }
+.po-tip b.t{color:#8a6d00;}
+.po-ratt { background:#fdf3b4; border-color:#e2b93b; }
+.po-ratt b.t{color:#8a6d00;}
+.po-rep  { background:#fdf3b4; border-color:#e2b93b; font-weight:700; }
+.po-rep b.t{color:#8a6d00;}
+.po-calc { background:#fdeef3; border-color:#e78aa8; }
+.po-calc b.t{color:#c2337a;}
+.po-fig  { background:#f7f5ee; border-color:#cfc7b2; font-size:16px; }
+.po-fig b.t{color:#6b6450;}
+.po-sim  { background:#f6f3ea; border:1.5px dashed #c9c3b4; color:#5a5343; }
+.po-sim b.t { color:#5a5343; }
+/* ===== A4 print only ===== */
+.po { margin:6px 0; }
+.poflat > .ic { font-size:18.5px; margin-right:7px; }
+.poflat b.t { padding:1px 7px; border-radius:7px 10px 6px 9px;
+              -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+.pf-warn b.t { background:#fbd0da; color:#9c1330; }
+.pf-tip  b.t { background:#fdefa4; color:#7d5200; }

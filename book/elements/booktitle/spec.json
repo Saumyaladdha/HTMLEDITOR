@@ -1,0 +1,11 @@
+{
+ "id": "booktitle",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "booktitle",
+ "when": "Chapter title block.",
+ "signals": [
+  "`# अध्याय N : …`"
+ ],
+ "notes": ""
+}

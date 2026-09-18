@@ -1,0 +1,11 @@
+{
+ "id": "question-head",
+ "ir_kind": "question",
+ "tag": "div",
+ "classes": "qhead",
+ "when": "The question number, its chip, stars and repeat note.",
+ "signals": [
+  "`**प्र. N**` followed by a backtick chip"
+ ],
+ "notes": ""
+}

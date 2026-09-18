@@ -1,0 +1,11 @@
+{
+ "id": "given",
+ "ir_kind": "given",
+ "tag": "div",
+ "classes": "given",
+ "when": "Given values in a numeric question.",
+ "signals": [
+  "`**दिया है :**` or `**दिया है, **`"
+ ],
+ "notes": "The reference does NOT use this class — check before emitting."
+}

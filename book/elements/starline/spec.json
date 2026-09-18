@@ -1,0 +1,11 @@
+{
+ "id": "starline",
+ "ir_kind": "starbadge",
+ "tag": "div",
+ "classes": "starline",
+ "when": "The gold `★ 5 साल में N बार पूछा गया` strip.",
+ "signals": [
+  "a line beginning `★ **…**`"
+ ],
+ "notes": ""
+}

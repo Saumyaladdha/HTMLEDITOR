@@ -1,0 +1,6 @@
+/* ===== shared ===== */
+.tbl { border-collapse:collapse; width:100%; font-size:16.5px; line-height:1.5; margin:14px 0; }
+.tbl th, .tbl td { border:1.5px solid #ded8c8; padding:7px 13px; text-align:left; }
+.tbl th { background:#fdf3b4; font-weight:700; }
+.tbl tr:nth-child(even) td { background:#faf8f1; }
+.tblwrap { overflow-x:auto; }

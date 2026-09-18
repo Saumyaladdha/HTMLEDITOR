@@ -1,0 +1,6 @@
+[
+ {
+  "i": 1,
+  "css": ".subj-chemistry .cst { font-size:18px; }\n.subj-chemistry .acol .cst { font-size:16.5px; }\n/* The locant row prints at 16.5 x 0.66 x 0.734 = 8px, under the 11px\n   floor, so it is set in absolute px like every other small label. */\n.subj-chemistry .cst>.cst-n>span { font-size:15px; }"
+ }
+]

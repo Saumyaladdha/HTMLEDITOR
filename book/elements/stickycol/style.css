@@ -1,0 +1,4 @@
+/* ===== A4 print only ===== */
+.stickycol { float:right; width:300px; margin:2px 0 16px 20px; }
+.stickycol > *       { margin:0 !important; }
+.stickycol > * + *   { margin-top:26px !important; }

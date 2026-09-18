@@ -1,0 +1,11 @@
+{
+ "id": "toc",
+ "ir_kind": "_screen",
+ "tag": "nav",
+ "classes": "toc",
+ "when": "Sidebar contents — scroll edition only.",
+ "signals": [
+  "screen mode"
+ ],
+ "notes": "Hidden in print."
+}

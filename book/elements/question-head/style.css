@@ -1,0 +1,11 @@
+/* ===== shared ===== */
+.qhead { display:flex; align-items:center; gap:11px; flex-wrap:wrap; row-gap:6px;
+         margin-bottom:9px; }
+.qnum { position:relative; display:inline-block; padding:2px 16px; }
+.qnum>i { position:absolute; top:0; left:-5px; right:-5px; bottom:0; background-size:100% 100%;
+    background-image:url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%2040%27%20preserveAspectRatio=%27none%27%3E%3Cpath%20d=%27M6,9C40,3,70,13,100,7C130,2,160,12,194,7L196,22C188,28,168,35,138,31C108,37,68,29,38,34C22,37,8,32,5,27Z%27%20fill=%27%23ee7fa8%27%20fill-opacity=%27.62%27/%3E%3Cpath%20d=%27M10,12C45,7,80,15,115,10C145,6,175,14,192,11L194,24C180,30,150,36,120,32C90,36,55,31,25,34C14,35,8,30,8,26Z%27%20fill=%27%23ee7fa8%27%20fill-opacity=%27.4%27/%3E%3C/svg%3E"); }
+.qnum>b { position:relative; font-size:22.5px; font-weight:700; }
+.chip { background:#eef4fc; border:1.5px solid #a9c3e2; border-radius:8px; padding:2px 11px;
+        font-size:14.5px; }
+/* ===== A4 print only ===== */
+.qhead { margin-bottom:8px; }

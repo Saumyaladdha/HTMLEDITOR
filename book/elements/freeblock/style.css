@@ -1,0 +1,12 @@
+/* A block lifted onto the page and placed by hand.
+   `.page` is already `position:relative`, so this is positioned against the
+   page box. `left`, `top` and `width` are written inline by the editor; only
+   what is common to every free block lives here.
+
+   It takes no room in the flow, so the text closes up behind it. That also
+   means it CAN overlap other content — the editor flags that rather than
+   forbidding it, because deliberate overlap is sometimes the point. */
+.bookfree { position:absolute; z-index:2; }
+/* The marker left where the block used to sit, so it can go back. Hidden, and
+   carries no height of its own. */
+.bookfree-home { display:none !important; }

@@ -1,0 +1,2 @@
+/* Nothing extra. A cell may hold a number, a variable, an expression
+   (3a + 8c) or a minus sign, so no rule here may assume its width. */

@@ -1,0 +1,1 @@
+../../../pipeline/subjects/physics/step02_content_validator/SKILL.md

@@ -1,0 +1,38 @@
+[
+ {
+  "i": 31,
+  "css": ".figcard, .fcard, .note, .tbl { margin:8px 0; }"
+ },
+ {
+  "i": 41,
+  "css": ".acol .figcard, .acol .fcard { padding:10px 14px; }"
+ },
+ {
+  "i": 42,
+  "css": ".figbox { background:#fbfcfe; }"
+ },
+ {
+  "i": 43,
+  "css": ".figbox > .fh { margin-bottom:8px; }"
+ },
+ {
+  "i": 44,
+  "css": ".figspace { border:1.5px dashed #c3d6ea; border-radius:11px; background:#fff; }"
+ },
+ {
+  "i": 44,
+  "css": ".figspace.is-filled { border:none; background:none; border-radius:0; }"
+ },
+ {
+  "i": 45,
+  "css": ".figrow { display:flex; gap:12px; align-items:flex-start; margin:5px 0; }"
+ },
+ {
+  "i": 46,
+  "css": ".figrow > .figcard { flex:1; min-width:0; margin:0; }"
+ },
+ {
+  "i": 47,
+  "css": ".fig-solo { width:66%; margin-left:auto; margin-right:auto; }"
+ }
+]

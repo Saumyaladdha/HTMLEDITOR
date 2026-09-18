@@ -1,0 +1,11 @@
+{
+ "id": "callout",
+ "ir_kind": "card",
+ "tag": "div",
+ "classes": "callout sticky",
+ "when": "A titled card; in A4 it floats in .stickycol with a pin.",
+ "signals": [
+  "`> #### 📌 <Label>` blockquote heading followed by `>` rows"
+ ],
+ "notes": ""
+}

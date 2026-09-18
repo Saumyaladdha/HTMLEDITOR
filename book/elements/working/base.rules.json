@@ -1,0 +1,10 @@
+[
+ {
+  "i": 48,
+  "css": ".work { font-family:'Times New Roman',Times,serif; font-style:italic; font-size:18px; line-height:1.7;\n        margin:9px 0; font-variant-numeric:lining-nums; }"
+ },
+ {
+  "i": 134,
+  "css": "p.work { font-family:'Times New Roman',Times,serif; font-style:italic; font-size:18px; line-height:1.7;\n         margin:9px 0; padding-left:6px; font-variant-numeric:lining-nums; }"
+ }
+]

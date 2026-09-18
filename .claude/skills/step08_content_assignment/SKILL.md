@@ -1,0 +1,1 @@
+../../../pipeline/subjects/physics/step08_content_assignment/SKILL.md

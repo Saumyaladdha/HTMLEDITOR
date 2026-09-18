@@ -1,0 +1,30 @@
+[
+ {
+  "i": 19,
+  "css": ".callout.sticky { box-shadow:2px 5px 14px rgba(0,0,0,.18); border-radius:16px;\n                  padding:14px 17px 16px; position:relative; margin:0; }"
+ },
+ {
+  "i": 20,
+  "css": ".callout.sticky:nth-child(odd)  { transform:rotate(-1.3deg); }"
+ },
+ {
+  "i": 21,
+  "css": ".callout.sticky:nth-child(even) { transform:rotate(1.4deg); }"
+ },
+ {
+  "i": 22,
+  "css": ".callout.sticky > .pin { position:absolute; top:-9px; right:38px; width:17px; height:17px;\n                         border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,.35); }"
+ },
+ {
+  "i": 23,
+  "css": ".pin.red  { background:radial-gradient(circle at 35% 30%,#ff7b6e,#c81e1e); }"
+ },
+ {
+  "i": 24,
+  "css": ".pin.blue { background:radial-gradient(circle at 35% 30%,#7ec4ff,#1e56c8); }"
+ },
+ {
+  "i": 29,
+  "css": ".callout    { margin:9px 0; }"
+ }
+]

@@ -1,0 +1,10 @@
+[
+ {
+  "i": 34,
+  "css": "p, .para { font-size:18px; line-height:1.62; margin:8px 0; }"
+ },
+ {
+  "i": 35,
+  "css": ".lead b:first-child { color:#1f2430; }"
+ }
+]

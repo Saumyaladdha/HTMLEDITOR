@@ -1,0 +1,11 @@
+{
+ "id": "heading-underline",
+ "ir_kind": "_inline",
+ "tag": "span",
+ "classes": "hdu hd-{accent}",
+ "when": "The hand-drawn underline under a section title.",
+ "signals": [
+  "part of a section head"
+ ],
+ "notes": "Replaced the highlighter swipe in the finalised edition."
+}

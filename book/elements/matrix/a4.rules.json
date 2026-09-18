@@ -1,0 +1,14 @@
+[
+ {
+  "i": 123,
+  "css": ".acol .mx>.mxg { gap:6px 24px; padding:5px 8px; }"
+ },
+ {
+  "i": 124,
+  "css": ".acol .mx>.mxg>span { font-size:15.5px; }"
+ },
+ {
+  "i": 126,
+  "css": ".mxrow { break-inside:avoid; }"
+ }
+]

@@ -1,0 +1,9 @@
+{
+ "id": "srcnote(refbox)",
+ "ir_kind": "refbox",
+ "tag": "div",
+ "classes": "note",
+ "when": "A boxed cross-reference note (a blockquote that is not a card, banner or formula).",
+ "signals": [],
+ "notes": "secondary kind owned by the srcnote element"
+}

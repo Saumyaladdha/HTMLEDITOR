@@ -1,0 +1,11 @@
+{
+ "id": "marktag",
+ "ir_kind": "_derived",
+ "tag": "span",
+ "classes": "marktag",
+ "when": "A group's summary: `कुल N प्रश्न · M अंक`.",
+ "signals": [
+  "DERIVED — counted from the questions in the group, never written"
+ ],
+ "notes": "One per group. The reference has exactly 17 for 17 groups."
+}

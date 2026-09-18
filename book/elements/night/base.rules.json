@@ -1,0 +1,22 @@
+[
+ {
+  "i": 150,
+  "css": ".night { border:2.5px dashed #2b3a8f; background:#eef1fb; border-radius:20px;\n         padding:18px 24px; margin:26px 0; }"
+ },
+ {
+  "i": 151,
+  "css": ".night .nh { display:flex; align-items:center; gap:11px; font-family:'Caveat',cursive;\n             font-size:29px; font-weight:700; color:#2b3a8f; margin-bottom:8px; }"
+ },
+ {
+  "i": 152,
+  "css": ".mirror { border:2.5px solid #b899ec; background:#f8f4fd; border-radius:20px;\n          padding:18px 24px; margin:26px 0; }"
+ },
+ {
+  "i": 153,
+  "css": ".mirror .nh { display:flex; align-items:center; gap:11px; font-family:'Caveat',cursive;\n              font-size:29px; font-weight:700; color:#6b3fb0; margin-bottom:8px; }"
+ },
+ {
+  "i": 154,
+  "css": ".farewell { text-align:center; font-family:'Caveat',cursive; font-size:31px; font-weight:700;\n            color:#c2337a; margin:30px 0 6px; }"
+ }
+]

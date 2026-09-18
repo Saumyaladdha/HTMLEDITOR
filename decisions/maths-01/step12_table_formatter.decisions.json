@@ -1,0 +1,35 @@
+{
+ "decisions": [
+  {
+   "id": "front.b6",
+   "align": [
+    "l",
+    "c"
+   ],
+   "full_width": true,
+   "note": "Topic-vs-marks frequency grid: first column holds long topic labels (62 chars), second holds '1 अंक'. Labels left, figures centred — the physics default, firing correctly. Genuine table data, not a matrix row."
+  },
+  {
+   "id": "front.s12.tbl",
+   "align": [
+    "c",
+    "l"
+   ],
+   "full_width": true,
+   "note": "Reading-order procedure. First column is a step NUMBER, so centre it; the 78-char instruction is prose and must be left-aligned or its ragged edge reads as a centred poem. This one renders through cover.steps_card, where the number becomes a circle."
+  },
+  {
+   "id": "p3.g2025.q2.tbl",
+   "align": [
+    "c",
+    "c",
+    "c",
+    "c",
+    "c",
+    "c"
+   ],
+   "full_width": true,
+   "note": "The f(x)=|x| point table from the 2025 Q2 answer. Six columns trips the >5 flag, but every cell is 1-6 chars ($x$, $-2$, $f(x)$) — a value grid, not a data table, so it fits without restructuring. All centred so the x row and the f(x) row line up column by column, which is the whole point of showing it before the graph. Not a matrix: pipe-delimited, has a header, and is_ascii_row never saw it."
+  }
+ ]
+}

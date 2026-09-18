@@ -1,0 +1,11 @@
+{
+ "id": "examchip",
+ "ir_kind": "_inline",
+ "tag": "span",
+ "classes": "examchip",
+ "when": "A dark-red exam stamp with a yellow pin.",
+ "signals": [
+  "a `[UP <year> · <marks> अंक]` bracket on a section head"
+ ],
+ "notes": ""
+}

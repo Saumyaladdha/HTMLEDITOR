@@ -1,0 +1,19 @@
+/* ===== shared ===== */
+.topbar { position:sticky; top:0; z-index:60; background:rgba(253,252,247,.94);
+          backdrop-filter:blur(6px); border-bottom:1.5px solid #ded8c8;
+          display:flex; align-items:center; gap:14px; padding:9px 22px; }
+.topbar .tt { font-size:16.5px; font-weight:700; }
+.topbar .ts { font-size:14px; color:#7a7466; margin-left:auto; }
+.prog { position:absolute; left:0; bottom:-1.5px; height:3px; width:0;
+        background:linear-gradient(90deg,#f6c945,#ef8e2a); }
+.toc { position:sticky; top:64px; max-height:calc(100vh - 90px); overflow-y:auto;
+       background:#fdfcf7; border:2px solid #e3ddcc; border-radius:16px;
+       padding:14px 12px 16px; font-size:14.5px; }
+.toc h4 { margin:0 0 8px; font-size:15.5px; font-family:'Caveat',cursive;
+          font-weight:700; color:#2b3a8f; letter-spacing:.4px; }
+.toc a { display:block; color:#4a4636; text-decoration:none; padding:3px 8px;
+         border-radius:7px; line-height:1.35; }
+.toc a:hover { background:#f2eee1; }
+.toc a.t2 { padding-left:16px; font-size:13.5px; color:#6c6656; }
+.toc a.on { background:#fdf3b4; color:#1f2430; font-weight:700; }
+.toc .grp { margin-top:10px; padding-top:8px; border-top:1.5px dashed #ded8c8; }

@@ -1,0 +1,6 @@
+{"decisions": [
+  {"id": "3e8192c60597", "verdict": "by_design",
+   "words": ["स्रोत"],
+   "why": "`— स्रोत: 2025/set_jv · खण्ड अ` states which paper a question came from, which is exactly what the question head's chip carries for every OTHER question (`5 अंक · 2026/set_dw · खण्ड य`). One question in the source states it as a separate line instead, so the reader folds the value into the chip and the label word is not printed. The information is on the page; only the redundant label is not. Author artefact in the markdown, confirmed with the author.",
+   "fix": "none — the value is folded into the question chip by _parse_questions"}
+]}

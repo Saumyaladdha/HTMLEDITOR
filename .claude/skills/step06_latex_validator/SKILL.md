@@ -1,0 +1,1 @@
+../../../pipeline/subjects/physics/step06_latex_validator/SKILL.md

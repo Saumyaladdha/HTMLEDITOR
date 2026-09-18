@@ -1,0 +1,9 @@
+{
+ "id": "maths-steps",
+ "ir_kind": "presentation only (subject-scoped)",
+ "tag": "—",
+ "classes": ".subj-maths .dm, .subj-maths .mxrow, .qed",
+ "when": "A maths derivation: a chain of equalities, each step its own line.",
+ "signals": ["body carries class subj-maths"],
+ "notes": "Maths reads its answers as a chain of steps down the page, so a step is CENTRED and given room. Physics and biology keep their left-aligned display equations — the rules here are scoped to .subj-maths for exactly that reason."
+}

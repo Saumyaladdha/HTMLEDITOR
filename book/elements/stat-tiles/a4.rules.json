@@ -1,0 +1,38 @@
+[
+ {
+  "i": 122,
+  "css": ".cvtiles { flex:none; display:flex; gap:11.5px; flex-wrap:wrap; width:329.5px; }"
+ },
+ {
+  "i": 123,
+  "css": ".cvtile { flex:1; background:#fff; border:2px solid #ded8c8; border-radius:14px;\n          padding:9.5px 5px; text-align:center; }"
+ },
+ {
+  "i": 124,
+  "css": ".cvtv { font-size:34px; font-weight:700; line-height:1.1; }"
+ },
+ {
+  "i": 125,
+  "css": ".cvtu { font-size:15px; font-weight:700; margin-left:3px; }"
+ },
+ {
+  "i": 126,
+  "css": ".cvty { font-size:13.5px; font-weight:700; margin-top:3px; padding-top:3px;\n        border-top:1.5px dashed #e6e0d0; white-space:nowrap; }"
+ },
+ {
+  "i": 127,
+  "css": ".cvtl { font-size:14px; color:#6b6450; line-height:1.25; margin-top:1px; }"
+ },
+ {
+  "i": 128,
+  "css": ".cvtcap { width:100%; text-align:center; font-size:14.5px; color:#8a8372;\n          font-weight:700; margin-bottom:1px; }"
+ },
+ {
+  "i": 138,
+  "css": "/* THE TILE LABEL WAS UNDER THE PRINT FLOOR.\n   `.cvtl` was 14px, which is 10.3px at the 0.734 print zoom —\n   below the 11px minimum step15 enforces, on a label that carries\n   real counts, not decoration. 15.2px prints at 11.2px.\n   `i` is set ABOVE every other rule in this file on purpose: the\n   bundle emits rules in `i` order and both selectors are equally\n   specific, so a lower number loses to the 14px rule it is meant\n   to replace. The first attempt used 90 and did nothing.\n   Only this element is touched — `.cvtl` appears zero times in\n   either tested physics chapter, so no verified pagination moves.\n   NOTE: no Hindi is quoted in this comment. Quoting the label's\n   own text here made it match a search for that text on the page,\n   which cost a wrong diagnosis. */\n.cvtl { font-size:15.2px; }"
+ },
+ {
+  "i": 140,
+  "css": "/* `.cvty` was 13.5px = 9.9px printed, the last thing on this cover under\n   the floor. Same tile, same kind of content as `.cvtl` above: a count\n   the reader is meant to read. 15.2px prints at 11.2px.\n   `i` above every rule in this file, for the reason given on `.cvtl`. */\n.cvty { font-size:15.2px; }"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "id": "sidebyside",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "sxs",
+ "when": "Two blocks placed next to each other, sharing one line's width.",
+ "signals": [
+  "created in the editor; the markdown has no syntax for it"
+ ],
+ "notes": "A flex row, so it establishes a BFC and sits BESIDE the note column as one unit rather than wrapping around it. Children share the width equally and lose their own vertical margins."
+}

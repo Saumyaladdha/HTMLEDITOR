@@ -1,0 +1,14 @@
+[
+ {
+  "i": 15,
+  "css": ".booktitle { font-size:41px; font-weight:700; color:#2b3a8f; line-height:1.25;\n             text-align:center; }"
+ },
+ {
+  "i": 16,
+  "css": ".booksub { text-align:center; font-family:'Caveat',cursive; font-size:25.5px;\n           color:#c2337a; font-weight:700; margin-top:4px; }"
+ },
+ {
+  "i": 26,
+  "css": ".h2 { margin:24px 0 12px; font-size:28px; font-weight:700; }"
+ }
+]

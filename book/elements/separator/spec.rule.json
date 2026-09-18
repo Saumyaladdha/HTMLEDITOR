@@ -1,0 +1,9 @@
+{
+ "id": "separator(rule)",
+ "ir_kind": "rule",
+ "tag": "div",
+ "classes": "qsep",
+ "when": "A horizontal rule between blocks.",
+ "signals": [],
+ "notes": "secondary kind owned by the separator element"
+}

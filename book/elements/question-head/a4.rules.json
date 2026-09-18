@@ -1,0 +1,10 @@
+[
+ {
+  "i": 36,
+  "css": ".qhead { margin-bottom:8px; }"
+ },
+ {
+  "i": 300,
+  "css": "/* CHIP AT THE PRINT FLOOR.\n   `.chip` is 14.5px, which is 10.6px at the 0.734 print zoom — under\n   the 11px floor, and 153 of them in one chemistry chapter. It is not\n   decoration: `2 बार · 7, 5 अंक` says how often this has been asked\n   and for how many marks, which is the single most-read thing on a\n   revision page. 15.5px prints at 11.4px. */\n.chip { font-size:15.5px; }"
+ }
+]

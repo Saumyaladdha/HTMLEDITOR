@@ -1,0 +1,11 @@
+{
+ "id": "stickycol",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "stickycol",
+ "when": "The floated right-hand note column.",
+ "signals": [
+  "structural"
+ ],
+ "notes": "300px wide; one card per page."
+}

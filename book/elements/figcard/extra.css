@@ -1,0 +1,19 @@
+
+/* Text wrapping around a small figure.
+   `.figrow` puts a figure and ONE neighbour side by side as flex items, which
+   is right for a pair but wrong for prose: a long paragraph beside a small
+   picture should wrap under it once it clears the bottom, and a flex item
+   never does that. A float does, and Part 1 is built for it — `.flowwrap`
+   already floats the note column the same way, and its `.u` wrappers are
+   deliberately NOT flow-root so following text wraps around a float instead
+   of sitting beside it as one block. */
+.figcard.fig-left  { float:left;  width:40%; margin:2px 18px 10px 0; }
+.figcard.fig-right { float:right; width:40%; margin:2px 0 10px 18px; }
+/* A float must not escape its section, or the last figure of one would
+   overlap the heading of the next. Scoped with `:has()` so it exists ONLY
+   where a float actually does: an unconditional `::after` is still a block
+   box, and inserting one into every section changed margin collapsing enough
+   to add a page to chapter 3 before anyone had floated anything. */
+.sec:has(> .figcard.fig-left, > .figcard.fig-right)::after {
+  content:""; display:block; clear:both;
+}

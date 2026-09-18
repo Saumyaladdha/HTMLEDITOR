@@ -1,0 +1,11 @@
+{
+ "id": "separator",
+ "ir_kind": "qsep",
+ "tag": "div",
+ "classes": "qsep",
+ "when": "The dashed rule between questions.",
+ "signals": [
+  "`---` between questions"
+ ],
+ "notes": ""
+}

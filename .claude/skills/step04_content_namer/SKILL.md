@@ -1,0 +1,1 @@
+../../../pipeline/subjects/physics/step04_content_namer/SKILL.md

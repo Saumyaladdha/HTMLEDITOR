@@ -1,0 +1,34 @@
+[
+ {
+  "i": 59,
+  "css": ".fcard { border:2.5px solid #9b6fd8; background:#faf7fe; border-radius:16px;\n         padding:12px 18px; margin:14px 0; }"
+ },
+ {
+  "i": 60,
+  "css": ".fcard>.ft { font-family:'Caveat',cursive; font-size:22.5px; font-weight:700;\n             color:#6b3fb0; margin-bottom:6px; }"
+ },
+ {
+  "i": 61,
+  "css": ".frow { display:flex; gap:10px; align-items:baseline; font-size:17px; line-height:1.6;\n        padding:6px 0; border-top:1.5px dashed #ded8f0; }"
+ },
+ {
+  "i": 62,
+  "css": ".frow:first-of-type { border-top:none; }"
+ },
+ {
+  "i": 63,
+  "css": ".frow>.fx { font-family:'Times New Roman',Times,serif; font-style:italic; font-size:18.5px; flex:none;\n            background:#fff; border:1.5px solid #d9cff0; border-radius:9px; padding:2px 11px; font-variant-numeric:lining-nums; }"
+ },
+ {
+  "i": 64,
+  "css": ".cond { background:#f4eefc; border-radius:7px; padding:0 7px; font-size:15.5px; }"
+ },
+ {
+  "i": 150,
+  "css": "/* The second half of a panel broken over a column boundary.\n\n   It keeps the panel's frame and colour — it is still the सूत्र panel,\n   and stripping the frame made the rows look like loose formulas that\n   had escaped their box. Only the HEADING goes: a reader does not need\n   telling twice, and the open top edge plus the dashed rule say\n   \"continued\" on their own. */\n.fcard-cont { padding-top:9px; margin-top:0;\n              border-top-left-radius:0; border-top-right-radius:0; }\n.fcard-cont > .frow:first-child { border-top:1px dashed #cfc8b8;\n              padding-top:8px; }"
+ },
+ {
+  "i": 151,
+  "css": "/* Room for a vector arrow inside a boxed formula.\n\n   `.vec` draws its arrow with a pseudo-element .66em above the letter,\n   and a boxed formula sits tight to its text — so the arrow over the\n   first symbol was clipped by the box's own top edge. Adding padding\n   alone was not enough: the arrow still reached past it, so it is\n   tucked and shrunk here as well, the same way `.dm` does it.\n\n   `overflow:visible` matters too — without it the box clips the\n   pseudo-element regardless of the padding. */\n.fx { padding-top:11px; overflow:visible; }\n.fx .vec::after, .frow .vec::after { top:-0.5em; font-size:0.5em;\n        overflow:visible; }"
+ }
+]

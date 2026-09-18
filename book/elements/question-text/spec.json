@@ -1,0 +1,12 @@
+{
+ "id": "question-text",
+ "ir_kind": "para",
+ "tag": "p",
+ "classes": "q",
+ "when": "Prose INSIDE a question — the stem and the answer's explanation.",
+ "signals": [
+  "sits between a question head and the next question head",
+  "reads as a sentence, not as an equation"
+ ],
+ "notes": "18.5px. The reference has 516 of these; rendering them as .para sets Part 2 a half-point small throughout."
+}

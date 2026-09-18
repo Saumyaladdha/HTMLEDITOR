@@ -1,0 +1,11 @@
+{
+ "id": "table",
+ "ir_kind": "table",
+ "tag": "table",
+ "classes": "tbl",
+ "when": "A data table, wrapped so a wide one scrolls in its own box.",
+ "signals": [
+  "pipe table"
+ ],
+ "notes": "Cells LEFT aligned by default. 14.5px inside a column."
+}

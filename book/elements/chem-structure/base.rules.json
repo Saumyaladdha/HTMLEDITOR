@@ -1,0 +1,30 @@
+[
+ {
+  "i": 1,
+  "css": "/* COLUMNS ARE ATOMS. Every row shares one column track list, so a\n   substituent in the row above lands exactly over its own carbon and the\n   `|` between them meets it. This is the whole reason the structure is a\n   grid: laid out as text, `CH3` went wherever the line breaker put it. */\n.cst { display:inline-grid; grid-auto-rows:auto; justify-items:center;\n       align-items:center; margin:10px 0; white-space:nowrap; }\n.cst>.cst-r { display:grid; grid-template-columns:subgrid;\n              grid-column:1 / -1; }"
+ },
+ {
+  "i": 2,
+  "css": "/* A FALLBACK MUST NOT OUTRANK THE THING IT FALLS BACK FROM.\n   `subgrid` makes every row share the PARENT's columns, which is the only\n   reason a locant sits over its own carbon and a substituent under it. This\n   explicit track count was written as a fallback for browsers without\n   subgrid — but declared unconditionally and later in the cascade it\n   replaced subgrid everywhere, including the Chrome that renders these\n   pages. Each row then sized its OWN `auto` tracks, so the sparse rows\n   collapsed: `5 4 3 2 1` bunched together left of centre instead of one\n   number per carbon, and `| |` / `H Br` clustered under the middle of the\n   chain instead of under C2 and C3.\n   The parent keeps its explicit tracks — subgrid needs them to inherit. */\n.cst { grid-template-columns:repeat(var(--n), auto); }\n/* The row override is GONE, not merely guarded: every renderer this book\n   targets supports subgrid, and leaving the fallback in any form invites\n   the same silent override back. Rows inherit the parent's tracks. */\n.cst>.cst-r>span { display:block; text-align:center; padding:0 1px; }"
+ },
+ {
+  "i": 3,
+  "css": "/* The chain itself carries the page's notation size; bonds are given a\n   little room either side so `CH₃ — CH` reads as a bond and not a dash in\n   a word. */\n.cst>.cst-c>span { line-height:1.2; }\n.cst>.cst-c>span:nth-child(even) { padding:0 3px; }"
+ },
+ {
+  "i": 4,
+  "css": "/* A vertical bond. A single glyph in its own row, tight against the atom\n   above and below it, so the bond looks continuous rather than like a\n   stray pipe character. */\n.cst>.cst-bond>span { line-height:0.72; font-size:1.05em; }"
+ },
+ {
+  "i": 5,
+  "css": "/* A substituent — same size as the chain, because it is part of the\n   molecule and not an annotation on it. */\n.cst>.cst-sub>span { line-height:1.15; }"
+ },
+ {
+  "i": 6,
+  "css": "/* CARBON NUMBERS. Small, quiet, and in their own row so they line up\n   with each other as well as with their atoms — a locant that has drifted\n   is worse than no locant, because the question turns on which carbon it\n   is. */\n.cst>.cst-n>span { font-size:.66em; line-height:1.3; opacity:.72;\n       font-family:inherit; font-style:normal; }"
+ },
+ {
+  "i": 7,
+  "css": "/* The IUPAC name, under the structure it names — which is where the\n   question asks for it and where a textbook prints it. Centred on the\n   molecule, not on the column, so it reads as a label on the drawing\n   rather than as the next sentence. */\n.cst-name { grid-column:1 / -1; text-align:center; margin-top:5px;\n     font-style:normal; font-family:inherit; opacity:.9; }"
+ }
+]

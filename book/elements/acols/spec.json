@@ -1,0 +1,11 @@
+{
+ "id": "acols",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "acols",
+ "when": "Two pre-assigned columns of a Part-2 page.",
+ "signals": [
+  "structural"
+ ],
+ "notes": "The packer decides what goes in each; a question may split across them."
+}

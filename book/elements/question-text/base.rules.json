@@ -1,0 +1,30 @@
+[
+ {
+  "i": 131,
+  "css": ".q { font-size:18.5px; line-height:1.65; margin:8px 0; }"
+ },
+ {
+  "i": 132,
+  "css": ".qmarks { background:#fdf3b4; border:1.5px solid #e2b93b; border-radius:8px; padding:1px 9px;\n          font-size:14px; font-weight:700; white-space:nowrap; margin-left:6px;\n          display:inline-block; }"
+ },
+ {
+  "i": 133,
+  "css": "/* The chip belongs TO the step above it. Given a line of its own it\n   sat far right with a gap either side and read as an orphan; pulled\n   up onto the equation's own baseline it reads as a note on it. */\n.marksrow { text-align:right; margin:-14px 0 8px; line-height:1; }\n.marksrow .qmarks { font-size:12.5px; padding:0 7px; }"
+ },
+ {
+  "i": 134,
+  "css": ".qyr { font-size:15px; font-weight:700; color:#6b6656; white-space:nowrap; }"
+ },
+ {
+  "i": 135,
+  "css": ".athsep { display:flex; align-items:center; gap:10px; margin:12px 0 6px; }\n.athsep::before, .athsep::after { content:\"\"; flex:1; height:1px;\n          background:#d8d2c4; }\n.athsep > span { font-family:'Kalam',cursive; font-size:16px; font-weight:700;\n          color:#8a5a9e; letter-spacing:0.04em; white-space:nowrap; }"
+ },
+ {
+  "i": 136,
+  "css": "/* The chip belongs TO the step above it. Given a line of its own it\n   sat far right with a gap either side and read as an orphan; pulled\n   up onto the equation's own baseline it reads as a note on it. */\n.marksrow { text-align:right; margin:-14px 0 8px; line-height:1; }\n.marksrow .qmarks { font-size:12.5px; padding:0 7px; }"
+ },
+ {
+  "i": 137,
+  "css": "/* The `— स्रोत:` trailer closing a question. Folded into the head's chip\n   when it names ONE paper; a question repeated across three or four papers\n   keeps every code and stays a line of its own here. At `.q`'s 18.5px it\n   read as another sentence of the question. */\n.srccite { font-size:15.5px; line-height:1.5; color:#6b6656; margin:6px 0 2px; }\n.srccite .ref { font-weight:700; }"
+ }
+]

@@ -1,0 +1,22 @@
+[
+ {
+  "i": 144,
+  "css": ".tbl { border-collapse:collapse; width:100%; font-size:16.5px; line-height:1.5; margin:14px 0; }"
+ },
+ {
+  "i": 145,
+  "css": ".tbl th, .tbl td { border:1.5px solid #ded8c8; padding:7px 13px; text-align:left; }"
+ },
+ {
+  "i": 146,
+  "css": ".tbl th { background:#fdf3b4; font-weight:700; }"
+ },
+ {
+  "i": 147,
+  "css": ".tbl tr:nth-child(even) td { background:#faf8f1; }"
+ },
+ {
+  "i": 148,
+  "css": ".tblwrap { overflow-x:auto; }"
+ }
+]

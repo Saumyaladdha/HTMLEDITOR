@@ -1,0 +1,11 @@
+{
+ "id": "freeblock",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "bookfree",
+ "when": "A block lifted out of the text flow and positioned freely on the page.",
+ "signals": [
+  "created in the editor; the markdown has no syntax for it"
+ ],
+ "notes": "Absolutely positioned inside `.page`, which is already position:relative. It occupies no space in the flow, so the text closes up behind it — and it can overlap other content, which the editor warns about rather than prevents."
+}

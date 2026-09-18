@@ -1,0 +1,12 @@
+{
+ "id": "options",
+ "ir_kind": "options",
+ "tag": "div",
+ "classes": "opts",
+ "when": "MCQ options.",
+ "signals": [
+  "two or more `(i)`/`i)`/`a)`/`(a)` markers, on one line or consecutive lines",
+  "each item is a CHOICE, not a sentence that happens to start with (iv)"
+ ],
+ "notes": "`.opts one` when any option is long. Marker is BOLD, text is not."
+}

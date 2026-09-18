@@ -1,0 +1,10 @@
+[
+ {
+  "i": 135,
+  "css": ".opts { display:grid; grid-template-columns:1fr 1fr; gap:7px 20px; font-size:17.5px;\n        margin:10px 0 4px; padding-left:4px; }"
+ },
+ {
+  "i": 136,
+  "css": ".opts.one { grid-template-columns:1fr; }"
+ }
+]

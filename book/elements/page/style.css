@@ -1,0 +1,46 @@
+/* ===== shared ===== */
+* { box-sizing:border-box; }
+body { margin:0; background:#e8e4da; color:#1f2430;
+       font-family:'Kalam',cursive; -webkit-font-smoothing:antialiased; }
+.shell { display:grid; grid-template-columns:250px minmax(0,1fr); gap:30px;
+         max-width:1240px; margin:0 auto; padding:26px 22px 70px; align-items:start; }
+.page { background:#fdfcf7; border-radius:20px; box-shadow:0 8px 34px rgba(0,0,0,.13);
+        padding:38px 48px 46px; }
+@media (max-width:1100px) {
+  .shell { grid-template-columns:minmax(0,1fr); }
+  .toc { display:none; }
+  .page { padding:26px 22px 34px; }
+  .booktitle { font-size:31px; }
+  .opts { grid-template-columns:1fr; }
+}
+@media print {
+  body { background:#fff; }
+  .topbar, .toc { display:none; }
+  .shell { display:block; max-width:none; padding:0; }
+  .page { box-shadow:none; border-radius:0; padding:0 6mm; }
+  .qcard, .callout, .figcard, .fcard { break-inside:avoid; }
+  .sechead, .yearhead { break-after:avoid; }
+}
+/* ===== A4 print only ===== */
+body { background:#cfcabd; margin:0; padding:0; }
+.page { width:1080px; height:1527px; overflow:hidden; position:relative;
+        background:#fdfcf7; border-radius:0; margin:22px auto;
+        box-shadow:0 6px 30px rgba(0,0,0,.25);
+        padding:40px 68px 55px; }
+pre#OVERFLOW { display:none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  body { background:#fff; }
+  /* PRINT_ZOOM must leave the page box strictly SMALLER than the sheet.
+     At 0.7352 the 1080x1527 box scaled to 794.016 x 1122.650 against A4's
+     793.701 x 1122.520, over on BOTH axes by a fraction of a pixel. Each page
+     then spilled that sliver onto the next sheet, and because every .page also
+     carries break-before:page, the result was a blank sheet after every printed
+     one. The ceiling is 793.701/1080 = 0.734908; 0.734 keeps about a pixel of
+     slack for sub-pixel rounding, at a fifth of a percent smaller print. */
+  .page { margin:0 auto; box-shadow:none; break-before:page; zoom:0.734; }
+  body > .page:first-child { break-before:auto; }
+}
+@media print {
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}

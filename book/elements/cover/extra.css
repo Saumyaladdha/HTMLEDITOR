@@ -1,0 +1,42 @@
+
+/* The methodology card is a flex row (`.cvstats`); its figures column stacks
+   `.cvrow`s where the tile layout would put three compact tiles side by side.
+   The default 8px row padding made that column 16px taller than the slack
+   left on the cover sheet, which pushed the whole card onto a second sheet
+   for the sake of 16px. Scoped to `.cvstats` so every other card keeps the
+   roomier rhythm. */
+.cvstats .cvrow { padding:4px 0; }
+.cvstats .cvrow:first-of-type { padding-top:0; }
+
+/* Compact methodology rows: used when the card carries BOTH the chapter's
+   own table and the stat tiles, so three blocks share one flex row and each
+   column is only ~285px wide. Label and text run on one flowing line. */
+.cvmini .cvrow { font-size:14.5px; line-height:1.35; padding:3px 0; }
+.cvmini .cvtopic { font-size:14.5px; }
+.cvmini .cvmt { color:#6b6455; }
+
+/* Fits the WHOLE cover onto one sheet.
+   The cover's type is set in px throughout, so a font-size cascade cannot
+   shrink it — a scale on the wrapper can, and it takes the cards, their type
+   and their spacing down by the same fraction, which is what one page
+   requires. `width` is grown by the inverse so the scaled result still fills
+   the column, and the wrapper carries an explicit height because a transform
+   does not change the layout box the packer measures. */
+.cvfit { transform-origin: top left; }
+
+/* Accepted decorator art, at the foot of a column that step10 measured as
+   having real slack. Centred, quiet, and never taller than the space it was
+   given — see book/decorators/place.py. `margin-top:auto` pushes it to the
+   bottom of the column rather than leaving it stranded directly under the
+   text, which is what makes the whitespace read as deliberate. */
+.bookart { display:flex; align-items:flex-end; justify-content:center;
+           margin:18px auto 0; opacity:0.92; }
+.bookart img, .bookart svg { max-height:100%; max-width:70%;
+           width:auto; height:auto; object-fit:contain; }
+.bookart--character img { max-width:52%; }
+
+/* Part 2 beginning underneath the tail of Part 1 — see _merged_page. The
+   hairline is what tells a reader the single column above and the two
+   columns below are different parts of the book rather than one broken
+   layout. */
+.acols--tail { margin-top: 20px; padding-top: 16px; border-top: 1px dashed #d8d2c4; }

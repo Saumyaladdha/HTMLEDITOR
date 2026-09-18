@@ -1,0 +1,24 @@
+{
+ "decisions": [
+  {
+   "id": "b5ad7cc88635",
+   "kind": "para",
+   "why": "Not options. The question is 'सिद्ध कीजिए कि … R स्वतुल्य तथा संक्रामक है किन्तु सममित नहीं' — a 2-mark PROOF, with no choices anywhere in it. (i)/(ii)/(iii) enumerate the three properties being checked, one Hindi clause each, inside the answer body. Per the maths decision tree, a Hindi sentence that happens to carry an = or a relation is para. Tagged options it would render as a 2-col MCQ grid and imply the student picks one of the three."
+  },
+  {
+   "id": "baf17053282c",
+   "kind": "para",
+   "why": "Same block as b5ad7cc88635 — branch (ii) of the same three-property proof. Hindi sentence, no equation standing on its own."
+  },
+  {
+   "id": "4b14a28e556e",
+   "kind": "para",
+   "why": "Same block as b5ad7cc88635 — branch (iii). Carries a ⇒ inside a Hindi clause, which is prose about a relation, not a formula line."
+  },
+  {
+   "id": "3fbea935f042",
+   "kind": "para",
+   "why": "'इसी प्रकार :' is a connective in the middle of the (gof)⁻¹ = f⁻¹og⁻¹ proof — it marks the turn from direction (1) to direction (2). It is not a rubric lead-in (the maths rubric is दिया है / मानक परिणाम / उपपत्ति के चरण / शर्त), so there is no labelled strip for it. Prose."
+  }
+ ]
+}

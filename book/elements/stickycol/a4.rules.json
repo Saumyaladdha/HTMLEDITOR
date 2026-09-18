@@ -1,0 +1,14 @@
+[
+ {
+  "i": 16,
+  "css": ".stickycol { float:right; width:300px; margin:2px 0 16px 20px; }"
+ },
+ {
+  "i": 17,
+  "css": ".stickycol > *       { margin:0 !important; }"
+ },
+ {
+  "i": 18,
+  "css": ".stickycol > * + *   { margin-top:26px !important; }"
+ }
+]

@@ -1,0 +1,7 @@
+/* ===== shared ===== */
+.rule { height:9px; border-radius:6px; background:linear-gradient(90deg,#f6c945,#ef8e2a);
+        margin:12px 0 4px; }
+hr.sep { border:none; border-top:2px dashed #e2dccb; margin:24px 0; }
+/* ===== A4 print only ===== */
+.qsep { border-top:2.5px dashed #e5a8bc; margin:6px 0 9px; }
+hr.sep { margin:11px 0; }

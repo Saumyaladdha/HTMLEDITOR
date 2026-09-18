@@ -1,0 +1,12 @@
+{
+ "id": "chem-structure",
+ "ir_kind": "structure",
+ "tag": "div",
+ "classes": "cst",
+ "when": "A branched organic molecule whose branches the source describes in a bracketed sentence. 47 in chemistry chapter 6.",
+ "signals": [
+  "$CH_3-CH-CH_2Br$ (केन्द्रीय कार्बन से ऊपर तथा नीचे एक-एक $CH_3$ जुड़ा है)",
+  "$\\overset{3}{CH_3}-\\overset{2}{CH}-\\overset{1}{CH_2}-Br$"
+ ],
+ "notes": "A GRID whose columns are the atoms, so a substituent sits exactly over the carbon it is bonded to and its vertical bond meets that carbon. Built as a grid and not as text because in a text line the browser decides where CH3 lands, and it landed anywhere: substituents appeared detached, carbon numbers floated free of their atoms, and a wrapped line put a branch under the wrong carbon. The source states every branch in prose; this only moves that information into the picture it was describing. Nothing is inferred — a sentence that does not match the grammar in book/format/structure.py stays prose, because a branch drawn on the wrong carbon is a different compound."
+}

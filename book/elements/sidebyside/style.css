@@ -1,0 +1,19 @@
+/* Two blocks sharing one line.
+   Lives here rather than in a rules.json because this element is NOT in the
+   reference archive — it is ours, and `tools/split_css.py` regenerates the
+   rules files from that archive, so anything added there would vanish on the
+   next split. See book/elements/__init__.py. */
+.sxs { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; margin:9px 0; }
+
+/* A REAL floor, not `min-width:0`.
+   The first version used `min-width:0` to stop flex overflow, which also let a
+   half shrink to any width at all — at about 90px a Hindi paragraph sets one
+   word per line, and a paired card came out as a vertical ribbon of text.
+   With a floor plus `flex-wrap`, a pair that cannot fit STACKS instead of
+   squeezing: worse than intended, but always readable. */
+/* 150px, not 220. Two halves plus the gap have to fit the NARROWEST place a
+   pair can occur, which is a Part-2 column at 450px — 220px needed 454px and
+   so silently stacked (and was refused outright) on every two-column page,
+   about fifty of the chapter's seventy-three. At 150 a column gives each half
+   ~218px, which is comfortable at the 14.5px Part-2 sets. */
+.sxs > * { flex:1 1 150px; min-width:150px; margin-top:0; margin-bottom:0; }

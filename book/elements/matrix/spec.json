@@ -1,0 +1,12 @@
+{
+ "id": "matrix",
+ "ir_kind": "matrix_art",
+ "tag": "span",
+ "classes": "mx",
+ "when": "A matrix. Maths chapter 3 carries 496 of them.",
+ "signals": [
+  "$A=\\begin{bmatrix}1&2&3\\\\2&3&1\\end{bmatrix}$",
+  "two or more consecutive lines of ASCII matrix art: [ 3  -2  1 ]"
+ ],
+ "notes": "Brackets are DRAWN with borders, not typed as [ ] glyphs, so they grow with the number of rows. Cells are a CSS grid with tabular numerals, so columns line up. A matrix is the one construct where losing the brackets loses the meaning: without them a 2x3 matrix is six loose digits. The same element also renders the INLINE matrices that format/inline builds inside a .m run; `matrix_art` is the block form, where each source line is one matrix row."
+}

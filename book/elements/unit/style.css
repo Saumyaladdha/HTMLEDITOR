@@ -1,0 +1,3 @@
+/* ===== A4 print only ===== */
+.acol .u { display:flow-root; }
+.flowwrap .u { display:block; padding:0.02px 0; }

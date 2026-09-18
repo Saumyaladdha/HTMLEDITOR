@@ -1,0 +1,26 @@
+[
+ {
+  "i": 57,
+  "css": ".frow { display:block; break-inside:avoid; padding:7px 0 8px; }"
+ },
+ {
+  "i": 58,
+  "css": ".frow > .fx { display:inline-block; margin:0 0 4px; border-width:2px; }"
+ },
+ {
+  "i": 59,
+  "css": ".frow > .fd { display:block; line-height:1.45; }"
+ },
+ {
+  "i": 60,
+  "css": ".frow > .fc { display:block; margin-top:4px; padding:1px 0 1px 9px;\n              border-left:3px solid; background:#faf7fe; border-radius:0 8px 8px 0;\n              line-height:1.4; }"
+ },
+ {
+  "i": 61,
+  "css": ".frow > .fc > b { color:#6b3fb0; }"
+ },
+ {
+  "i": 71,
+  "css": "/* A LIST PANEL — reagents, or uses. Not formulae, so not boxes.\n   Each row is `thing — what it is for`: the thing keeps the notation\n   face, the description is prose, and a hairline separates the rows.\n   Six coloured boxes for a list of solvents read as six formulae to\n   memorise, which is what looked wrong about it. */\n.fcard--list>.frow { margin:0; padding:5px 0; border-top:1px solid #e8e4d6; }\n.fcard--list>.frow:first-of-type { border-top:0; }\n.fcard--list .fx { border:0 !important; background:none !important;\n     padding:0 !important; box-shadow:none !important;\n     display:inline !important; }\n.fcard--list .fcap { font-style:normal; opacity:.95; }\n.fcard--list { background:none; border-style:dashed; border-width:1px; }"
+ }
+]

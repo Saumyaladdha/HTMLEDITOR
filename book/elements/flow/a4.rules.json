@@ -1,0 +1,34 @@
+[
+ {
+  "i": 96,
+  "css": ".acol .flow { padding:10px 11px; }"
+ },
+ {
+  "i": 97,
+  "css": ".acol .flow>.st { font-size:15px; padding:4px 9px; }"
+ },
+ {
+  "i": 98,
+  "css": ".flow { break-inside:avoid; }"
+ },
+ {
+  "i": 109,
+  "css": ".acol .fstep>.st { font-size:15px; padding:7px 10px; margin-left:16px; }"
+ },
+ {
+  "i": 104,
+  "css": ".acol .fstep>.no { width:28px; height:28px; font-size:12px; border-width:2.5px; }"
+ },
+ {
+  "i": 105,
+  "css": ".acol .fstep::before { left:13px; }"
+ },
+ {
+  "i": 108,
+  "css": ".acol .fstep::after { left:28px; width:16px; }"
+ },
+ {
+  "i": 103,
+  "css": ".acol .fstep { padding:4px 0; }"
+ }
+]

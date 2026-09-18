@@ -1,0 +1,10 @@
+/* Reaction equations (`.rxn-eq`, the `reaction` element) render as one
+   unbroken flex row — `.rxn-eq` is `flex-wrap:nowrap` and its formula
+   sides are `white-space:nowrap` — so a printed arrow stays straight.
+   Inside a `.subj-chemistry` comparison table that nowrap row ignores
+   the table's own "wrap instead of widen" fix (see table/a4.rules.json)
+   and spills the equation past the cell, the table, and the page
+   margin. Letting the row wrap and its formula sides break like
+   ordinary text keeps it inside the cell instead. */
+.subj-chemistry .tbl .rxn-eq { flex-wrap:wrap; row-gap:2px; }
+.subj-chemistry .tbl .rxn-eq > .rxn-side { white-space:normal; overflow-wrap:break-word; }

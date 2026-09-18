@@ -1,0 +1,14 @@
+[
+ {
+  "i": 47,
+  "css": "/* A derivation step. Inset from the prose margin, with a hairline that\n   groups it with the sentence that introduced it, and ASYMMETRIC space\n   — tight above, open below — so the gap falls BETWEEN steps rather\n   than inside one.\n\n   The only label is the markdown's own `…(i)`. A derived count in the\n   gutter was a second numbering system on the same equation, and the\n   prose cites the author's, not ours. */\n.dm { font-family:'Times New Roman',Times,serif; font-style:italic; font-size:19.5px;\n      text-align:center; margin:3px 0 11px; padding:1px 0 1px 14px;\n      border-left:2px solid #e4dfd2; line-height:1.5; overflow-x:auto;\n      font-variant-numeric:lining-nums; }\n.acol .dm { padding-left:10px; }\n/* The equation label, set apart so it reads as a reference the prose\n   can cite rather than as part of the maths. */\n.dm .k { float:right; font-style:normal; font-size:15.5px;\n         font-weight:700; color:#3a5a8c;\n         background:#eef3fb; border-radius:4px;\n         padding:1px 7px; margin-left:8px; white-space:nowrap; }"
+ },
+ {
+  "i": 161,
+  "css": "/* The arrow is tucked and shrunk rather than the line being opened.\n   Raising `line-height` to 1.75 cleared the collision and spread every\n   equation so far apart that the page lost its rhythm. */\n.dm .vec::after { top:-0.52em; font-size:0.5em; }"
+ },
+ {
+  "i": 162,
+  "css": "/* A `=` chain: left-hand side, sign, expression — three columns, so the\n   signs line up down the page by construction.\n\n   The left-hand side shares the FIRST row. Given a row of its own it\n   sat alone above the chain with a gap beneath it and read as a stray\n   symbol; every row after the first leaves that cell empty. */\n.dm-chain { display:grid; grid-template-columns:auto auto 1fr;\n            column-gap:6px; row-gap:1px; text-align:left;\n            justify-content:start; margin:3px 0 11px; }\n.dm-chain .chl { text-align:right; white-space:nowrap; }\n.dm-chain .chop { text-align:center; white-space:nowrap; }\n.dm-chain .chex { text-align:left; }"
+ }
+]
