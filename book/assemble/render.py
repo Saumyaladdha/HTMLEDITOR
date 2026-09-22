@@ -372,7 +372,8 @@ def _render_block(b, ctx):
     if k == "figure":
         size = "figure" if b.get("mode") == "ref" else "diagram-md"
         return [_item(C.figure(b.get("num", ""), b.get("caption", ""), b.get("desc", ""),
-                               b.get("ref"), size=size), atomic=True)]
+                               b.get("ref"), size=size,
+                               cap_text=b.get("cap_text", "")), atomic=True)]
     if k == "slot":
         return [_item(C.slot(b.get("role", "doodle-md"), b.get("hint", "")), atomic=True)]
 

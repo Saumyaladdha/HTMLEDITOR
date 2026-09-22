@@ -20,3 +20,18 @@
           gap:6px 14px; align-items:stretch; }
 .frow.frow-pair > .fx { flex:initial; width:100%; text-align:center;
           box-sizing:border-box; }
+
+/* A DEVANAGARI NUMERATOR NEEDS MORE ROOM ABOVE IT THAN A LATIN ONE.
+   `.frow>.fx`'s own `padding:2px 11px` (formula-card/base) leaves 2px at
+   the top — plenty for a Latin symbol, whose glyphs sit well clear of the
+   em-box top, but not for Devanagari, whose शिरोरेखा (head-stroke) runs
+   along the top of almost every letter. मोलरता/मोललता's boxed formulae —
+   `M = विलेय के मोल / विलयन का आयतन` — stack that head-stroke as the
+   FIRST line of a two-line fraction, so with 2px of air it sat right on
+   the box's own border.
+   Scoped to a box that actually holds a fraction (`:has(.fr)`): a
+   one-line formula like `p = K_H · x` already clears the border with its
+   2px, and every one of those in the book would gain height it does not
+   need. `extra.css` loads after `base`/`a4`, so this wins over the 2px
+   without having to out-specify `.frow>.fx` itself. */
+.fx:has(.fr) { padding-top:12px; }

@@ -1,0 +1,84 @@
+{
+ "decisions": [
+  {
+   "id": "e021ac80a318",
+   "kind": "question-text"
+  },
+  {
+   "id": "1d956efac163",
+   "kind": "question-text"
+  },
+  {
+   "id": "897e09d282cf",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "b0cd1bc45f7f",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "b242a71580e5",
+   "kind": "question-text"
+  },
+  {
+   "id": "5d9b52d93b2e",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "770976e77270",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "f0065e4d8f4e",
+   "kind": "question-text"
+  },
+  {
+   "id": "863efc750975",
+   "kind": "question-text"
+  },
+  {
+   "id": "b0cd1bc45f7f",
+   "kind": "question-text"
+  },
+  {
+   "id": "8df69543cc3a",
+   "kind": "question-text"
+  },
+  {
+   "id": "8df69543cc3a",
+   "kind": "question-text"
+  },
+  {
+   "id": "cover_tiles",
+   "tiles": []
+  }
+ ]
+}

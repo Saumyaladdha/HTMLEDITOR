@@ -1,28 +1,412 @@
 {
  "decisions": [
   {
-   "id": "81344e9f83ca",
-   "verdict": "parser",
-   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
-   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.7 · (i) 17,23 और 29 — this one sits after **उत्तर:**, so it is the ANSWER's own part label.]"
+   "id": "65f8839fc9ff",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
   },
   {
-   "id": "d9cd859e6581",
-   "verdict": "parser",
-   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
-   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.6 · (iii) 6, 72 और 120]"
+   "id": "4a2538e70507",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
   },
   {
-   "id": "521d3b8c33e3",
-   "verdict": "parser",
-   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
-   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.5 · (iv) 12, 15, 21 का HCF.]"
+   "id": "3b0da8e6ae23",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
   },
   {
-   "id": "9d7005b9b7b0",
-   "verdict": "parser",
-   "fix": "If this shape recurs, the narrow fix is in `_looks_like_options`: a single marker with NO sibling marker anywhere in the surrounding block is a sub-part label, not an options list. Do not widen it blindly — the fallback exists because history chapters write one devanagari-lettered statement per line and need exactly this behaviour.",
-   "why": "parser, not content — and NOT a swallowed stem. The stem 'अभाज्य गुणनखण्ड विधि से HCF एवं LCM ज्ञात कीजिए-' is present in the IR (6 occurrences), so nothing is lost. What happened: the source lifts ONE sub-part of a multi-part NCERT exercise, so the question carries a single enumerated line such as '(iii) 6, 72 और 120'. `_looks_like_options`'s single-marker fallback (added for history's devanagari statement lists) accepts any line opening with a roman numeral under 220 chars, so that one line became an `options` block of one item. It is the question's DATA, not a choice to pick from. Renders as a 1-cell options grid rather than as part of the question text — cosmetic, no content loss. [प्र.3 · (iii) 6, 72 और 120]"
+   "id": "5e75a172f332",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "9fb78bbe2274",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "0d957920953e",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "40c93f3554c5",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ca018761c77c",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "70cfc3bafe8a",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "068c3ffa4647",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "4b7f3db5227a",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "0b0fdf0fed30",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "f95edc4323c3",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "79cdc7b41433",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "d662bc60cef0",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "7d509154cd5c",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "5db61f2a2129",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "af6d9dd61786",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "d531728d4a81",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "eb0916503f95",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "241e77d8fb18",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "2ba8c3e6297b",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ca6646be1fc9",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "8e8523aa1f25",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "0b4a45e90c59",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "f782f3eb5523",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "e2dc5b912b88",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "7475ed6f97ba",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "5ca2c6e0f5b9",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "564197efa26c",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "3cf5a87c0f26",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "0651bd13f994",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "f20e91c08d9d",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "1aac331514c0",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "e3ae90236a0c",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "17a53b26f4eb",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "3ff8fb7b1c80",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "1216753d2145",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "a6c9ee7afc02",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ba910568e869",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "cfba5a1fc56a",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "13c070d3be86",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ff9fe6dedf2a",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ced33fecf2df",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "c1f2822edb3f",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "4415ccbf8a71",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "8f637f5d8458",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ca8ed1541683",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "0e8355f1a3f8",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "280072a3b103",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "cec8ac8e8e45",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "a5a777b11367",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "25a830bf2aae",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "19f22d11be19",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "b57d5dea7a22",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "eef3673beeda",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "fad28a9b6620",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "c76181b49500",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "282329955743",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "ea2c54d951e8",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "2e08f8b6dd70",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "14ee0cb21ccd",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "2ab186ce56c9",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "83be60e12040",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "7093ed58c632",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "b229ff5553ed",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "69d91d5217af",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
+  },
+  {
+   "id": "8434073ddb0e",
+   "verdict": "content",
+   "fix": "no change — महत्वपूर्ण प्रश्न (Important Questions) section intentionally omits marks chips, an attested book-wide convention (e.g. content/19_print_ready (12).md:2064 states this explicitly: अंक अंकित नहीं / marks not marked)",
+   "why": "all 68 flags are in the single महत्वपूर्ण प्रश्न group (total_marks=0, n_questions=68); front board-paper questions all carry [marks · year] chips correctly"
   }
  ]
 }

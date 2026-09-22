@@ -1,0 +1,22 @@
+{
+ "decisions": [
+  {
+   "id": "f8f203aef083",
+   "accept": false,
+   "role": "doodle-lg",
+   "why": "the asset the decorator inserted for this placement was a human-heart anatomy illustration — a biology asset, wholly wrong for a maths relations/functions chapter — and it also pushed page 10 over the page limit (overflow, content clipped). Reject; leave the trailing column space empty rather than mis-decorated."
+  },
+  {
+   "id": "d42993074952",
+   "accept": false,
+   "role": "doodle-lg",
+   "why": "same page (10), same wrong asset family and overflow — reject."
+  },
+  {
+   "id": "39ab8091bd6f",
+   "accept": false,
+   "role": "doodle-lg",
+   "why": "no reason to expect a subject-appropriate asset here either, and the risk (wrong art, or another overflow) outweighs filling 385px of trailing whitespace — reject."
+  }
+ ]
+}

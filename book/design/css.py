@@ -82,7 +82,15 @@ body { margin:0; background:#e8e4da; color:#1f2430;
 .basetag { font-family:'Caveat',cursive; font-size:19.5px; font-weight:700; color:#8a8372; }
 
 /* exam stamp chip (approved look: dark-red stamp + small yellow pin) */
-.examchip { background:#c0392b; color:#fff; font-weight:700; font-size:13.5px;
+#
+# font-size was 13.5px, which is legible on screen but at PRINT_ZOOM
+# (0.734, see tokens.py) prints at 9.9pt — below the 11pt legibility
+# floor `book/qa/visual.py` checks against. 28 stamps on chapter 19 alone
+# came back tiny_text. 15.5px clears the floor (15.5 * 0.734 = 11.4pt)
+# with a small margin; `white-space:nowrap` means a longer stamp just
+# widens (the `.qhead` flex row wraps it to its own line if needed), so
+# growing the font never clips it.
+.examchip { background:#c0392b; color:#fff; font-weight:700; font-size:15.5px;
             border-radius:11px 15px 9px 13px; padding:4px 15px; white-space:nowrap;
             transform:rotate(-1.5deg); box-shadow:1.5px 3px 7px rgba(0,0,0,.22);
             position:relative; }
@@ -465,7 +473,10 @@ hr.sep { margin:11px 0; }
 .cvh { font-family:'Caveat',cursive; font-weight:700; font-size:31px; color:#2b3a8f;
        margin-bottom:11px; line-height:1.1; }
 
-.cvhead { display:flex; justify-content:space-between; gap:12.5px; font-size:14.5px;
+/* cover-card column headers (टॉपिक / कितनी बार / …) are reading text —
+   14.5px prints at 10.6px, under the 11px floor, same as `.chip` and
+   `.acol .tbl` above. 15.2px prints at 11.2px. */
+.cvhead { display:flex; justify-content:space-between; gap:12.5px; font-size:15.2px;
           font-weight:700; color:#8a8372; border-bottom:2px solid currentColor;
           padding-bottom:3px; margin-bottom:5px; opacity:.85; }
 .cvrow { font-size:18px; line-height:1.4; padding:8px 0;

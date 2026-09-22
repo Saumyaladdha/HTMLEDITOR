@@ -241,6 +241,25 @@ def _top_slash(s):
 _WRAPPED_RE = re.compile(r'^\s*([(\[{])(.*)([)\]}])\s*$', re.S)
 
 
+def _paren_groups(s):
+    """Every top-level `(...)` span in `s`: [(start, end_exclusive), …].
+
+    A group nested inside another is not listed on its own — recursing into
+    the outer group's own text (below) reaches it."""
+    out, depth, start = [], 0, None
+    for i, ch in enumerate(s):
+        if ch == '(':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0 and start is not None:
+                out.append((start, i + 1))
+                start = None
+    return out
+
+
 def _fr_one(s, _depth=0):
     i = _top_slash(s)
     if i < 0:
@@ -252,6 +271,31 @@ def _fr_one(s, _depth=0):
         if m and _top_slash(m.group(2)) >= 0:
             return (m.group(1) + _fr_one(m.group(2), _depth + 1)
                     + m.group(3))
+        # A BRACKETED FRACTION BURIED MID-EXPRESSION, not the whole string —
+        # one FACTOR of it. `(fof)(x)` composed with a rational function
+        # gives a numerator like `4(\frac{4x+3}{6x-4})+3`: the `\left(…
+        # \right)` around the inner `\frac` adds an outer paren the inner
+        # fraction's OWN parens sit inside, so its `/` is one level deeper
+        # than this string's top, and the `4` before / `+3` after mean
+        # `_WRAPPED_RE` above (whole-string-is-one-bracket) never matches
+        # either. The inner fraction stayed flat text inside the outer
+        # fraction's already-correctly-stacked `.fr`/`.dn` box: `4((4x+3)
+        # /(6x-4))+3` printed as one crowded line instead of two levels.
+        # Recursing into every top-level bracket span (not only a span
+        # that happens to be the WHOLE string) reaches it the same way.
+        if _depth < 3:
+            parts, last, changed = [], 0, False
+            for gstart, gend in _paren_groups(s):
+                grp = s[gstart:gend]
+                fixed = _fr_one(grp, _depth + 1)
+                if fixed != grp:
+                    changed = True
+                parts.append(s[last:gstart])
+                parts.append(fixed)
+                last = gend
+            parts.append(s[last:])
+            if changed:
+                return ''.join(parts)
         return s
     # THE SAME CHEMICAL-SLASH GUARD THE PROSE PATH HAS.
     #
@@ -562,6 +606,23 @@ _YEAR_MARKS_RE = re.compile(
 _DASH_RUN_BEFORE_MARKS_RE = re.compile(r'-{3,}\s*(?=(?:<b>)?\[)')
 
 
+# A BARE DIGIT WITH NO UNIT WORD IS ONLY A MARKS TAG WHEN IT TRAILS.
+#
+# `[1]`/`[2]` with no `M`/`अंक`/`marks` is how physics and biology write a
+# one-line answer's marks — always the LAST thing on the line: `…रहती है।
+# [1]`. But the same bracket-digit shape is ALSO real mathematics: maths
+# writes an equivalence class as `[0]`, and `तुल्यता वर्ग [0] को लिखो` — MORE
+# of the sentence following the bracket, not a trailing tag at all — turned
+# into a yellow "0 अंक" chip stamped into the middle of the question, and
+# the same corruption hit `$[0]=\{0,2,4\}$` two lines later because this
+# regex has no notion of `$` and matches inside maths delimiters too. The
+# fraction spellings below (`½`, `2\frac{1}{2}`) stay unambiguous regardless
+# of position — nothing else looks like a mark written as a fraction — so
+# only the bare-digit branch needs the extra check: convert it ONLY when
+# nothing but closing punctuation/markdown follows to the end of the string.
+_TRAILING_AFTER_MARKS_RE = re.compile(r'^[\s*।.\)]*$')
+
+
 def marks_chips(s):
     s = _DASH_RUN_BEFORE_MARKS_RE.sub('', s)
     # THE CHIP SAYS WHAT THE NUMBER IS.
@@ -570,8 +631,13 @@ def marks_chips(s):
     # unit — it could be the option number. The tag's own word is what makes
     # it unambiguous, and the chip is `white-space:nowrap`, so it costs one
     # line either way.
-    chip = lambda m: ('<span class="qmarks">%s अंक</span>'
-                      % _marks_value(m.group(1)))
+    def chip(m):
+        raw = m.group(1)
+        if (re.fullmatch(r'\d{1,2}', raw)
+                and not re.search(r'[Mm]|अंक|marks?|mark', m.group(0))
+                and not _TRAILING_AFTER_MARKS_RE.match(m.string[m.end():])):
+            return m.group(0)
+        return '<span class="qmarks">%s अंक</span>' % _marks_value(raw)
     s = _MARKS_TAG_DOLLAR_RE.sub(
         lambda m: '<span class="qmarks">%s अंक</span>' % _marks_value(m.group(1)), s)
     # Years first — they are not marks and must not be read as any.

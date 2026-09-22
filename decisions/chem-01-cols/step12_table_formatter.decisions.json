@@ -1,0 +1,22 @@
+{
+ "decisions": [
+  {
+   "id": "front.s2.tbl",
+   "align": [
+    "l",
+    "c"
+   ],
+   "full_width": true,
+   "note": "topic names run up to 47 chars; full width gives the wrap room, short marks column stays compact"
+  },
+  {
+   "id": "front.s4.tbl",
+   "align": [
+    "c",
+    "l"
+   ],
+   "full_width": true,
+   "note": "step number is a single digit (reads as a badge, centered); instruction text runs up to 62 chars and needs the full column width"
+  }
+ ]
+}

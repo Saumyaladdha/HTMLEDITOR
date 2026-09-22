@@ -32,6 +32,20 @@ PROFILE = {
     # Figures are declared inline, with a description the decorator step reads.
     "figures": "inline",
 
+    # THE CAPTION LINE UNDER A FIGURE LIVES INSIDE ITS CARD.
+    #
+    # `*चित्र N — one sentence*` after an image was a free paragraph, so the
+    # figure read as a dashed box plus a second block of italic text under
+    # it. `readers.markdown.attach_captions` folds it into the figure and
+    # `components.figure` prints it as the card's `<figcaption>`.
+    #
+    # The value is the longest caption, in characters, worth printing. A
+    # physics caption is usually a title followed by a `;`-separated list of
+    # parts to draw — 300 to 800 characters of brief — so anything past a
+    # short sentence is cut back to its title clause and the rest stays in
+    # `data-desc` for the art step.
+    "caption_in_card": 160,
+
     # `\\vec`, `\\frac`, `$$` — the LaTeX validator has real work to do.
     "latex": True,
 

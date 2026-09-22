@@ -98,6 +98,22 @@ RE_QHEAD = re.compile(
     r'\*\*\s*(?:प्र\.?|Q\.?|प्रश्न)\s*(?P<n1>[0-9]+)\s*\*\*'
     r'|#{2,4}\s*(?:प्र\.?|Q\.?|प्रश्न)\s*(?P<n2>[0-9]+)'
     r')\s*'
+    # A CITATION TAG MAY COME BEFORE THE MARKS CHIP, NOT ONLY AFTER.
+    #
+    # `chip2` below already covers a SECOND tag trailing the marks chip
+    # (physics chapter 9's `[1 अंक …]  [म.प्र. 2009 | 1 अंक]`). Chemistry
+    # chapter 1's "अन्य महत्त्वपूर्ण प्रश्न" bank writes the same kind of
+    # provenance note the OTHER way round — `(CBSE 2023)` `[अंक अंकित नहीं
+    # · …]` — source first, marks chip second. Unhandled, the paren tag
+    # matched INTO `chip2` (it accepts `(` as well as `[`, for the
+    # trailing case), which left the real `[अंक अंकित नहीं …]` chip
+    # unconsumed — and the strict end-of-line tail a few lines down then
+    # failed the whole match. Twelve question heads, one exact shape
+    # every time (`(citation)` immediately before the chip, nothing
+    # else), fell through to plain paragraphs and vanished from the
+    # book with no error. Optional and tried first, so a head with no
+    # leading citation is unaffected.
+    r'(?:[`$]\((?P<cite>[^)]*)\)[`$]\s*)?'
     r'(?:[`$]\[(?P<chip>[^\]]*)\][`$])?\s*'
     # A SECOND CHIP IS STILL THE SAME QUESTION HEAD.
     #
@@ -1366,6 +1382,25 @@ class _Scanner(object):
                 continue
             if _starts_block(nxt):
                 break
+            # A BARE `$$` IS NEVER MORE OPTION TEXT.
+            #
+            # `_starts_block` deliberately does not know about `$$` (see its
+            # own definition) because it is shared by every accumulation
+            # loop in this file, several of which must keep reading THROUGH
+            # a `$$` to find its matching close — breaking there instead
+            # left raw `\frac`/`\Rightarrow` on the page across the whole
+            # book. This loop is narrower: an option row is one line of
+            # MCQ text, so nothing it collects should ever look like a
+            # display-maths delimiter. Left unhandled, a long single
+            # roman-numeral answer part — `(i) माना कि …$(a,b)…$, तब` —
+            # that falls through the "one item, too long to be an MCQ"
+            # check a few lines down swallowed the `$$\begin{aligned}
+            # …\end{aligned}$$` derivation after it (and everything past
+            # that too) into this ONE block's raw text instead of letting
+            # the dispatcher read it as its own `formula` node the way
+            # every sibling proof in this chapter does.
+            if nxt.strip() == "$$":
+                break
             # A COMBINATION-ANSWER LEAD-IN IS ITS OWN SENTENCE, NOT ANOTHER
             # STATEMENT.
             #
@@ -2225,6 +2260,20 @@ class _Scanner(object):
                         prev["desc"] = cap
                     if not (prev.get("caption") or "").strip():
                         prev["caption"] = cap
+                    # ONE SENTENCE OF IT IS PRINTED, INSIDE THE CARD.
+                    #
+                    # Everything above files the italic line under `desc`,
+                    # which only reaches `data-desc` — an attribute nobody
+                    # reads off the page. So a figure printed as a header
+                    # and an empty plate with nothing saying what it shows,
+                    # while the sentence that says so sat in an invisible
+                    # attribute (or, in older builds, in a second block of
+                    # italic text under the box). Subjects that opt in with
+                    # `caption_in_card` get the first sentence set as the
+                    # card's own `<figcaption>`; the rest stays in `desc`.
+                    if _PROFILE.get("caption_in_card") and cap.strip():
+                        prev["cap_text"] = first_sentence(
+                            cap, _caption_limit())
                     continue
                 # Every following `> 🖼️ …` line is the brief. Kept OUT of the
                 # rendered text — `desc` is what step11 reads to commission
@@ -2973,6 +3022,12 @@ def _parse_questions(lines, stats):
                 (mq.group("note") or mq.group("note2"))
             if mq.group("chip2"):
                 chip_txt = ((chip_txt + " · ") if chip_txt else "") + mq.group("chip2")
+            # `cite` is the source note that came BEFORE the marks chip —
+            # see RE_QHEAD — so it leads the joined text the same way it
+            # led the source line.
+            if mq.group("cite"):
+                chip_txt = (mq.group("cite") + " · " + chip_txt) if chip_txt \
+                    else mq.group("cite")
             # See RE_QCHIP_CONT: a heading-branch head with a title and no
             # chip of its own may have its chip/stars/note on the next line.
             if mq.group("n2") and not chip_txt and i + 1 < len(lines):
@@ -3480,6 +3535,40 @@ def draw_structures(doc):
     return doc
 
 
+def _caption_limit():
+    """`caption_in_card` is True, or the longest caption (characters) the
+    subject wants printed under a figure before falling back to its title."""
+    v = _PROFILE.get("caption_in_card")
+    return 340 if v is True else int(v)
+
+
+def first_sentence(text, limit=340):
+    """The part of a figure description that belongs UNDER the picture.
+
+    Two shapes arrive:
+
+      * a real caption — one sentence ending in a danda or full stop, e.g.
+        `द्विबीजपत्री भ्रूण की अनुदैर्ध्य काट; दो बीजपत्र (COTYLEDON), … नामांकित।`
+        Kept whole, labelled parts and all: that is what a student reads.
+      * a drawing brief — `title; part to draw; part to draw; …`, often 700+
+        characters and with NO sentence end at all. Only the title clause
+        before the first `;` is a caption; the rest is an instruction to an
+        illustrator and stays in `data-desc`.
+
+    So: cut at the first danda / full stop (never a decimal point); and if
+    there was none, or the sentence is longer than `limit`, cut at the first
+    `;` instead.
+    """
+    t = re.sub(r'\s+', ' ', (text or "")).strip().strip("*").strip()
+    m = re.search(r'।(?=\s|$)', t) or re.search(r'(?<![0-9A-Z])\.(?=\s|$)', t)
+    out = t[:m.end()].strip() if m else t
+    if not m or len(out) > limit:
+        cut = out.find(";")
+        if cut >= 12:
+            out = out[:cut].rstrip(" ,")
+    return out
+
+
 def attach_captions(doc):
     """Fold a `*चित्र N.M — …*` paragraph into the figure it describes.
 
@@ -3493,12 +3582,18 @@ def attach_captions(doc):
     Matched on the NUMBER, not on adjacency alone, so a paragraph that merely
     mentions a figure is left where it is.
 
-    SCOPED TO CHEMISTRY. Applied to everything it folded 21 of biology's
+    SCOPED PER SUBJECT. Applied to everything it folded 21 of biology's
     captions too, taking that chapter from its verified 932 blocks to 911 —
     a change to a tested output made as a side effect of work on another
-    subject, which is not a change anyone asked for.
+    subject, which is not a change anyone asked for. So a profile opts in:
+
+      `reactions`        chemistry — the sentence is folded into `desc`
+      `caption_in_card`  the sentence is PRINTED inside the figure card as
+                         its `<figcaption>` (physics, biology), instead of
+                         being set as a free paragraph under the box
     """
-    if not _PROFILE.get("reactions"):
+    in_card = bool(_PROFILE.get("caption_in_card"))
+    if not (_PROFILE.get("reactions") or in_card):
         return doc
 
     def rewrite(blocks):
@@ -3515,11 +3610,20 @@ def attach_captions(doc):
                     and prev.get("num")):
                 t = (b.get("text") or "").strip()
                 m = re.match(r'^\*?\s*(चित्र\s*' + re.escape(prev["num"])
-                             + r')\s*[—–-]\s*(.+?)\*?$', t, re.S)
+                             + r')\s*[—–·:-]\s*(.+?)\*?$', t, re.S)
                 if m:
-                    prev["desc"] = ((prev.get("desc") or "")
-                                    + (" " if prev.get("desc") else "")
-                                    + m.group(2).strip()).strip()
+                    if in_card:
+                        # PRINTED, not just remembered: the sentence becomes
+                        # the card's own `<figcaption>`. The `चित्र N` prefix
+                        # is dropped because the card header already carries
+                        # it. `desc` is left alone — it is the brief step11
+                        # commissions art from, and this is not that.
+                        prev["cap_text"] = first_sentence(
+                            m.group(2), _caption_limit())
+                    else:
+                        prev["desc"] = ((prev.get("desc") or "")
+                                        + (" " if prev.get("desc") else "")
+                                        + m.group(2).strip()).strip()
                     continue
             out.append(b)
         return out

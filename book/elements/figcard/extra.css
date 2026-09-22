@@ -17,3 +17,12 @@
 .sec:has(> .figcard.fig-left, > .figcard.fig-right)::after {
   content:""; display:block; clear:both;
 }
+
+/* THE CAPTION IS PART OF THE CARD.
+   `*चित्र N — one sentence*` used to be a free paragraph under the dashed box,
+   so every figure read as two blocks. `components/figure.py` now prints it as
+   a `<figcaption>` inside the border, under the plate. It is italic and small
+   because it annotates the picture rather than competing with the question
+   text around it. */
+.figcard > .fcap { margin:8px 2px 0; font-style:italic; font-size:15px;
+                   line-height:1.55; color:#4d5666; text-align:left; }

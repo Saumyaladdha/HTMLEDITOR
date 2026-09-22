@@ -56,6 +56,14 @@ PROFILE = {
     # NCERT and ref:, along with 100 stray backticks.
     "figures": "fenced",
 
+    # THE CAPTION LINE UNDER A FIGURE LIVES INSIDE ITS CARD.
+    #
+    # `*चित्र N — one sentence*` after an image was a free paragraph, so the
+    # figure read as a dashed box plus a second block of italic text under
+    # it. `readers.markdown.attach_captions` folds it into the figure and
+    # `components.figure` prints it as the card's `<figcaption>`.
+    "caption_in_card": True,
+
     # No LaTeX anywhere in the chapter: zero `\\frac`, zero `\\vec`, zero
     # `$$`. The validator has nothing to check, and a rule written for
     # physics notation firing here would be a false positive.
