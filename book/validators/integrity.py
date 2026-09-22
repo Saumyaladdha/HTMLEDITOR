@@ -59,6 +59,14 @@ SCAFFOLD = {
     # never reaches the page while the value itself (1.8) still does,
     # inline. Not content loss.
     "लगभग",
+    # The same construct, a different header word: a 3-column cover table
+    # (तरीका · कितने · कहाँ सबसे ज़्यादा) is rendered by `components.cover`
+    # as `.cvflex`/`.cvtiles` — a card per row, the COUNT column's value set
+    # as the big number (`.cvtv`), the other two columns as the card's head
+    # and body text. The count column's header word ("कितने" — "how many")
+    # is exactly like "लगभग" above: implied by the tile's own styling,
+    # never printed as a literal label, and not content loss.
+    "कितने",
     # A Mathpix crop URL carries its own crop rectangle as a query string —
     # `...jpg?height=159&width=637&top_left_y=1703&top_left_x=238` — physics
     # chapter 1 alone writes ten of them (`चित्र N — ![](url?...)`, see
@@ -241,7 +249,21 @@ DUP_FACTOR = 2.5          # this much more often than the source is suspicious
 
 _TAG = re.compile(r"<[^>]+>")
 _ATTR = re.compile(r'(?:data-desc|data-fig|data-ref|alt|title)="([^"]*)"')
-_WORD = re.compile(r"[\wऀ-ॿ]+", re.U)
+# EXCLUDES U+0964/U+0965 (danda / double danda) from the Devanagari range.
+#
+# Both sit inside ऀ-ॿ, so a word directly followed by one with no space —
+# `सिद्धम्।`, every sentence in the book — glued the danda onto the word as
+# part of the SAME token. On the source side that is harmless (the identical
+# gluing happens in the HTML too, wherever the word and its danda share one
+# text node). It broke on `.qed`, which wraps only "इति सिद्धम्" and leaves
+# the trailing danda outside the span: `_TAG.sub` turns that boundary into a
+# space, so the HTML-side token is `सिद्धम्` while the markdown-side token is
+# `सिद्धम्।` — two different tokens for text that renders identically,
+# reported as a dropped word on a page that dropped nothing. A danda is
+# punctuation, never part of a word, in any Devanagari text; excluding it
+# here fixes every chapter that boxes a punctuated phrase this way, not just
+# this one line.
+_WORD = re.compile(r"[\wऀ-ॣ०-ॿ]+", re.U)
 
 
 def _words(text):

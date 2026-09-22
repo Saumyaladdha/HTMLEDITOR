@@ -1,0 +1,54 @@
+{
+ "decisions": [
+  {
+   "id": "d7e2e762c761",
+   "corrected_source": "\\mathrm{R}=\\{(a, b): 2,(a-b)",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "48c35a71128a",
+   "corrected_source": "(x, y) \\in \\mathrm{R} \\Rightarrow(y, x) \\in \\mathrm{R} \\quad\\{\\because \\mathrm{R",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "8fda35bed3c9",
+   "corrected_source": "fixed at source, see why",
+   "why": "content/maths_chapter1.md:1372 — inserted the missing \\}$ right after a-b+\\sqrt{3}\\in S, matching the answer's own restatement of the same set two lines later"
+  },
+  {
+   "id": "239eef4d1ce7",
+   "corrected_source": "\\mathrm{R}=\\{(a, b): a, b \\in \\mathrm{R}",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "1ce6c80d8074",
+   "corrected_source": "fixed at source, see why",
+   "why": "content/maths_chapter1.md:1462 — a stray \"?\" stood where the closing \\} belonged (compare the answer's correct \\}( at the same point); replaced it with $\\}$"
+  },
+  {
+   "id": "7aa37f6e6cd0",
+   "corrected_source": "\\mathrm{R}=\\{(x, y): x . y",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "504ef8d0d30f",
+   "corrected_source": "\\mathrm{S}=\\{(a, b)",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "ea31da781a0a",
+   "corrected_source": "\\mathrm{S}=\\{(a, b):",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "16d3474d0c6b",
+   "corrected_source": "\\mathrm{R}=\\{(x, y): x-y+\\sqrt{3}",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  },
+  {
+   "id": "1fbd6dd33861",
+   "corrected_source": "\\mathrm{R}=\\{(x, y): x-y+\\sqrt{3}",
+   "why": "false positive — the validator checks brace balance within one $...$ span; this set-builder condition is deliberately split across multiple spans with Hindi prose between them (the book-wide convention throughout this chapter), and the \\} closes correctly in a later span on the same line. Verified by running the actual converter on the snippet: it produces clean output with no leaked TeX."
+  }
+ ]
+}

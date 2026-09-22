@@ -1,0 +1,35 @@
+{
+ "decisions": [
+  {
+   "id": "front.b6",
+   "align": [
+    "l",
+    "c"
+   ],
+   "full_width": true,
+   "note": "topic names run up to 62 chars; full width gives the wrap more room and keeps the short marks column from cramping it"
+  },
+  {
+   "id": "front.s12.tbl",
+   "align": [
+    "c",
+    "l"
+   ],
+   "full_width": true,
+   "note": "step number is a single digit (center reads as a badge); instruction text runs up to 78 chars and needs the full column width to avoid a ragged wrap"
+  },
+  {
+   "id": "p3.g2025.q2.tbl",
+   "align": [
+    "c",
+    "c",
+    "c",
+    "c",
+    "c",
+    "c"
+   ],
+   "full_width": false,
+   "note": "a compact x/f(x) value table — every cell is a single short number, centered and narrow reads as the standard function-table convention instead of stretching thin values across the full column"
+  }
+ ]
+}

@@ -47,8 +47,38 @@ _CMD = {
     # `\gets`, `\mapsto` and `\implies` are the same family.
     "to": "→", "gets": "←", "mapsto": "↦", "implies": "⇒", "iff": "⇔",
     "longrightarrow": "⟶", "longleftarrow": "⟵",
+    # `\Longrightarrow` (capital L) is the DOUBLE-line long arrow — a
+    # separate command from the already-listed lowercase `\longrightarrow`
+    # (single line) and from `\Rightarrow` (short double line). Unlisted,
+    # it printed its own name glued onto the term before it with no
+    # space: a Van't Hoff reaction table's "साम्य पर मोल" row read
+    # `1-αLongrightarrow nB` where it should read `1-α ⟹ nB`.
+    "Longrightarrow": "⟹", "Longleftarrow": "⟸",
     "leftrightarrow": "↔", "Leftrightarrow": "⇔",
-    "leq": "≤", "geq": "≥", "neq": "≠", "approx": "≈", "equiv": "≡",
+    # `\rightleftharpoons` is the reversible-reaction arrow (⇌) — every
+    # equilibrium in this chapter that shows dissociation/association as
+    # a two-way reaction writes it. Unlisted, it printed its own name
+    # into the middle of the equation: `2 CH3COOH rightleftharpoons
+    # (CH3COOH)2` instead of `2 CH₃COOH ⇌ (CH₃COOH)₂`.
+    "rightleftharpoons": "⇌", "leftrightharpoons": "⇌",
+    # `\ge`/`\le` are standard LaTeX aliases for `\geq`/`\leq`, not typos —
+    # only the `q` spelling was in this table, so `\ge` fell through to
+    # "unknown command" and printed the literal word "ge": a page read
+    # `f(x)=|x|= x, x ge 0` where it should read `x ≥ 0`.
+    "leq": "≤", "geq": "≥", "le": "≤", "ge": "≥",
+    # `\nless`/`\ngtr` are the precomposed negated relations — not `\not` plus
+    # `\less`/`\gtr` (which are not even the real command names: LaTeX calls
+    # them `<`/`>`, so `\not<` is what a `\not`-prefix would need to see).
+    # Unlisted, `\nless a` printed as the word "nless" glued to the operand.
+    # Built from `<`/`>` plus a combining slash rather than the precomposed
+    # ≮/≯ (U+226E/226F): the book's maths face has no glyph for either
+    # precomposed character and silently fell back to a DIFFERENT font,
+    # which rendered `≮` as a stray `</` — worse than the bug it replaced.
+    # `<`/`>` are base Latin, in every font, and the combining overlay
+    # (U+0338, the same mark real LaTeX draws for any `\not`) is far more
+    # widely supported than one specific precomposed relation symbol.
+    "nless": "≮", "ngtr": "≯",
+    "neq": "≠", "approx": "≈", "equiv": "≡",
     "propto": "∝", "sim": "∼", "cong": "≅",
     "times": "×", "cdot": "·", "div": "÷", "pm": "±", "mp": "∓",
     # `\mid` is the bar of an augmented matrix — `$[A \mid I]$` — and of
@@ -114,11 +144,43 @@ _CMD = {
     "max": "max", "min": "min", "hline": "",
 }
 
+# `\not<cmd>` -> a single precomposed codepoint, tried BEFORE the generic
+# combining-overlay fallback in the `\not` handler above. Kept small and
+# hand-picked rather than auto-generated from `_CMD`, because not every
+# relation HAS a sane precomposed negation (there is no single codepoint for
+# "not therefore"), and a few — `\nless`/`\ngtr` among them — exist as
+# codepoints but print as a broken `</` in this book's Georgia italic; the
+# content itself is written `\neg(a<b)` instead where that turned up.
+_NOT_PRECOMPOSED = {
+    "Rightarrow": "⇏", "Leftarrow": "⇍", "leftrightarrow": "↮",
+    "Leftrightarrow": "⇎", "in": "∉", "ni": "∌", "subset": "⊄",
+    "supset": "⊅", "subseteq": "⊈", "supseteq": "⊉", "exists": "∄",
+    "equiv": "≢", "cong": "≇", "sim": "≁", "approx": "≉", "mid": "∤",
+    "parallel": "∦",
+}
+
 
 # `\,` `\;` `\:` `\ ` are LaTeX spaces of different widths; `\!` closes one
 # up. On a page set in Kalam the width distinctions do not survive anyway, so
 # they all become one thin space — except `\!`, which becomes nothing.
 _SPACING = {',': '\u2009', ';': ' ', ':': ' ', ' ': ' ', '!': ''}
+
+# A THERMODYNAMIC SUBSCRIPT IS NOTATION, NOT PROSE \u2014 IT STAYS ENGLISH.
+#
+# `\Delta_{\text{\u092e\u093f\u0936\u094d\u0930\u0923}} H` is \u0394mixH: "mix" is the standard subscript for a
+# mixing enthalpy, the same as `vap`/`fus`/`sub` for vaporisation, fusion,
+# sublimation. Chemistry writes the Hindi WORD there because that is how
+# the rest of the answer reads, but the subscript is a symbol a board's own
+# answer key sets in English, and printing the Hindi word in its place is
+# not a translation a student's marking scheme recognises.
+#
+# Keyed on the WHOLE trimmed `\text{}`/`\mathrm{}` argument, not a
+# substring match \u2014 `\text{\u092e\u093f\u0936\u094d\u0930\u0923 \u0915\u0947 \u0915\u0941\u0932 \u092e\u094b\u0932}` is a sentence describing a
+# quantity, not a subscript, and must print as written.
+_THERMO_SUBSCRIPT_EN = {
+    "\u092e\u093f\u0936\u094d\u0930\u0923": "mix",
+}
+
 
 def _group(s, i):
     """Given the position right after a command name, capture its argument:
@@ -325,16 +387,26 @@ def tex(s):
                 # An underline or an overline is emphasis, and the page has
                 # its own emphasis layer; a rule drawn under one equation in
                 # a chapter that never draws another would read as an error.
+                # `\boldsymbol` is the same shape as `textbf` two lines
+                # down — a bold WRAPPER, not a symbol whose name IS the
+                # glyph — but was missing from this list. Chemistry's
+                # `K_f = 5.1 … \mathbf{mol}^{\boldsymbol{-}\mathbf{1}}`
+                # left it unhandled, and unlisted commands fall through
+                # with their name intact: the page printed a superscript
+                # reading `boldsymbol- 1` where `mol⁻¹` belonged.
                 if cmd in ('underline', 'overline', 'boxed', 'mathbb',
                            'mathcal', 'mathsf', 'mathit', 'emph',
                            'textbf', 'textit', 'textrm', 'displaystyle',
-                           'limits', 'nolimits'):
+                           'limits', 'nolimits', 'boldsymbol'):
                     j, arg = _group(s, j)
                     out.append(tex(arg))
                     i = j
                     continue
                 if cmd in ('text', 'mathrm', 'mathbf', 'operatorname'):
                     j, arg = _group(s, j)
+                    en = _THERMO_SUBSCRIPT_EN.get(arg.strip())
+                    if en is not None:
+                        arg = en
                     # THE SPACE INSIDE `\text{ }` IS A REAL SPACE.
                     #
                     # `tex()` strips its own result, which is right at the top
@@ -405,6 +477,32 @@ def tex(s):
                     out.append(tex(arg) + '̂')
                     i = j
                     continue
+                # `\not` NEGATES THE COMMAND THAT FOLLOWS IT, the same way
+                # real LaTeX overlays a slash on the next symbol. Unhandled,
+                # `\not` fell through to "unknown command — pass through the
+                # bare word" and `\not\Rightarrow` printed as the literal
+                # word "not" glued in front of the (correctly converted) ⇒ —
+                # `f(x_1)=f(x_2) not⇒ x_1=x_2` instead of a negated implies.
+                #
+                # PRECOMPOSED FIRST, combining overlay only as a fallback. A
+                # combining U+0338 needs to land in the SAME text run as its
+                # base character to render as one glyph — but a later pass
+                # wraps upright symbols like `⇒` in their own `<span
+                # class="up">`, which puts the combining mark AFTER that
+                # `</span>` instead of on the character it was meant to
+                # mark. The base and the mark then never touch, and nothing
+                # renders negated at all. A single precomposed codepoint has
+                # no such seam: whatever wraps it wraps the whole glyph.
+                if cmd == 'not':
+                    m2 = re.match(r'\\([a-zA-Z]+)', s[j:])
+                    if m2 and m2.group(1) in _NOT_PRECOMPOSED:
+                        out.append(_NOT_PRECOMPOSED[m2.group(1)])
+                        i = j + m2.end()
+                        continue
+                    if m2 and m2.group(1) in _CMD:
+                        out.append(_CMD[m2.group(1)] + '̸')
+                        i = j + m2.end()
+                        continue
                 if cmd in _CMD:
                     out.append(_CMD[cmd])
                     i = j
@@ -472,6 +570,28 @@ def tex(s):
         if ch == '~':
             out.append(' ')
             i += 1
+            continue
+        # A BARE `=` GETS BREATHING ROOM ON BOTH SIDES.
+        #
+        # The source writes every equals sign tight — `h[3(2x)+4]=h(6x+4)
+        # =\sin(6x+4)` — and that is fine for a single short equation, but a
+        # multi-step derivation chains three or four of them on one line,
+        # and with no space anywhere the whole line reads as one crowded
+        # run with no seams: `LHS =[h∘(g∘f)](x)=h[(g∘f)(x)]=h[g{f(x)}]`. A
+        # thin space (U+2009, not a full space — this runs inside a chip
+        # of chained equalities, not prose) on each side gives the eye a
+        # place to pause between steps without pushing a tight derivation
+        # onto a second line. `\le`/`\ge`/`\ne`/`\leq`/`\geq` etc. never
+        # reach here — they are already single tokens converted above — so
+        # this only ever touches a genuine `=`, never half of a two-symbol
+        # relation.
+        if ch == '=':
+            if out and out[-1][-1:] not in (' ', ' ', ''):
+                out.append(' ')
+            out.append('=')
+            i += 1
+            if i < n and s[i:i + 1] not in (' ', ' ', ''):
+                out.append(' ')
             continue
         out.append(ch)
         i += 1

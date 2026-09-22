@@ -1,0 +1,39 @@
+{
+ "decisions": [
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  },
+  {
+   "id": "f6ae966ccb98",
+   "verdict": "accepted-tradeoff",
+   "fix": "no change — book/assemble/html.py:107-116 documents this exact chapter (maths_chapter1) by name as the precedent for scaling its dense 11-card cover to k=0.912 to keep it on one sheet, printing its smallest type at ~10.2-10.9px against the 11px floor. Bumped .cvhead 14.5->15.2px anyway (book/design/css.py) since it helps any less-dense cover; COVER_HARD_MIN=0.88 bounds how far this can go before the build refuses and spills to a second sheet instead."
+  }
+ ]
+}

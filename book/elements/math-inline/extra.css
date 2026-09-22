@@ -1,0 +1,13 @@
+/* LINING FIGURES IN EVERY MATHS FACE.
+   Georgia's figures are OLD-STYLE by default: 0 is a small round x-height
+   glyph and 1 is a small-cap I, so in `ε₀`, `10⁻⁷` or `1.0` the zero reads as
+   the English letter "o" and the one as "l" or "I" — worst in a subscript,
+   where the glyph is already tiny. `lining-nums` keeps Georgia and only swaps
+   the figures for full-height ones, so no new font is embedded and the letters
+   around them do not change.
+   Every rule that sets Georgia for maths is listed, not just `.m`: a formula
+   card (`.frow>.fx`), a display line (`.dm`), a working line (`.work`) and the
+   cover formula each set their own face and would keep the old-style figures. */
+.m, .fr, .up, .dm, .frow>.fx, .work, p.work, .cvformula {
+  font-variant-numeric: lining-nums;
+}

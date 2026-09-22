@@ -30,8 +30,27 @@ import re
 # already knew all three spellings for a marks tag at the END of a line; this
 # is the same knowledge for a chip, and it is the SIXTH time one construct has
 # been found written two ways with code that knew one.
+#
+# A LITERAL DECIMAL POINT WAS NEVER IN THE CHARACTER CLASS.
+#
+# The whole-number branch's optional suffix was `[/·]\d+` — `/` for a
+# slash fraction, `·` because the code below already normalises a
+# middle-dot decimal (`raw.replace("·", ".")`) before calling `float()`.
+# Only `.` itself, the spelling chemistry chapter 1 actually writes —
+# `[0.5 अंक · 2026]`, `[1.5 अंक · 2026]` — was missing. `\d+` alone
+# matched just the digit AFTER the point (`re.search` skips the `0.`
+# that fails the trailing `\s*अंक`, then succeeds from `5 अंक`), so
+# every fractional chip in the chapter parsed as if the decimal were
+# the whole value: `0.5` became `5`, `1.5` became `5`. The mark shown
+# on each question's own chip was untouched (that text is a separate,
+# unparsed passthrough — see `format/inline.py`), but everything
+# computed FROM the parsed number was wrong: a paper of 0.5+0.5+0.5+
+# 0.5+1+1.5+1.5 = 6 marks summed to 31 in the "कुल … अंक" band it
+# opens, and the same corruption is what step05 flagged as
+# `marks_unsorted` — the true sequence (0.5, 0.5, 0.5, 0.5, 1, 1.5,
+# 1.5) is ascending; the corrupted one (5, 5, 5, 5, 1, 5, 5) is not.
 RE_MARKS = re.compile(
-    r'((?:\d+\s*)?[½¼¾]|\d+(?:[/·]\d+)?)\s*अंक')
+    r'((?:\d+(?:\.\d+)?\s*)?[½¼¾]|\d+(?:\.\d+)?(?:[/·]\d+)?)\s*अंक')
 
 # What each vulgar fraction is worth, for the numeric `marks` field.
 _VULGAR_VALUE = {"½": 0.5, "¼": 0.25, "¾": 0.75}

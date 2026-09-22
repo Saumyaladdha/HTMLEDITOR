@@ -48,7 +48,7 @@ def plate_height(desc, fallback=158):
 
 
 def figure(num, caption, desc="", ref=None, size="figure", place="center",
-           height=None, narrow=False):
+           height=None, narrow=False, cap_text=""):
     label = ("चित्र %s" % num) if num else (caption or "चित्र")
     # THE CAPTION USUALLY *IS* THE LABEL, SPELLED OUT.
     #
@@ -74,12 +74,22 @@ def figure(num, caption, desc="", ref=None, size="figure", place="center",
     # `fig-solo` narrows a full-width figure to 66% and centres it; inside a
     # column it stays full width.
     variant = " fig-solo" if place == "center" and not narrow else ""
+    # THE ITALIC LINE UNDER A FIGURE BELONGS TO THE FIGURE.
+    #
+    # `*चित्र 1.8 — द्विबीजपत्री भ्रूण की अनुदैर्ध्य काट; …*` used to be set as
+    # a free paragraph after the card, so a figure read as a dashed box AND a
+    # second, unrelated block of italic text beneath it. `attach_captions`
+    # now hands that sentence over as `cap_text`, and it is set here as the
+    # card's own `<figcaption>`, inside the border, under the plate. The
+    # `.fh` above already names the figure, so the number is not repeated.
+    cap_html = ('<figcaption class="fcap">%s</figcaption>' % inline(cap_text)
+                if (cap_text or "").strip() else "")
     return ('<figure class="figcard figbox%s" data-fig="%s" data-ref="%s" data-desc="%s">'
             '<div class="fh"><span>📐</span><span>%s</span></div>'
             '<div class="figspace" style="height:%dpx;"></div>'
-            '</figure>'
+            '%s</figure>'
             % (variant, plain(num or ""), plain(ref or ""), plain(desc or ""),
-               inline(label), h))
+               inline(label), h, cap_html))
 
 
 def figure_note(text):

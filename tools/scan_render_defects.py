@@ -327,7 +327,19 @@ def scan(path):
                             samples=[" ".join(h[1].split())[:110]
                                      for h in hits[:4]]))
     for rid, sev, rx, why in RULES:
-        hits = list(rx.finditer(_scan_body))
+        # STRUCTURAL rules check span ADJACENCY (is `.fr`'s first child
+        # immediately its own close tag), not leaked text — so they must
+        # read the REAL body. `.mt` is `\text{}` inside a maths run, and a
+        # unit name is legitimately set that way as a fraction OPERAND
+        # (`<span class="fr"><span><span class="mt">मीटर</span></span>
+        # <span class="dn"><span class="mt">सेकंड</span></span></span>` —
+        # a real, non-empty मीटर/सेकंड quotient). Blanking it before this
+        # check emptied both spans and reported ten correct fractions as
+        # `empty_fraction`, on a chapter that had none — the exact false
+        # alarm `_scan_body`'s own comment above says blanking must not
+        # cause ("unchanged for everything else"). Run on `body` instead.
+        src = body if rid in ("empty_fraction", "slug_fraction") else _scan_body
+        hits = list(rx.finditer(src))
         if not hits:
             continue
         samples = []
