@@ -20,7 +20,7 @@ from book.core import artifact                          # noqa: E402
 
 def args(**extra):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--md", default=os.path.join(ROOT, "content", "17_reader_edition.md"))
+    ap.add_argument("--md", default=os.path.join(ROOT, "content", "21_figures_final.md"))
     ap.add_argument("--stem", default="chapter-01")
     ap.add_argument("--quiet", action="store_true")
     # EVERY step accepts --subject, whether or not it uses one. run_all

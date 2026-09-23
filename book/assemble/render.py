@@ -17,6 +17,8 @@ page — which the reference book does constantly.
 """
 import re
 
+from ..util import upload_image as _upload_image
+
 # Below this, numbering is noise: two equations need no spine, and a lone
 # `①` beside a single formula pretends to structure that is not there.
 MIN_NUMBERED_STEPS = 3
@@ -171,8 +173,12 @@ def render_block(b, ctx):
     # must not also get a row of its own.
     marks = b.get("marks")
     if marks and not (b["kind"] == "formula" and b.get("display")):
+        # `inline.marks_chip`, not `C.qmarks("[%s]" % marks)`: the value is
+        # already extracted, and putting it back in brackets so `inline` can
+        # re-find it nested the chip in a second `.qmarks` span and lost the
+        # values the tag pattern does not match (`1×5` printed as `[1×5]`).
         out.append(_item('<div class="marksrow">%s</div>'
-                         % C.qmarks("[%s]" % marks), atomic=True))
+                         % _inline.marks_chip(marks), atomic=True))
     # WHICH IR block this item came from.
     #
     # Purely diagnostic, and it earns its keep: `layout.split` reports the
@@ -201,6 +207,26 @@ def _render_block(b, ctx):
         # at different sizes and has 516 of the former. A pure-maths line in
         # a derivation becomes `.work` (Georgia italic) instead of prose.
         text = b["text"]
+        # A STANDALONE BOLD LINE OPENING A PARAGRAPH IS A SECTION HEADING.
+        #
+        # A long answer is written as `**धारिता**` on its own line, then the
+        # prose, then `**ऊर्जा घनत्व**`, then more. The reader folds a
+        # paragraph's lines into one block, so the heading arrived glued to
+        # the front of the prose and printed as `<b>धारिता</b> धारिता
+        # (Capacitance) …` — one run-on paragraph where the reference has a
+        # blue heading and a paragraph under it. Breaking a wall of answer
+        # into named sections is most of what makes a long answer readable,
+        # and the source already says where the breaks go.
+        #
+        # A trailing colon means a LEAD-IN (`**सूत्र:** …`), not a heading,
+        # and those are claimed by the rubric long before this.
+        m_sub = _RE_LEAD_BOLD.match(text or "")
+        if m_sub and C.is_subhead_text(m_sub.group(1)):
+            rest = m_sub.group(2).strip()
+            head = [_item(C.subhead(m_sub.group(1).strip()), atomic=True)]
+            if not rest:
+                return head
+            return head + render_block(dict(b, text=rest), ctx)
         if _is_pure_math(text):
             # The reference puts EVERY one of its 257 `.dm` and 56 `.work`
             # lines in Part 2 — none in Part 1, where maths lives in सूत्र
@@ -320,6 +346,17 @@ def _render_block(b, ctx):
         return [_item(C.eq(b["text"], b.get("eqno", ""),
                            None, b.get("marks", "")), atomic=True)]
     if k == "formula_card":
+        # PART 1 GETS THE BULLETED PANEL, PART 2 THE BOXED ONE.
+        #
+        # Two different designs for two different jobs — see
+        # `components.math.formula_list`. The panel no longer clears a note
+        # column in either half (there is no float column any more), but
+        # `clears` is still read below for the wide Part-2 variant.
+        if ctx.get("revision"):
+            html = C.formula_list(b["rows"], b.get("title", "सूत्र"))
+            it = _item(html, atomic=True)
+            it["split"] = split_payload(b)
+            return [it]
         # A wide सूत्र panel CLEARS the note column, so it always renders at
         # full width. The packer must size it with the wide height, not the
         # narrow one — see `clears` in layout/pack.
@@ -350,11 +387,17 @@ def _render_block(b, ctx):
         return [_item(C.marktag(b["label"]), atomic=True)]
 
     if k == "callout":
-        # Flat in Part 1, boxed in Part 2 — and only the two skins the
-        # reference defines get the flat treatment; the rest stay boxed.
-        if not ctx.get("in_question") and b["ctype"] in C.FLAT:
-            return [_item(C.pointer_flat(b["ctype"], b.get("label", ""),
-                                         b.get("text", "")), atomic=True)]
+        # EVERY CALLOUT IS THE BORDERED BOX, IN BOTH HALVES.
+        #
+        # This used to set a Part-1 callout as `pointer_flat` — a bare
+        # `<p class="poflat">` with no border — on the rule that "Part 1
+        # uses a flat callout, Part 2 the bordered box". The reference
+        # does not: it carries ZERO `.poflat` elements in the whole
+        # chapter (the CSS survives, nothing emits it) and 14 bordered
+        # `.po` boxes in Part 1 alone. Unboxed, a ⚠️ warning sat in the
+        # column as an ordinary paragraph with an emoji in front of it and
+        # read as body text rather than as a warning — which is the entire
+        # job of the component.
         return [_item(C.pointer(b["ctype"], b.get("label", ""), b.get("text", ""),
                                 b.get("icon", "")), atomic=True)]
     if k == "simchip":
@@ -371,8 +414,18 @@ def _render_block(b, ctx):
 
     if k == "figure":
         size = "figure" if b.get("mode") == "ref" else "diagram-md"
+        # A REF IS A URL FOR A READER'S BROWSER, OR IT IS NOTHING YET.
+        #
+        # `resolve_ref` is the one place a local file, an inline `data:`
+        # image, or an external crop (mathpix) becomes something this
+        # platform's own storage serves — see book/util/upload_image.py.
+        # It never raises and never makes things worse: with no upload
+        # credentials configured, or with nothing real behind the ref yet,
+        # it hands the same string back and the page draws the empty
+        # placeholder plate exactly as it always has.
+        ref = _upload_image.resolve_ref(b.get("ref"))
         return [_item(C.figure(b.get("num", ""), b.get("caption", ""), b.get("desc", ""),
-                               b.get("ref"), size=size,
+                               ref, size=size,
                                cap_text=b.get("cap_text", "")), atomic=True)]
     if k == "slot":
         return [_item(C.slot(b.get("role", "doodle-md"), b.get("hint", "")), atomic=True)]
@@ -389,6 +442,27 @@ def _render_block(b, ctx):
 # ==========================================================================
 # CONTAINERS
 # ==========================================================================
+# The exam-frequency trailer a topic heading ends with:
+#
+#     ### 2.3 वैद्युत द्विध्रुव के कारण विभव · **13 सवाल आए · 1 व 5 अंक में**
+#
+# A `·` and then a bold run that COUNTS something. Anchored to the end and
+# required to be bold, so a title that merely contains a `·` — a topic
+# genuinely named "क्षेत्र · विभव" — is not cut in half. The counting words
+# are the guard that keeps a bold trailer which is part of the NAME
+# (`**संधारित्र**`) out of the seal.
+_TOPIC_FREQ_RE = re.compile(
+    r'\s*·\s*\*\*([^*]*(?:सवाल|प्रश्न|अंक|बार|पेपर)[^*]*)\*\*\s*$')
+
+
+def _split_topic_freq(title):
+    """-> (title without its frequency trailer, the trailer or "")."""
+    m = _TOPIC_FREQ_RE.search(title or "")
+    if not m:
+        return title, ""
+    return title[:m.start()].rstrip(" ·"), m.group(1).strip()
+
+
 def render_section(sec, ctx):
     """A Part-1 section: heading + blocks, with any cards floated beside it."""
     acc = sec.get("accent", 0)
@@ -404,12 +478,28 @@ def render_section(sec, ctx):
         pyq = [p for p in sec.get("pyq", []) if p]
         exams = [p for p in pyq if p.strip().upper().startswith("UP")]
         chips = [p for p in pyq if p not in exams]
-        inner.append(C.section_head(sec.get("num", ""), sec["title"], acc,
+        _title, _freq = _split_topic_freq(sec["title"])
+        inner.append(C.section_head(sec.get("num", ""), _title, acc,
                                     chips, exams, sec.get("en", ""),
-                                    sec.get("flag", "")))
+                                    sec.get("flag", ""), freq=_freq,
+                                    revision=bool(ctx.get("revision"))))
 
     inner.append("</div>")
     out.append(_item("".join(inner), atomic=True, tag="sechead"))
+    # THE PAGE ITSELF CARRIES THE TOPIC'S ACCENT NOW, NOT JUST THE HEADING.
+    #
+    # The reference sets `--accent`/`--tint` on every content `.page`, and
+    # `.type-banner`/`.type-en` read them via `var()` — a per-element accent
+    # class is not enough once the colour has to reach the page wrapper
+    # itself. `html.py` walks the flow/column items looking for this tag to
+    # resolve each page's accent; nothing here decides which page a section
+    # lands on, it just states which accent that section IS.
+    out[-1]["accent"] = acc
+    # And which KIND it is, for `.revision-unit[data-kind="topic"]` — the
+    # dashed rule the reference draws BETWEEN Part-1 topics. Carried on the
+    # item so the rule can be `:not(:first-child)` per column, which is
+    # what stops it printing under the part banner at the top of a page.
+    out[-1]["kind"] = "topic"
 
     for b in sec.get("blocks", []):
         out.extend(render_block(b, sub))
@@ -447,11 +537,54 @@ def render_question(q, ctx):
     items = [_item(C.qhead(q.get("num"), q.get("raw", ""), acc,
                            q.get("stars", 0), q.get("fullnote", "")),
                    atomic=True, owner=owner, tag="qhead")]
+    # See the matching note in `render_section` — Part 2's page accent
+    # follows whichever question's topic dominates the page.
+    items[0]["accent"] = acc
+    # THE QUESTION STEM IS SET BOLD — all 79 of the reference's are, and
+    # none of ours were.
+    #
+    # The stem is the sentence a student scans a page for; at the same
+    # weight as the answer prose beneath it, a question and its answer
+    # read as one undifferentiated block, which is most of why a Part-2
+    # page looked flatter than the reference's. Only the FIRST prose
+    # block of the question is marked — a stem that runs to a second
+    # paragraph, an option list, or a `दिया है` line, is not the stem.
+    _stem_done = False
     for b in q.get("blocks", []):
+        # A SHORT STEM IS A HEADING, A LONG ONE IS BOLD BODY TEXT.
+        #
+        # Measured on the reference: the stems it sets as `.subhead` run
+        # to a median of 25 characters, the ones it sets as
+        # `<p class="q"><b>` to a median of 108. A one-line MCQ stem
+        # ("वैद्युत विभव का मात्रक है") is a label over its options; a
+        # four-line numerical is a paragraph. Setting both the same way
+        # made the short ones disappear into the options under them.
+        if (not _stem_done and b.get("kind") in ("para", "question_text")
+                and C.is_subhead_text(b.get("text", ""))):
+            it = _item(C.subhead(b["text"]), atomic=True, owner=owner)
+            items.append(it)
+            _stem_done = True
+            continue
         for it in render_block(b, sub):
             it["owner"] = owner
+            if (not _stem_done and b.get("kind") in ("para", "question_text")
+                    and '<p class="q">' in it["html"]):
+                it["html"] = it["html"].replace(
+                    '<p class="q">', '<p class="q"><b>', 1)
+                it["html"] = _close_last(it["html"], "</p>", "</b></p>")
+                _stem_done = True
             items.append(it)
     return items
+
+
+def _close_last(html, old_tail, new_tail):
+    """Replace the LAST occurrence of `old_tail` — a stem may contain a
+    nested `</p>` from an inline construct, and closing the bold at the
+    first one would leave the tag open across the rest of the block."""
+    i = html.rfind(old_tail)
+    if i < 0:
+        return html
+    return html[:i] + new_tail + html[i + len(old_tail):]
 
 
 # A `qgroup` in Part 2 is usually a YEAR ("2026") or a named bank
@@ -478,26 +611,89 @@ def render_question(q, ctx):
 # with no punctuation at all is too easily a sentence that happens to
 # start with a digit, where "1.8" already carries enough of its own shape
 # to tell a topic number from prose.
+# A paragraph that OPENS with a standalone bold run — `**धारिता**` and
+# then the prose under it. The bold must not end in a colon (that is a
+# lead-in like `**सूत्र:**`, claimed by the rubric) and must not be the
+# whole paragraph's only content dressed as emphasis.
+_RE_LEAD_BOLD = re.compile(r'^\s*\*\*([^*:：]{1,46})\*\*\s*(.*)$', re.S)
+
+
 _RE_QGROUP_TOPIC = re.compile(r'^(?:(\d+\.\d+)\.?|(\d+)\.)\s+(\S.*)$')
+
+# A QUESTION-FORMAT heading — `बहुविकल्पीय प्रश्न (1 अंक)`, `लघु उत्तरीय
+# प्रश्न-I (2 अंक)`, `आंकिक प्रश्न`. Named by the FORM of the answer the
+# paper wants, which is what separates it from a year (`2024`) and from a
+# topic (`2.18 संधारित्रों का संयोजन`). Matched on the format words
+# themselves rather than on "is not a year", so a group labelled with
+# something genuinely unexpected still falls through to the year head
+# rather than being silently promoted to a part-level banner.
+_QTYPE_WORDS = ("बहुविकल्पीय", "अतिलघु", "लघु उत्तरीय", "दीर्घ",
+                "विस्तृत उत्तरीय", "आंकिक", "सत्य/असत्य", "रिक्त स्थान",
+                "अति लघु")
+
+
+def is_qtype_label(label):
+    return any(w in (label or "") for w in _QTYPE_WORDS)
 
 
 def render_qgroup(g, ctx):
     out = []
-    if g.get("label"):
+    if g.get("_qtype_banner"):
+        # One of these per question FORMAT (MCQ, VSA, SA-I/II, LA), pooled
+        # across every topic — see `readers.markdown._regroup_by_qtype`. Only
+        # the FIRST one also carries Part 2's own masthead (`part_label`),
+        # folded into the same banner rather than a separate one above it.
+        out.append(_item(C.type_banner(g["label"], accent=g.get("accent"),
+                                       part_label=g.get("part_label", ""),
+                                       part_sub=g.get("part_sub", "")),
+                         atomic=True, tag="groupband"))
+    elif g.get("_year_marker"):
+        out.append(_item(C.year_head(g["label"]), atomic=True, tag="groupband"))
+        return out
+    elif g.get("label"):
         topic = _RE_QGROUP_TOPIC.match(g["label"])
         if topic:
             out.append(_item(C.section_head(topic.group(1) or topic.group(2),
                                             topic.group(3)),
                              atomic=True, tag="sechead"))
+        elif is_qtype_label(g["label"]):
+            # A QUESTION-FORMAT GROUP IS A BANNER, NOT A YEAR PILL.
+            #
+            # `_regroup_by_qtype` exists for a source that nests questions
+            # under topics and has to be pooled by format. A source that
+            # ALREADY writes `### बहुविकल्पीय प्रश्न (1 अंक)` needs no
+            # regrouping, so it never set `_qtype_banner` — and the label
+            # fell to `year_head`, which drew "बहुविकल्पीय प्रश्न (1 अंक)"
+            # as the big yellow highlighter pill a YEAR gets. The
+            # reference sets it as `.type-banner > h2.question-type-heading`
+            # either way; how the markdown happened to be organised is not
+            # something the page should show.
+            out.append(_item(C.type_banner(g["label"], accent=g.get("accent"),
+                                           part_label=g.get("part_label", ""),
+                                           part_sub=g.get("part_sub", "")),
+                             atomic=True, tag="groupband"))
         else:
             out.append(_item(C.year_head(g["label"]), atomic=True, tag="groupband"))
     if g.get("summary"):
         out.append(_item('<div>%s</div>' % C.marktag(g["summary"]), atomic=True))
     first = True
     for ch in g.get("children", []):
+        if ch["kind"] == "qgroup" and ch.get("_year_marker"):
+            out.extend(render_qgroup(ch, ctx))
+            first = True
+            continue
         if ch["kind"] == "question":
-            if not first:
-                out.append(_item(C.qsep(), atomic=True, tag="qsep"))
+            # NO SEPARATOR ELEMENT — THE HEAD DRAWS ITS OWN RULE.
+            #
+            # A `.qsep` div used to be inserted between questions. The
+            # reference has none at all (0 in the whole chapter): the same
+            # dashed pink rule is `.qhead`'s `border-top`, which is better
+            # in the one place it matters — a question that starts a
+            # column gets the rule suppressed (`.acol > .u:first-child
+            # .qhead`), where a separate div would have stranded a rule
+            # across the top of the column with nothing above it. Kept as
+            # a standalone element only where the source asks for a rule
+            # in its own right (the `rule`/`qsep` block kind).
             first = False
             out.extend(render_question(ch, ctx))
         else:
@@ -576,7 +772,7 @@ def aside_column(cards_html, width=ASIDE_W):
 # ==========================================================================
 # DOCUMENT SHELL
 # ==========================================================================
-def document(title, body_html, mode="a4", chrome=False, font_css=None):
+def document(title, body_html, mode="a4", font_css=None):
     from ..design import fonts
     # THE SUBJECT TRAVELS ON THE BODY.
     #
@@ -590,8 +786,6 @@ def document(title, body_html, mode="a4", chrome=False, font_css=None):
     # A class on <body> lets each subject have its own presentation without
     # forking the stylesheet or the elements.
     classes = ["subj-" + (_PROFILE.get("name") or "physics")]
-    if chrome:
-        classes.append("chrome-on")
     cls = ' class="%s"' % " ".join(classes)
     head = "<style>%s</style>" % (font_css if font_css is not None else fonts.css())
     return (
@@ -736,8 +930,16 @@ def _numeric_col(rows):
     word."""
     if len(rows) < 3:
         return False
+    # A CELL WRAPPED IN `**bold**` STILL OPENS ON THE DIGIT, NOT THE STARS.
+    #
+    # physics_chap2.md's own marks column writes every value as `**2
+    # अंक**` — the raw markdown, stars and all, is what reaches this
+    # function — so the digit test always missed on its own chapter,
+    # the very shape it exists to catch. Stripped before the check, not
+    # after: the emphasis is real markdown, not part of the value.
     good = sum(1 for r in rows
-               if len(r[-1]) <= 26 and re.match(r'\s*[0-9०-९]', r[-1]))
+               if len(r[-1].strip("*_ ")) <= 26
+               and re.match(r'\s*[0-9०-९]', r[-1].strip("*_")))
     return good >= max(3, int(0.8 * len(rows)))
 
 
@@ -822,427 +1024,106 @@ def _masthead(front):
     return ""
 
 
+def _cover_table_html(t):
+    """One front-matter table -> `priority_table` (a ranked value column)
+    or `study_table` (a numbered procedure), matching the reference's own
+    two table skins. Title is left blank — the enclosing `front_section`
+    already carries the `<h2>`, and a second heading on the table itself
+    duplicated it."""
+    head, rows = t.get("head", []) or [], t.get("rows", []) or []
+    if not rows:
+        return ""
+    total = rows[-1] if "कुल" in str(rows[-1][0]) else None
+    body = rows[:-1] if total else rows
+    first_col = [r[0].strip() for r in body] if body else []
+    numbered = first_col and all(c.isdigit() for c in first_col)
+    if numbered:
+        return C.cover.study_table("", body, head=head)
+    return C.cover.priority_table("", head, body, total)
+
+
+def _cover_note(text, bulb=False):
+    """One note under the cover masthead — see `cover.note_row` for why the
+    text has to be wrapped rather than emitted bare into the flex row."""
+    return C.cover.note_row(text, bulb=bulb)
+
+
 def render_cover(front, chapter, decisions=None):
-    """-> (main, overflow) HTML for the cover; both "" when no front matter."""
+    """-> {"hero": html, "sections": [html, ...]} — the cover, stacked in
+    SOURCE ORDER, exactly as the reference lays out its front matter: a
+    masthead, then one `.source-front-section` per `##` analytics
+    heading, each block inside rendered in the order it was written
+    (table, prose, note) rather than sorted into role-based columns.
+
+    Replaces the old card-grid cover (`left`/`right`/`full`, balanced by
+    measured height) — the reference has no such grid; every front-matter
+    chapter reads as one linear page, same as the body does.
+    """
     secs = [c for c in front.get("children", []) if c["kind"] == "section"]
     if not secs:
         return None
 
-    # The pull-quotes live INSIDE the analytics sections, not beside them,
-    # so collect them from the section bodies. Looking only at part level
-    # found none and the cover lost both note cards.
-    # Pull-quotes appear at BOTH depths: loose before the first `##`, and
-    # inside an analytics section. Collecting only one depth dropped the
-    # other — chapter 3 lost both notes, chapter 2 lost its lead line.
-    notes = [c for c in front.get("children", []) if c["kind"] == "refbox"]
-    for sec in secs:
-        notes.extend(b for b in sec.get("blocks", []) if b["kind"] == "refbox")
-
-    # A CALLOUT IN THE FRONT MATTER IS A NOTE TOO.
+    # THE MASTHEAD IS THE ONE HEADER NOTE EVERY CHAPTER DERIVES.
     #
-    # `render_cover` only ever extracts RECOGNISED shapes from a front-matter
-    # section — a table becomes a bars/tiles card, a `>` blockquote (kind
-    # `refbox`) becomes a note above — and `body = [p for p in parts if
-    # p.get("role") != "front"]` in `html.py` means front matter is never
-    # ALSO rendered generically into the page flow the way a Part-1 section
-    # is. An aside written as `⛔ **आलेख शून्य है।** ch01–ch03 में …` — an
-    # icon + bold label, `render_block`'s `callout` kind rather than a `>`
-    # blockquote — fits neither shape, so it was never visited by anything
-    # and the whole sentence vanished: real editorial content ("this
-    # chapter has never asked for a graph"), not decoration. Folded into
-    # the same notes list, using the callout's own label, so it prints as a
-    # pull-quote instead of being silently dropped.
-    def _callout_note(c):
-        label, text = c.get("label", ""), c.get("text", "")
-        # A callout label is usually a short phrase, but this one is a full
-        # sentence the author already ended with `।` — appending `:` after
-        # it printed "है।:", two closers in a row. Stripped only for THIS
-        # join; `pointer()`'s own `label:` convention elsewhere is untouched.
-        label = label.rstrip("।.!?")
-        return dict(text=("%s: %s" % (label, text)) if label else text)
-
-    notes.extend(_callout_note(c) for c in front.get("children", [])
-                 if c["kind"] == "callout")
-    for sec in secs:
-        notes.extend(_callout_note(b) for b in sec.get("blocks", [])
-                     if b["kind"] == "callout")
-
-    # A LOOSE PARAGRAPH UNDER THE `##` IS THE SAME SHAPE AGAIN.
-    #
-    # Not every aside is a `>` blockquote or an icon-led callout — a chapter
-    # can just write a plain sentence directly under the `##`, with no `###`
-    # to hold it: "आधे से थोड़े ज़्यादा अंक अकेले टॉपिक 4 से आते हैं, इसलिए
-    # पढ़ाई वहीं से शुरू करो।" sits right after the weight-table, one blank
-    # line before the first `###`. `secs` only collects `section` children,
-    # so this — like the loose table above — was never visited by anything:
-    # nine distinct words gone with no error, the exact failure `notes`
-    # already exists to prevent for `refbox` and `callout`. Same list, same
-    # reasoning, third shape.
-    notes.extend(dict(text=c["text"]) for c in front.get("children", [])
-                 if c["kind"] == "para" and (c.get("text") or "").strip())
-
-    # The seal is the chapter's headline mark count. It is DERIVED — from the
-    # first analytics heading — because no chapter writes it as a field.
-    lead, seal = "", None
+    # "इस अध्याय से एक पेपर में औसतन N अंक आते हैं।" is stated by the first
+    # analytics heading's own title (`## 🎯 वो N अंक …`) and re-derived
+    # here rather than copied from a `>` blockquote, because not every
+    # chapter writes the blockquote — see the old `render_cover`'s same
+    # derivation, kept verbatim.
+    header_notes = []
     m = re.search(r'([0-9]+(?:[·.][0-9]+)?)\s*अंक', secs[0].get("title", ""))
     if m:
-        raw = m.group(1).replace("·", ".")
-        try:
-            seal = "%g" % round(float(raw))
-        except ValueError:
-            seal = m.group(1)
-        # plain text: `inline()` escapes, so raw <b> would print as markup
-        lead = "इस अध्याय से एक पेपर में औसतन **%s अंक** आते हैं।" % m.group(1)
+        header_notes.append("इस अध्याय से एक पेपर में औसतन **%s अंक** आते हैं।"
+                            % m.group(1))
+    _mast = _masthead(front)
+    for c in front.get("children", []):
+        if c["kind"] == "refbox":
+            header_notes.append(c.get("text", ""))
+        elif c["kind"] == "callout":
+            lbl = (c.get("label", "") or "").rstrip("।.!?")
+            txt = c.get("text", "")
+            header_notes.append(("%s: %s" % (lbl, txt)) if lbl else txt)
+        elif c["kind"] == "para" and (c.get("text") or "").strip():
+            t = c["text"].strip()
+            if t != _mast:
+                header_notes.append(t)
+    hero = C.cover.front_title(chapter.get("num", ""), chapter.get("title", ""))
+    # The lamp marks the DERIVED "औसतन N अंक" line only — the first note,
+    # and the one the reference draws it beside. Every note the chapter
+    # wrote itself follows without one.
+    _notes = [n for n in header_notes if n]
+    header_html = hero[:-len("</header>")] + "".join(
+        _cover_note(n, bulb=(i == 0 and bool(m)))
+        for i, n in enumerate(_notes)) + "</header>"
 
-    cards = []
-    # A TABLE DIRECTLY UNDER THE `##` HEADING IS NOT INSIDE A SECTION.
-    #
-    # `secs` above only collects "section" children — the `###` subheadings
-    # — because that is the shape `_card_role`/`_rows_of` are built to read.
-    # A chapter that puts its topic-weight table straight under the `##`
-    # itself (no `###` wrapping it) parses that table as a LOOSE child of
-    # `front`, the same level `refbox`/`callout` notes sit at — and those
-    # are already re-collected below by scanning `front.children` a second
-    # time. Tables were not, so this exact shape — physics chapter 1's
-    # opening "वो 5 अंक किन टॉपिक से आते हैं?" table — vanished from the
-    # cover with nothing to show it was ever there: not an error, not a
-    # dropped-word count (its words live on in `part.sub`, the strap line
-    # that heading became), just an entire table with no path to a card.
-    # Built the same way a section's OWN second table is (see "A SECOND
-    # TABLE IN THE SAME SECTION IS ITS OWN CARD" below) — head/rows straight
-    # into a bars card, `front.sub` standing in for a section title since
-    # this table has no `###` of its own to carry one.
-    # ONLY THE FIRST LOOSE TABLE IS THE `##` HEADING'S OWN.
-    #
-    # `front["sub"]` is the ONE `##` line these tables sit under, so handing
-    # it to every one of them titled them all identically. The maths chapter
-    # puts two loose tables under `## 🎯 वो लगभग 4 अंक किन टॉपिक से आते हैं?`
-    # — a topic-vs-marks table and a method-vs-question-count table — and the
-    # cover printed that same question as the heading of both cards, one
-    # above the other, while the second card's actual subject (तरीका ·
-    # कितने सवाल) appeared nowhere. Two different charts asserting they
-    # answer the same question is worse than an unlabelled one.
-    #
-    # The second and later tables are titled from their OWN column heads,
-    # exactly as "A SECOND TABLE IN THE SAME SECTION IS ITS OWN CARD" below
-    # already does for a section's extra tables. Same situation, same rule.
-    _loose_n = 0
-    for t in front.get("children", []):
-        if t["kind"] != "table":
-            continue
-        head, rows = t.get("head", []) or [], t.get("rows", []) or []
-        if not rows:
-            continue
-        total = rows[-1] if "कुल" in str(rows[-1][0]) else None
-        body = rows[:-1] if total else rows
-        if _loose_n == 0:
-            ttl = front.get("sub", "") or (head[0] if head else "")
-        else:
-            ttl = " · ".join(x for x in head if x) or front.get("sub", "")
-        _loose_n += 1
-        cards.append(("bars", C.cover.bar_card(
-            ttl, head, body, total, "cvc-pink", "")))
-    for sec in secs:
-        role = _card_role(sec)
-        head, rows = _rows_of(sec)
-        title = sec.get("title", "")
-        if role == "bars":
-            total = rows[-1] if rows and "कुल" in rows[-1][0] else None
-            body = rows[:-1] if total else rows
-            if total is None and body:
-                # The reference closes this card with a `कुल` row. Most
-                # chapters do not write one, so derive it by summing the
-                # column rather than leaving the card without its bottom line.
-                # Sum the column the CARD charts, and carry that column's own
-                # unit. `r[-1]` plus a hardcoded "अंक" was wrong twice over on
-                # a three-column table: it summed the cross-reference column
-                # (5 + 1 + 1 + 1) and printed "कुल 8 अंक" under a card whose
-                # figures were 33, 51, 49 and 14 — and "बार" columns were
-                # labelled "अंक" as well.
-                col = C.cover._bar_col(body)
-                tot = sum((C.cover._first_number(r[col]) if col < len(r)
-                           else None) or 0 for r in body)
-                if tot:
-                    unit = C.cover._value_unit(body[0][col]
-                                               if col < len(body[0]) else "")
-                    total = ["कुल", ("%g %s" % (round(tot), unit)).strip()]
-            # The section's lead line is real prose and belongs on the page.
-            # It was left out earlier only because the cover was unmeasured
-            # and adding it clipped the sheet; now the cover is measured and
-            # spills to a second page, so it can be printed.
-            _leads = _table_leads(sec)
-            _tbls = _tables_of(sec)
-            # Each table's own heading goes to its own card; whatever prose
-            # is left over is the section's and stays on the first one.
-            _lead_set = set(_leads.values())
-            _sec_lead = " ".join(
-                x for x in [_prose_of(sec)] if x and x.strip() not in _lead_set)
-            for _lt in _lead_set:
-                _sec_lead = _sec_lead.replace(_lt, "").strip()
-            _first_lead = _lead_text(_tbls[0], _leads) if _tbls else ""
-            cards.append(("bars", C.cover.bar_card(
-                title, head, body, total, "cvc-pink",
-                (_first_lead + " " + _sec_lead).strip() if _first_lead
-                else _sec_lead)))
-            # A SECOND TABLE IN THE SAME SECTION IS ITS OWN CARD.
-            #
-            # Its own head becomes the card's title, since that is what
-            # labels its columns. Only the first card carries the section
-            # title and lead line — repeating those would read as two
-            # sections rather than two views of one.
-            for extra in _tables_of(sec)[1:]:
-                ehead = extra.get("head", []) or []
-                erows = extra.get("rows", []) or []
-                if not erows:
-                    continue
-                etotal = erows[-1] if "कुल" in str(erows[-1][0]) else None
-                ebody = erows[:-1] if etotal else erows
-                cards.append(("bars", C.cover.bar_card(
-                    _lead_text(extra, _leads,
-                               " · ".join(x for x in ehead if x) or title),
-                    ehead, ebody, etotal, "cvc-blue", "")))
-        elif role == "steps":
-            cards.append(("steps", C.cover.steps_card(title, rows, "cvc-green",
-                                                       _prose_of(sec), head)))
-        elif role == "tiles":
-            # The cover's stat tiles are a COVER-level decision, not a
-            # per-section one: chapter 3 states the figures in the FIRST
-            # section's caption but the reference prints them on the last
-            # card. The agent supplies them once; the plain card renders them.
-            supplied = (decisions or {}).get("cover_tiles") or []
-            # Without an agent decision, read the spread out of the chapter's
-            # own prose. The figures are stated in a sentence, not a table, so
-            # a card that only reads `rows` degraded to a plain list — which
-            # is how the cover lost its stat tiles entirely.
-            spread = _stats.spread_tiles(" ".join(_prose_of(x) for x in secs))
-            tiles = ([[t.get("value", ""), t.get("label", ""), t.get("note", "")]
-                      for t in supplied] or spread or rows)
-            cards.append(("tiles", C.cover.tiles_card(
-                title, _prose_of(sec), tiles, "cvc-plain", head,
-                caption=(decisions or {}).get("cover_tiles_caption", ""),
-                rows=rows)))
-        else:
-            fml = ""
-            for b in sec.get("blocks", []):
-                if b["kind"] in ("formula", "formula_box"):
-                    fml = b.get("text", "")
-                    break
-            cards.append(("text", C.cover.text_card(title, _prose_of(sec), (), fml, "cvc-gold")))
+    sections_html = []
+    for i, sec in enumerate(secs, 1):
+        parts = []
+        for b in sec.get("blocks", []):
+            k = b.get("kind")
+            if k == "table":
+                parts.append(_cover_table_html(b))
+            elif k in ("refbox", "callout"):
+                txt = b.get("text", "")
+                if k == "callout":
+                    lbl = (b.get("label", "") or "").rstrip("।.!?")
+                    txt = ("%s: %s" % (lbl, txt)) if lbl else txt
+                parts.append(_cover_note(txt))
+            elif k == "definition":
+                term, body = (b.get("term") or "").strip(), (b.get("text") or "").strip()
+                txt = ("<b>%s:</b> %s" % (inline(term), inline(body))).strip() \
+                    if term else inline(body)
+                parts.append('<div class="u"><p class="q">%s</p></div>' % txt)
+            elif k == "para" and (b.get("text") or "").strip():
+                parts.append('<div class="u"><p class="q">%s</p></div>'
+                             % inline(b["text"]))
+            elif k == "bullets":
+                items = [str(x) for x in (b.get("items") or []) if str(x).strip()]
+                if items:
+                    parts.append('<div class="u"><p class="q">%s</p></div>'
+                                 % inline(" · ".join(items)))
+        sections_html.append(C.cover.front_section(i, sec.get("title", ""),
+                                                    "".join(parts)))
 
-    # THE DERIVED LEAD AND THE CHAPTER'S OWN BLOCKQUOTE CAN BE ONE LINE.
-    #
-    # `lead` is DERIVED from the first analytics heading — "इस अध्याय से एक
-    # पेपर में औसतन **12 अंक** आते हैं।" — and a chapter that ALSO writes
-    # that sentence as a `>` blockquote has it collected into `notes` too,
-    # so the cover printed it twice: once under the title and again as a
-    # pull-quote beside it. Chapter 2 and biology chapter 1 both do this.
-    # Matched on letters and digits alone so the `**` the derived copy
-    # carries, and any difference in spacing, cannot hide the match.
-    def _lead_key(s):
-        return re.sub(r'[^0-9\u0900-\u097F]+', '', s or '')
-    if lead:
-        _lk = _lead_key(lead)
-        notes = [n for n in notes if _lead_key(n.get("text")) != _lk]
+    return dict(hero=header_html, sections=sections_html)
 
-    # ALL of them. Capping at two dropped chapter 17's third pull-quote —
-    # six words of real prose — and the cover now spills to a second sheet,
-    # so there is no reason to cap.
-    note_html = [C.cover.note(n["text"],
-                              "cvn-red" if i % 2 == 0 else "cvn-blue",
-                              "🎯" if i % 2 == 0 else "📐")
-                 for i, n in enumerate(notes)]
-
-    # Column by ROLE, not by index. The reference puts the weight chart and
-    # its pull-quotes on the left, the narrative and the reading order on the
-    # right, and the methodology note full width underneath. Alternating by
-    # position produced a different shape on every chapter.
-    left = [h for r, h in cards if r == "bars"]
-    right = [h for r, h in cards if r in ("text", "steps")]
-    full = [h for r, h in cards if r not in ("bars", "text", "steps")]
-
-    # Role decides which column a CARD starts in; the notes then even the two
-    # up. Sending every note left unconditionally was fine for a chapter with
-    # one bar chart and two pull-quotes, and lopsided for chapter 4, which has
-    # three charts and five notes: left held 8 cards to right's 2, so the
-    # cover measured 2866px — twice a sheet — and spilled over three pages
-    # while half of each was blank.
-    for n in note_html:
-        (left if len(left) <= len(right) else right).append(n)
-    # A role split can be uneven on its own. Move the tail across rather than
-    # leave one column carrying two more cards than the other.
-    while len(left) - len(right) >= 2:
-        right.insert(0, left.pop())
-    while len(right) - len(left) >= 2:
-        left.insert(0, right.pop())
-
-    # Returned in TWO parts so the caller can measure and, if the cover does
-    # not fit, put the full-width cards on a second sheet. `.page` is
-    # overflow:hidden — an unmeasured cover silently clips, which is exactly
-    # what happened when the gold card gained its formula box.
-    return dict(hero=C.cover.hero(chapter.get("num", ""), chapter.get("title", ""),
-                                  lead, seal, strap=front.get("sub", ""),
-                                  mast=_masthead(front)),
-                left=left, right=right, full=full,
-                # The same cards in reading order, for a caller that can
-                # MEASURE. Counting cards is not balancing them: chapter 4's
-                # three bar charts are each taller than any two notes, so an
-                # even 5/5 split by count still left one column half a page
-                # longer. See balance_cover_columns.
-                flat=list(left) + list(right))
-
-
-def cover_grid_html(cards):
-    """The cards moved off the cover, as a two-column grid of their own.
-
-    Used for the page after the cover — see the one-sheet policy in
-    `assemble.html.build`. The cards keep their own styling; only their
-    placement changes.
-    """
-    half = (len(cards) + 1) // 2
-    return C.cover.grid(cards[:half], cards[half:])
-
-
-def cover_pages_html(parts, keep_n=None, full_on_1=False):
-    """Assemble the cover into one or two sheets.
-
-    `keep_n` caps how many left/right cards stay on the first sheet; the rest
-    spill. The caller measures and walks that number down until the sheet
-    fits, which is the same measure-then-check discipline every other page
-    gets — the cover used to be emitted unchecked and `overflow:hidden` ate
-    whatever did not fit."""
-    left, right, full = parts["left"], parts["right"], parts["full"]
-    if keep_n is None:
-        keep_n = max(len(left), len(right))
-    l1, l2 = left[:keep_n], left[keep_n:]
-    r1, r2 = right[:keep_n], right[keep_n:]
-    # `full` cards sit AFTER the grid at full width, the way the reference
-    # has them — putting them in the grid's left column left the right column
-    # empty and gave the methodology card most of a sheet to itself.
-    if full_on_1:
-        # Now that the full-width cards are laid out horizontally they can be
-        # small enough to finish the first sheet, which removes the second
-        # sheet entirely. The caller measures before asking for this.
-        page1 = ('<div class="flowwrap cover">%s%s%s</div>'
-                 % (parts["hero"], C.cover.grid(l1, r1), "".join(full)))
-        rest = l2 + r2
-        page2 = ('<div class="flowwrap cover">%s</div>' % C.cover.grid(l2, r2)) if rest else ""
-        return page1, page2
-    page1 = '<div class="flowwrap cover">%s%s</div>' % (parts["hero"], C.cover.grid(l1, r1))
-    rest = l2 + r2 + full
-    page2 = ('<div class="flowwrap cover">%s%s</div>'
-             % (C.cover.grid(l2, r2) if (l2 or r2) else "", "".join(full))) if rest else ""
-    return page1, page2
-
-def _cover_sheet(items):
-    """One spill sheet from a list of (kind, left, right) card slots."""
-    ls = [a for k, a, _ in items if k == "grid" and a]
-    rs = [b for k, _, b in items if k == "grid" and b]
-    fs = [a for k, a, _ in items if k == "full"]
-    inner = (C.cover.grid(ls, rs) if (ls or rs) else "") + "".join(fs)
-    return '<div class="flowwrap cover">%s</div>' % inner
-
-
-def _spill_columns(cards, height_of):
-    """`cards` greedily balanced into two columns of even measured height."""
-    cols, hs = ([], []), [0, 0]
-    for html in cards:
-        i = 0 if hs[0] <= hs[1] else 1
-        cols[i].append(html)
-        hs[i] += height_of(html)
-    return cols
-
-
-def cover_spill_html(parts, keep_n, full_on_1, fits, height_of=None):
-    """The cards that did not fit sheet 1, on as many sheets as they need.
-
-    Sheet 1 is measured and walked down until it fits. Sheet 2 never was —
-    whatever was left over was emitted unchecked, on the assumption that a
-    spill is always small. Chapter 4 nests six analytics blocks where chapter
-    3 has three, so the spill did not fit, and `.page` is `overflow:hidden`:
-    372px of the last card was cut off with no error anywhere.
-
-    `fits(html)` is the caller's measurement — this module does no measuring
-    of its own.
-    """
-    try:
-        from itertools import zip_longest
-    except ImportError:                                  # pragma: no cover
-        from itertools import izip_longest as zip_longest
-    left, right, full = parts["left"], parts["right"], parts["full"]
-
-    # THE SPILL GETS ITS COLUMNS BALANCED TOO.
-    #
-    # A spill row is as tall as its taller card, so pairing a tall card with a
-    # short one wastes the difference — and the leftovers kept whatever column
-    # they happened to land in when the WHOLE cover was balanced for sheet 1.
-    # Six maths cards took two sheets that way, the second holding two short
-    # cards and 1200px of nothing. Re-balancing the leftovers by measured
-    # height fits them on one sheet.
-    rest = [c for pair in zip_longest(left[keep_n:], right[keep_n:])
-            for c in pair if c is not None]
-    if height_of and rest:
-        lrest, rrest = _spill_columns(rest, height_of)
-    else:
-        lrest, rrest = list(left[keep_n:]), list(right[keep_n:])
-    # A CARD THAT WILL NOT FIT THE GRID GOES FULL WIDTH, NOT ONTO A NEW SHEET.
-    #
-    # Balanced, the maths spill measured 1443px against a 1432px sheet, so its
-    # shortest card — eleven words of prose — was sent to a page of its own.
-    # Laid across the full sheet width instead of a half-width column, that
-    # same card reflows to about half the height, and the two grid columns
-    # lose it entirely. Eleven pixels of overflow stop being a page.
-    #
-    # Shortest-first, because a short card is the one that loses least by
-    # spanning the sheet, and because moving it costs the grid the least.
-    if height_of and rest:
-        wide = []
-        while len(rest) > 2:
-            cols = _spill_columns(rest, height_of)
-            if fits(_cover_sheet([("grid", a, b) for a, b in
-                                  zip_longest(*cols)]
-                                 + [("full", w, None) for w in wide])):
-                lrest, rrest = cols
-                break
-            shortest = min(rest, key=height_of)
-            rest = [c for c in rest if c is not shortest]
-            wide.append(shortest)
-        else:
-            wide = []
-        full = list(wide) + list(full)
-        if wide:
-            full_on_1 = False
-
-    pending = [("grid", a, b) for a, b in zip_longest(lrest, rrest)]
-    if not full_on_1:
-        pending += [("full", f, None) for f in full]
-
-    pages, cur = [], []
-    for item in pending:
-        trial = cur + [item]
-        if cur and not fits(_cover_sheet(trial)):
-            pages.append(_cover_sheet(cur))
-            cur = [item]
-        else:
-            cur = trial
-    if cur:
-        pages.append(_cover_sheet(cur))
-    return pages
-
-def balance_cover_columns(parts, height_of):
-    """Re-split the cover's cards into two columns of even HEIGHT.
-
-    `height_of(html)` is the caller's measurement — this module never
-    measures. Cards are placed in reading order into whichever column is
-    currently shorter, which keeps the order recognisable while stopping one
-    column running half a page past the other.
-
-    Returns a new (left, right); `parts` is left alone.
-    """
-    flat = parts.get("flat") or (list(parts["left"]) + list(parts["right"]))
-    cols = ([], [])
-    heights = [0, 0]
-    for html in flat:
-        i = 0 if heights[0] <= heights[1] else 1
-        cols[i].append(html)
-        heights[i] += height_of(html)
-    return cols[0], cols[1]

@@ -16,7 +16,30 @@ import sys
 from . import probe as _probe
 from ..design import tokens as theme
 
-GAP = 9                       # .qb flex gap — the dominant inter-block gap
+# SPACE BETWEEN TWO BLOCKS IN A COLUMN — MEASURED, NOT ASSUMED.
+#
+# This was 9, described as ".qb flex gap". Whatever was once true of it,
+# it is not true of the page this book renders now: `.acol` is
+# `display:block` (the reference's own value) and `.u` is `margin:0`
+# with `padding:.05px 0`, which contains each block's own margins inside
+# its own measured height. Probed across 54 built columns and 601
+# block boundaries, the real gap between adjacent blocks is **0.22px**.
+#
+# Charging 9px a boundary therefore invented ~100px of occupancy per
+# column that the page does not have. The packer stopped filling a
+# column while a hundred-odd pixels were still free in it, so a block
+# that would have fitted was pushed to the next column — every column in
+# the book a little emptier than it had to be, and the last column of a
+# run visibly so. Measured against the reference edition: its columns
+# average 105px free, ours averaged 256px, and the difference is almost
+# exactly this charge.
+#
+# Kept as a named constant rather than deleted, because the packer's
+# arithmetic genuinely needs "the gap between two stacked blocks" and
+# the honest value for it today is nil. If the stylesheet ever puts real
+# space back between `.u` siblings, re-probe and set it to what the
+# browser reports rather than to a guess.
+GAP = 0
 HEAD_TAGS = ("qhead", "sechead", "groupband")
 
 
@@ -146,6 +169,73 @@ def settle(items, pack_fn, render_fn, rounds=4, verbose=True, wide_w=None):
     if verbose:
         sys.stderr.write("settle: gave up after %d rounds — run step15_visual_qa\n" % rounds)
     return units
+
+
+def pull_up_columns(cols, render_fn, free_fn, over_fn,
+                    rounds=4, min_free=90, verbose=True):
+    """Move a column's first block into the column before it, when the
+    RENDERED page has room for it.
+
+    `settle` only ratchets heights UP — deliberately, so the loop cannot
+    oscillate — and every correction it makes becomes a permanent
+    over-estimate the packer then packs against. With the overflow probe
+    fixed to see content spilling a fixed-height `.sheet-body`, settle
+    started making ~560 corrections a build where it had previously made
+    almost none, and the slack went with it: columns stopping 300px short
+    while the next column opened with a 126px block that would plainly
+    have fitted.
+
+    `pull_up` above does this for single-column pages. It can never fire
+    on this book any more — both halves are two-column now, and it only
+    looks at pages with exactly one column — so this is the same idea over
+    the FLAT column list the column packer produces.
+
+    By measurement, not by model: each round renders once to find which
+    columns actually have room, then moves one candidate at a time and
+    keeps the move only if the render still has no overflow. Content order
+    is preserved, because a block only ever moves to the column
+    immediately before it.
+    """
+    for r in range(rounds):
+        free = free_fn(render_fn(cols))
+        if free is None:
+            if verbose:
+                sys.stderr.write("pull_up_columns: probe failed; stopping\n")
+            return cols
+        moved = 0
+        # Last column first: moving a block out of column N+1 changes what
+        # column N+1 can then take from N+2, and going backwards means each
+        # decision is made against a column that is not about to change.
+        for i in sorted((k for k, v in free.items() if v >= min_free),
+                        reverse=True):
+            j = i + 1
+            if j >= len(cols) or not cols[j] or not cols[i]:
+                continue
+            cand = cols[j][0]
+            # A HEAD IS NEVER PULLED UP ALONE. `pack_columns` already
+            # refuses to leave one at the foot of a column; moving one
+            # there by hand would undo that and strand a question number
+            # above the column break from its own question.
+            if cand.get("tag") in HEAD_TAGS:
+                continue
+            if cand.get("h", 0) > free[i]:
+                continue
+            trial = [list(c) for c in cols]
+            trial[i].append(cand)
+            trial[j] = trial[j][1:]
+            if over_fn(render_fn(trial)):
+                continue
+            cols = trial
+            moved += 1
+        if verbose:
+            print("  pull-up round %d: reclaimed %d block(s)" % (r + 1, moved))
+        if not moved:
+            break
+    # A column emptied completely would leave a hole in the page's own
+    # sequence, so empty tails are dropped rather than rendered blank.
+    while cols and not cols[-1]:
+        cols.pop()
+    return cols
 
 
 def pull_up(units, render_fn, rounds=3, min_free=180, verbose=True):

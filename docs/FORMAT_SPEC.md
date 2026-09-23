@@ -60,6 +60,24 @@ as sections — that bug silently deleted two whole years of questions.
 
 ## 2 · Part 1 constructs
 
+**Part 1 is a different DESIGN from Part 2, not the same one with other
+content.** Both halves are packed into the same two columns, but every
+Part-1 unit carries `.revision-unit` and the page carries
+`.revision-flow`, which between them give it: denser prose (18px), a
+bulleted `.formula-list` सूत्र panel instead of Part 2's boxed `.frow`
+results, a two-column green त्रिक strip instead of the stacked beige one,
+a dashed rule between topics, and a blue rule down the column gutter.
+There is no floated note column anywhere in the book — a sticky note is
+set inline, in the column it belongs to. See
+`book/elements/revision-flow/`.
+
+A topic heading may end with a frequency trailer, ` · **13 सवाल आए · 1 व
+5 अंक में**`, which is split off the title and set as the red
+`.topic-frequency` seal beside it — the same seal the `[🔥 UP 2025 · 3
+अंक]` exam stamp gets, since both say how heavily the topic is examined.
+Written into the title it wrapped every heading onto a second line.
+
+
 | Write | Becomes |
 |---|---|
 | `### 3.4 title (English) · **[UP 2025 · 3 अंक]**` | `.sechead` — accent circle + hand-drawn underline + **exam stamps** |
@@ -107,7 +125,7 @@ page loses its most recognisable block.
 
 ---
 
-## 4 · Callouts — 19 variants, one glyph each
+## 4 · Callouts — 19 types, some with a second glyph
 
 `<emoji> **Label:** text`, all on one line. The **icon and colour come from
 the type**, never from the markdown — the source writes one family with
@@ -115,7 +133,7 @@ several glyphs, and a page of a dozen callouts must read as one system.
 
 | Emoji | Type | Emoji | Type |
 |---|---|---|---|
-| 🎯 | `mark` | 🛟 | `save` |
+| 🎯 | `mark` | 🛟 🔢 | `save` |
 | 🧮 | `calc` | 🪜 | `step` |
 | ⚠️ ⚠ | `trap` | ⭐ | `ratt` |
 | 🔄 | `turn` | 🧠 | `line` |
@@ -128,6 +146,17 @@ several glyphs, and a page of a dozen callouts must read as one system.
 Labels may be Hinglish (`Board ka jaal`); the renderer prints the Hindi
 equivalent from a lookup table. An unlisted marker degrades to `line`
 rather than being dropped.
+
+**A `save` callout may skip the bold label entirely** — `RE_BARE_CALLOUT`
+matches any registered icon followed by plain text with no `**Label:**` —
+which is how a chapter poses a worked numeric example:
+
+    🔢 "इलेक्ट्रॉन प्रति सेकंड 6·0 × 10¹⁵ चक्कर लगाता है, धारा क्या होगी ?"
+    → एक चक्कर पर आवेश e गुज़रता है, इसलिए `I = q/t` में `q = ne` लगाइए। *(UP 2025)*
+
+The quoted question becomes the bare `save` callout; the `→ …` line is an
+ordinary paragraph immediately after it — no fused two-line component, and
+none needed, since the two print as one visual unit already.
 
 Three markers are **not** callouts:
 `↔ **मिलता-जुलता:**` → dashed grey chip ·
@@ -179,14 +208,40 @@ c) तार के पदार्थ पर          d) तार की म�
 | Write | Becomes |
 |---|---|
 | `**प्र. N**` | `.qnum` pink marker pill |
-| `` `[1 अंक · 2026/set_ds · खण्ड अ]` `` | `.chip`; the marks also drive the yellow band |
+| `` `[1 अंक · 2026 · Set A/C · 2024 · Set G]` `` | split three ways — see **Question tags** below |
+| `` `[1 अंक · 2022A]` `` | a paper with no sets; the year stands as the whole reference |
 | `` `[3 अंक · पुस्तक]` `` | a book question rather than a board one |
 | `★★` | `.stars` |
 | `*note*` after the stars | `.starnote` in Caveat |
 | `a) … b) …` / `i) … ii) …` / `(a) …` | `.opts` 2-col grid, `.opts.one` when long |
 | `**उत्तर:**` | green `.anslabel` pill + `.anstext` |
 | `**दिया है :**` or `**दिया है, **` | `.given` with its pink left rule |
-| `---` between questions | `.qsep` dashed rule |
+| `---` between questions | `.qsep` dashed rule (a rule the SOURCE asks for) |
+
+> Between consecutive questions no separator is written and none is
+> emitted: `.qhead` draws that dashed rule itself as its `border-top`,
+> so a question opening a column can suppress it instead of stranding a
+> rule across the top of the column.
+
+#### Question tags
+
+The `` `[...]` `` tag after `**प्र. N**` is one `·`-separated list holding
+three different KINDS of fact, and each is set differently:
+
+| Field | Recognised by | Becomes |
+|---|---|---|
+| `1 अंक` | a number + `अंक`/`marks`/`M`, first field | yellow `.qmarks` chip, pushed to the end of the head's row |
+| `2026` / `2022A` | a bare 4-digit year, optional letter | opens a paper reference |
+| `Set A/C/E` | `Set` + `/`-separated ids | fills the year just opened — one `.paper-ref` per set (`2026/set_a`, `2026/set_c`, …) |
+| anything else | — | a small `.inline-tag` (e.g. `आंकिक प्रश्न`) |
+
+A year with no `Set` after it is itself one reference. A tag may name
+several papers — `1 अंक · 2025 · Set H · 2023 · Set A` is **two**
+papers, not four facts — and they are collected into one gold
+`.paper-refs` band on a row of its own under the head
+(`.question-meta`). A tag that parses to nothing recognisable falls
+back to a single `.chip`, so an unfamiliar dialect still prints.
+See `book/components/question.py`'s `split_qtag`.
 | `> ✅ **… cover।**` | the green closing `.banner` |
 
 **Sort questions by ascending marks inside a group.** The yellow
@@ -436,10 +491,23 @@ IF an enumerator precedes the image on the same line — `(ii) ![...]`
     three structures on one page indistinguishable
 ```
 
-**Never fetch or embed an external image URL at build time.** Every figure
-this pipeline ships is either a real local file under `source_figures/` or
-a reserved plate. A remote URL in the source is evidence of what the
-original crop was, not something to hotlink into the final page.
+**A real, finished image is not always local any more.** Since the
+`21_figures_final.md`-style chapters, a figure's own artwork can already
+be hosted — `![चित्र 2.1 — <caption>](https://…/2.1_….png)`, caption
+INSIDE the brackets — and that shape renders exactly like a local
+`source_figures/` scan: `figure()`'s only test is whether `ref` starts
+with `http(s)://`, not where it points. The pipeline never uploads
+anything itself (no network calls at build time — see
+`book/util/upload_image.py`'s docstring) and never edits the URL; it
+just hotlinks whatever the chapter already gives it.
+
+**This is a DIFFERENT shape from the Mathpix crop row above** (`चित्र N —
+![](url)`, caption OUTSIDE the brackets) — that one is still dropped on
+sight, exactly as documented: it is provenance for a crop nobody saved,
+not a finished picture. Caption-inside-brackets with a real URL means
+the art exists and is meant to print; caption-outside-brackets with an
+empty `![]()` means it does not. Read the shape, not just "does this
+line contain a URL."
 
 ---
 

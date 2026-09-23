@@ -17,9 +17,18 @@ def accent(i):
     return A[i % len(A)]
 
 
-def hdu(text, colour="hd-pink"):
-    """Section title with the hand-drawn underline under it."""
-    return '<span class="hdu %s"><i></i><b>%s</b></span>' % (colour, text)
+def tint(i):
+    """The pale per-accent background that rides along with `accent(i)` —
+    set on the page as `--tint` beside `--accent`."""
+    return theme.TINTS[i % len(theme.TINTS)]
+
+
+def hdu(text, colour="hd-pink", tag="span"):
+    """Section title with the hand-drawn underline under it.
+
+    `tag="h2"` for a Part-1 topic head: `.revision-unit .sechead h2` sizes
+    and un-margins it, and those rules cannot reach a `<span>`."""
+    return '<%s class="hdu %s"><i></i><b>%s</b></%s>' % (tag, colour, text, tag)
 
 
 def swipe(text, colour="qnum", cls=""):
@@ -35,8 +44,20 @@ def chip(text, size=None):
 
 
 def examchip(text):
-    """The dark-red exam stamp with its little yellow pin — `UP 2025 · 3 अंक`."""
-    return '<span class="examchip">🔥 %s</span>' % inline(text)
+    """The dark-red exam stamp with its little yellow pin — `UP 2025 · 3 अंक`.
+
+    `.topic-frequency` is the reference's name and design for this: same
+    dark-red seal, same yellow pin, but the pin is a `::before` on the
+    span rather than a separate element, and it is `flex:none` so it sits
+    on the heading's own row instead of being squeezed by it. The
+    reference carries no `.examchip` at all (0 occurrences), so keeping
+    the old class meant this stamp was the one heading element still
+    styled by the pre-reference stylesheet. Only the new name is emitted
+    — carrying both would leave the two rule sets fighting in the
+    cascade, which is how a chip ends up with one sheet's padding and
+    the other's border.
+    """
+    return '<span class="topic-frequency">🔥 %s</span>' % inline(text)
 
 
 def marktag(text):
@@ -70,13 +91,21 @@ def athava(label, text, years=""):
     why a student reads the variant at all. Set apart from the question text,
     the way the reference sets its year lists.
     """
-    tail = (' <span class="qyr">[%s]</span>' % inline(years)) if years else ""
-    # A RULE with the word in it, not an italic lead-in.
+    # A VARIANT HEAD, NOT A RULE ACROSS THE COLUMN.
     #
-    # Set as `<i>अथवा</i> …` the variant read as a continuation of the
-    # question above it — the two phrasings ran together and a student could
-    # not see where one ended. `अथवा` is a fork in the question, so it is set
-    # as a divider across the column with the word sitting in the break.
-    return ('<div class="athsep"><span>%s</span></div>'
-            '<p class="q">%s%s</p>'
-            % (inline(label), inline(text), tail))
+    # This drew `अथवा` sitting in a break in a full-width divider, on the
+    # reasoning that a fork in the question needs to be unmissable. The
+    # reference does not: it sets one ordinary question paragraph,
+    # `<p class="q variant-head"><b>अथवा</b> <i>(2025 के विकल्प)</i></p>`,
+    # and lets the options below it do the separating. The rule was louder
+    # than the question it divided, and in a 449px column it read as the
+    # end of the question rather than as a second phrasing of it.
+    #
+    # The sitting goes in the same line, in italic parentheses, rather
+    # than in a `.qyr` chip — it qualifies the word `अथवा` ("the 2025
+    # wording"), and as a chip it read as a separate year tag on the
+    # question.
+    tail = (' <i>(%s)</i>' % inline(years)) if years else ""
+    body = (" " + inline(text)) if (text or "").strip() else ""
+    return ('<p class="q variant-head"><b>%s</b>%s%s</p>'
+            % (inline(label), tail, body))

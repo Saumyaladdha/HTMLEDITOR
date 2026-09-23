@@ -138,3 +138,19 @@ of bare in the row.
 **Validation:** after the fix, `has_semicolon_matrix()` on that exact line
 returns a match, and the built page shows three same-sized grids in a row,
 not two grids and one wall of un-rendered brackets.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below.
+
+Extraction feeds the reader, so the constructs it must preserve VERBATIM
+now include four the reader learned: a `**त्रिक:**` fact strip, a
+`· **13 सवाल आए · 1 व 5 अंक में**` trailer on a topic heading, the
+`` `[1 अंक · 2026 · Set A/C]` `` question tag (marks, papers, notes — do
+not normalise the `·` separators or the `Set A/C` spelling), and
+`\boxed{…}` inside maths. Losing any of them downgrades a styled block to
+a plain paragraph with no error anywhere.

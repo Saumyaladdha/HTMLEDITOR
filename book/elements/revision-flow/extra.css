@@ -1,0 +1,119 @@
+/* PART 1 — THE QUICK-REVISION SPREAD, and the chrome that only Part 2
+   questions carry. Every rule below is VERBATIM from the reference
+   (`build/REFERENCE_chapter-02.html`); none of it existed in this
+   codebase before, which is why Part 1 rendered as one running column
+   with Part 2's sizing instead of the reference's two-column crib sheet.
+
+   Part 1 is not Part 2 with different content — it is a DIFFERENT
+   DESIGN. Its units are denser (18px prose against Part 2's larger
+   answer face), its सूत्र panel is a bulleted list rather than a row of
+   boxed results, its त्रिक strip is a two-column green grid rather than
+   a stacked beige one, and the two columns of the spread are separated
+   by a blue rule instead of whitespace. `.revision-unit` is the hook for
+   all of it; `.revision-flow` is the hook for the spread itself. See
+   `assemble/html.py` (which classes the Part-1 `.acols`) and
+   `assemble/render.py` (which classes each Part-1 `.u`). */
+
+/* ---------- the two-column spread ---------- */
+.revision-flow { display:flex; flex:none; }
+.revision-flow > .acol:first-child { border-right:2px solid #6f97d2; }
+
+/* ---------- a topic heading inside Part 1 ---------- */
+.revision-unit .sechead { display:grid; grid-template-columns:40px minmax(0,1fr);
+                          align-items:start; margin-top:15px; margin-bottom:10px;
+                          gap:0 10px; }
+.revision-unit .topic-heading { display:flex; flex-wrap:wrap; align-items:center;
+                                gap:9px; min-width:0; }
+.revision-unit .sechead h2 { margin:0; line-height:1.3; min-width:0; max-width:100%; }
+.revision-unit .sechead h2 b { font-size:24px; }
+/* `display:contents` — the history chips are laid out by the `.sechead`
+   grid above, not by a box of their own, so they sit on the heading's
+   own row instead of starting a new one. */
+.revision-unit .topic-history { display:contents; }
+.revision-unit .para { margin:7px 0; font-size:18px; line-height:1.6; }
+.revision-unit .po { margin:6px 0 10px; }
+/* A dashed rule between topics — but never above the first one on a
+   column, where it would read as a stray line under the part banner. */
+.revision-unit[data-kind="topic"]:not(:first-child) { padding-top:15px;
+    border-top:1px dashed #ddd6c5; margin-top:10px; }
+
+/* ---------- the सूत्र panel, Part 1 skin ---------- */
+/* Flat and bulleted, not a row of boxed results: in a crib sheet the
+   formulas are a LIST to read down, and the boxes Part 2 draws around
+   each result turned a six-formula topic into six separate cards. */
+.revision-unit .fcard { display:block; margin:7px 0; padding:11px 14px;
+                        border:1.5px solid #a67bd9; background:#f9f5fe; }
+.revision-unit .fcard .ft { font:700 17px 'Kalam',sans-serif; margin:0 0 7px; }
+.formula-list { display:grid; gap:7px; list-style:none; padding:0; margin:0; }
+.formula-list > li { display:grid; grid-template-columns:5px minmax(0,1fr);
+                     column-gap:10px; align-items:start; }
+.formula-list > li::before { content:""; width:5px; height:5px; border-radius:50%;
+                             background:#965fc9; margin-top:13px; }
+.formula-body { min-width:0; font-size:18px; line-height:1.7; }
+.revision-unit .formula-body > .m { display:inline-block; max-width:100%;
+                                    vertical-align:middle; }
+
+/* ---------- the त्रिक strip, Part 1 skin ---------- */
+/* Two columns and green, against the stacked beige strip Part 1 shares
+   with every other context — see `elements/trio/`. */
+.revision-unit .trio { display:grid;
+                       grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+                       gap:4px 28px; align-items:baseline; background:#f0faf3;
+                       border-color:#8fc7a3; border-left:3px solid #46966a;
+                       font-size:16px; line-height:1.4; padding:7px 12px;
+                       margin:4px 0; }
+
+/* ---------- the निगमन (derivation) sticky note ---------- */
+/* A derivation's steps are a numbered sequence to read down, so this one
+   callout drops the rotation and the inline runs every other sticky note
+   uses. `!important` is the reference's own — it is overriding the
+   shared `.callout.sticky` rules, not this file's. */
+.derivation-note { border:2px solid #739bd6; background:#f5f9ff;
+                   transform:none!important; padding:14px 20px!important;
+                   margin:12px 0!important; }
+.derivation-note .ch { color:#3565a6; font-family:'Kalam'; font-size:24px; }
+.derivation-note .ci { display:block!important; font-size:18px!important; }
+
+/* ---------- question chrome (Part 2) ---------- */
+/* The exam-paper provenance pills under a question head. */
+.paper-refs { padding:3px 8px; color:#57440a; background:#ffe98d;
+              border-bottom:2px solid #d5aa2c; border-radius:4px 7px 4px 6px;
+              font-weight:700; box-decoration-break:clone;
+              -webkit-box-decoration-break:clone; }
+.paper-ref { white-space:nowrap; }
+.question-meta { flex-basis:100%; padding:2px 0; font-size:15px; line-height:1.65; }
+/* A cross-reference to another question — `प्र. 53 देखिए`. */
+.qref { color:#3a5692; text-decoration:underline; text-decoration-color:#b0bed8;
+        text-underline-offset:3px; }
+/* A short tag set inline in running text, e.g. a source marker. */
+.inline-tag { font-family:'Kalam',sans-serif; background:#f5efd8; border-radius:4px;
+              padding:0 3px; }
+/* How often a topic has been examined — the red "hot topic" seal with its
+   own yellow pin. This REPLACES `.examchip`, which the reference does not
+   carry at all: same seal, but the pin is a `::before` on the span rather
+   than a separate element, and `flex:none` keeps it on the heading's own
+   row instead of letting the title squeeze it. Both authoring dialects
+   land here — `[🔥 UP 2025 · 3 अंक]` (see `components/inline.examchip`)
+   and the newer `· **13 सवाल आए · 1 व 5 अंक में**` heading trailer (see
+   `render._split_topic_freq`). `elements/examchip` is left in place for
+   chapters not yet rebuilt; nothing emits its class any more. */
+.topic-frequency { position:relative; display:inline-block; flex:none;
+                   white-space:nowrap; font-size:14px; line-height:1.5; color:#fff;
+                   background:#c0392b; padding:3px 9px;
+                   border-radius:11px 15px 9px 13px; font-weight:700;
+                   transform:rotate(-.7deg); box-shadow:1px 2px 4px #00000026; }
+.topic-frequency::before { content:""; position:absolute; top:-4px; left:50%;
+    margin-left:-4px; width:8px; height:8px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe58a,#e0a80c);
+    box-shadow:0 1px 2px #00000040; }
+/* A standalone `उत्तर:` heading, for an answer long enough that the
+   inline `.anslabel` chip would be lost above it. */
+.subhead { font-size:20px; color:var(--blue); font-weight:700; margin:12px 0 8px; }
+/* A question-format banner set in the flow rather than across the page. */
+.type-banner-inline { margin-top:24px; margin-bottom:16px; }
+.opts > div { padding:2px 0; }
+.po .ic { font-size:18px; }
+/* A fraction may shrink to its column rather than widening the line. */
+.dm .fr { vertical-align:middle; max-width:100%; }
+/* The reading-order table's own border tint. */
+.study-wrap { border-color:#56cab6; }

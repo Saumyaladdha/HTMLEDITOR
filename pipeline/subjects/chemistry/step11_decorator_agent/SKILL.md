@@ -44,3 +44,22 @@ IF the slack is genuinely at the END of a section or part, with no drawn
 - Never propose art on an organic Q&A page dense with structure images —
   the structures themselves are the visual interest the page has; more art
   competes with them.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**There is no floated note column any more.** The reference carries zero
+`.stickycol`: a note is set inline, in the column it belongs to. A
+निगमन (derivation) card additionally gets `.derivation-note`, which drops
+the rotation and puts each step on its own line — those cards are read
+down, not glanced at.
+
+So "move it to the margin" is no longer an available fix. A note that does
+not fit belongs earlier or later in its own column.

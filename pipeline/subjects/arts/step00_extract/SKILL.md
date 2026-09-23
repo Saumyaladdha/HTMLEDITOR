@@ -57,3 +57,19 @@ arts extraction. Two things worth checking if/when it is:
   produced the source. See `step16`'s SKILL.md for the rendering fix this
   needed; nothing to do differently at extraction time, just don't strip
   or "clean up" these citations — they are load-bearing provenance notes.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below.
+
+Extraction feeds the reader, so the constructs it must preserve VERBATIM
+now include four the reader learned: a `**त्रिक:**` fact strip, a
+`· **13 सवाल आए · 1 व 5 अंक में**` trailer on a topic heading, the
+`` `[1 अंक · 2026 · Set A/C]` `` question tag (marks, papers, notes — do
+not normalise the `·` separators or the `Set A/C` spelling), and
+`\boxed{…}` inside maths. Losing any of them downgrades a styled block to
+a plain paragraph with no error anywhere.

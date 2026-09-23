@@ -1,0 +1,38 @@
+
+/* `--blue` backs `.page-number` (and `.type-en`/`.type-banner h2` — see
+   partbanner/extra.css); the six rotating `--accent`/`--tint` pairs are set
+   inline per content page instead of listed here, one per topic. */
+:root { --blue:#2b3a8f; }
+
+/* THE ALWAYS-ON PAGE FOOTER.
+   The reference gives every sheet a quiet page number — `.sheet-body` is the
+   flex column that holds the actual content within the (now smaller) padded
+   box, and `.page-bottom` sits absolutely at its foot so the number never
+   consumes flow height the packer has to account for. See
+   `book/assemble/html.py:_number_pages` — the cover gets a number too, just
+   no `--accent` (nothing before Part 1 has a topic yet). */
+.sheet-body { height:1413px; display:flex; flex-direction:column; position:relative; }
+.page-bottom { position:absolute; bottom:21px; left:68px; right:68px;
+               border-top:1px solid #e6dfce; padding-top:7px;
+               display:flex; justify-content:center; }
+.page-number { font:700 18px Georgia,serif; color:var(--blue); }
+.page.source-cover .page-bottom { left:44px; right:44px; border-top:0; bottom:19px; }
+
+/* PRINT RULES THE ARCHIVED SHEET NEVER CARRIED.
+   Verbatim from the reference's own `@media print` block. Each fixes
+   something only visible on paper:
+     · the FIRST page must not force a break before itself, or every
+       print starts with a blank sheet;
+     · a two-column option grid stays two columns on paper (on screen it
+       is sized by the column, which collapses it to one);
+     · a link prints as text, not as an underlined link. */
+@media print {
+  #book > .page:first-child { break-before:auto; }
+  .opts { grid-template-columns:1fr 1fr; }
+  .opts.one { grid-template-columns:1fr; }
+  a { text-decoration:none; }
+}
+
+/* A link inherits the page's ink rather than the browser's blue — the
+   book is printed, and a blue word in a Hindi sentence reads as damage. */
+a { color:inherit; }

@@ -181,3 +181,19 @@ IS `broken` non-zero (a component name in MAP that book/components
   `क्रम:` case shows, a gap can be entirely upstream (the reader's rubric)
   or downstream (`render.py` never reading `fmt`, per `step07`) while this
   step's own table is completely correct and uninvolved.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**Part 1 and Part 2 both pack into two columns now.** There is no
+single-column `flowwrap` half and no 300px floated note column; a sticky
+note is assigned INLINE, into the column its section sits in. A Part-1
+item carries `revision`, which is what gives it `.revision-unit` and its
+page `.revision-flow`.

@@ -1,11 +1,11 @@
 [
  {
   "i": 131,
-  "css": ".q { font-size:18.5px; line-height:1.65; margin:8px 0; }"
+  "css": ".q { font-size:18.5px; line-height:1.6; margin:8px 0; overflow-wrap:break-word; }"
  },
  {
   "i": 132,
-  "css": ".qmarks { background:#fdf3b4; border:1.5px solid #e2b93b; border-radius:8px; padding:1px 9px;\n          font-size:14px; font-weight:700; white-space:nowrap; margin-left:6px;\n          display:inline-block; }"
+  "css": ".qmarks { background:#ffefad; border:1.5px solid #dfb632; border-radius:8px; padding:1px 9px;\n          font-size:14px; font-weight:700; white-space:nowrap; margin-left:6px;\n          display:inline-block; }\n.qhead .qmarks { font-size:13px; }\n.eq-tail .qmarks { font-style:normal; }"
  },
  {
   "i": 133,

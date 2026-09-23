@@ -82,8 +82,6 @@ def main():
                     choices=["physics", "biology", "chemistry", "maths", "arts", "economics"],
                     help="default: detect from the markdown")
     ap.add_argument("--only-part", default="all", choices=["all", "part1", "part2"])
-    ap.add_argument("--page-numbers", action="store_true",
-                    help="header + page numbers (the reference book has neither)")
     ap.add_argument("--from", dest="start", default=None, help="e.g. step09")
     ap.add_argument("--to", dest="end", default=None)
     ap.add_argument("--only", default=None, help="run exactly one step")
@@ -109,8 +107,6 @@ def main():
         extra = []
         if name in LAYOUT_ARGS:
             extra = ["--mode", a.mode, "--only", a.only_part]
-            if a.page_numbers:
-                extra.append("--page-numbers")
         print("[%2d/%d] %s" % (i, len(steps), name))
         # `-u`, AND THE ELAPSED TIME.
         #

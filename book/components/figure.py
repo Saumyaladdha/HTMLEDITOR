@@ -74,16 +74,76 @@ def figure(num, caption, desc="", ref=None, size="figure", place="center",
     # `fig-solo` narrows a full-width figure to 66% and centres it; inside a
     # column it stays full width.
     variant = " fig-solo" if place == "center" and not narrow else ""
-    # THE ITALIC LINE UNDER A FIGURE BELONGS TO THE FIGURE.
+    # A REF THAT IS A REAL URL IS A PICTURE, NOT A PLACEHOLDER.
     #
-    # `*चित्र 1.8 — द्विबीजपत्री भ्रूण की अनुदैर्ध्य काट; …*` used to be set as
-    # a free paragraph after the card, so a figure read as a dashed box AND a
-    # second, unrelated block of italic text beneath it. `attach_captions`
-    # now hands that sentence over as `cap_text`, and it is set here as the
-    # card's own `<figcaption>`, inside the border, under the plate. The
-    # `.fh` above already names the figure, so the number is not repeated.
-    cap_html = ('<figcaption class="fcap">%s</figcaption>' % inline(cap_text)
-                if (cap_text or "").strip() else "")
+    # `ref` reaches this component already resolved — see
+    # `assemble.render`'s figure branch, which hands every reference
+    # through `util.upload_image.resolve_ref` before it gets here. That
+    # function's own contract is "a browser-fetchable URL, or the original
+    # string unchanged" — so testing for `http(s)://` here is exactly the
+    # line between "there is a real image" and "still just a path (or
+    # nothing) with no art behind it yet", without this component needing
+    # to know anything about uploads, credentials, or storage.
+    #
+    # `.is-photo` drops the dashed placeholder look (border, background,
+    # reserved height) a real picture has no use for — those exist so an
+    # EMPTY plate still reads as intentional, not so a real photo sits in
+    # a box built for one.
+    has_image = bool(ref) and ref.startswith(("http://", "https://"))
+
+    # A REAL PHOTO IS A DIFFERENT, SIMPLER CARD — NOT THE PLACEHOLDER SHELL
+    # WITH AN IMAGE DROPPED IN.
+    #
+    # The reference's photo state has no `.fh` icon+label row and no dashed
+    # `.figspace` plate — those exist so an EMPTY reservation still reads as
+    # intentional, and a real picture has no use for either.
+    #
+    # THE CAPTION IS STILL `cap_text` FIRST, EXACTLY AS THE PLACEHOLDER
+    # BRANCH BELOW PRIORITISES IT.
+    #
+    # A chapter with real photos writes its own detailed caption as a
+    # separate italic paragraph after the image — `attach_captions` lifts
+    # it into `cap_text`, prefix stripped of the "चित्र N —" `label`
+    # already carries. Using `label` alone here (the short alt-text inside
+    # the `![...]`) silently dropped that whole sentence: 162 distinct
+    # words on physics chapter 2's 29 real figures, every one of them the
+    # chapter's own circuit-diagram description, caught by step16 as
+    # content nowhere on the page.
+    if has_image:
+        cap = ("%s — %s" % (label, cap_text)) if (cap_text or "").strip() else label
+        return ('<figure class="figcard has-img" data-figure="%s" data-ref="%s">'
+                '<div class="figure-image">'
+                '<img src="%s" alt="%s" loading="lazy"></div>'
+                '<figcaption>%s</figcaption></figure>'
+                % (plain(num or ""), plain(ref), plain(ref), plain(cap),
+                   inline(cap)))
+
+    # A FIGURE NAMES ITSELF TWO WAYS, AND BOTH CAN BE TRUE AT ONCE.
+    #
+    # `cap_text` is a REAL caption sentence the chapter wrote as its own
+    # italic paragraph after the image — `attach_captions` in the reader
+    # lifts it off the page and hands it here. Where it exists it is the
+    # more specific of the two and is printed as the card's own
+    # `<figcaption>`, inside the border, under the plate — see the note
+    # there for why a free paragraph after the card was wrong.
+    #
+    # Chemistry never sets `cap_text` (`attach_captions` folds a chemistry
+    # caption straight into `desc` instead — same profile, see its own
+    # docstring), and a `[RXN:`/`[STRUCT:`/`[IMAGE:` directive's own tail
+    # text is `desc` from the reader, with no separate caption paragraph at
+    # all. For those the only chapter-authored text there is IS `desc`, and
+    # 27 of chem_06's figures — no art yet, no `cap_text`, nothing but a
+    # dashed box and a bare `चित्र 6.1` — read as unfinished without it.
+    # `.fd` is the class the book already uses for a description line under
+    # a plate, so the fallback matches the same place, same styling,
+    # `cap_text` would use if the chapter had written one.
+    if (cap_text or "").strip():
+        cap_html = ('<figcaption class="fcap">%s</figcaption>'
+                   % inline(cap_text))
+    elif (desc or "").strip():
+        cap_html = '<div class="fd">%s</div>' % inline(desc)
+    else:
+        cap_html = ""
     return ('<figure class="figcard figbox%s" data-fig="%s" data-ref="%s" data-desc="%s">'
             '<div class="fh"><span>📐</span><span>%s</span></div>'
             '<div class="figspace" style="height:%dpx;"></div>'

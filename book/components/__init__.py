@@ -22,14 +22,14 @@ from .slot import slot, SLOT_SIZES, accent                                   # n
 from .inline import (hdu, swipe, chip, examchip, marktag, qmarks,            # noqa: F401
                      starline, stars, starnote, athava)
 from .heading import (chapter_header, section_head, sub_head, part_banner,   # noqa: F401
-                      year_head, year_banner, part_cover)
+                      type_banner, year_head, year_banner, part_cover)
 from .text import (para, work, bullets, numbered, definition, trio, note,    # noqa: F401
                    rule, sep, flow, looks_like_flow, flow_stages,             # noqa: F401
                    matrix_art)                                   # noqa: F401
-from .math import eq, fbox, fcard, frow, chem_structure, chem_ring, chem_rxn, has_chain       # noqa: F401
+from .math import eq, fbox, fcard, formula_list, frow, chem_structure, chem_ring, chem_rxn, has_chain       # noqa: F401
 from .callout import (pointer, pointer_flat, sticky, callout_block,          # noqa: F401
                       simchip, srcnote, refbox, fullnote, PO, FLAT)
-from .question import qhead, question_text, options, answer, given, qsep     # noqa: F401
+from .question import subhead, is_subhead_text, qhead, question_text, options, answer, given, qsep     # noqa: F401
 from .table import table                                                     # noqa: F401
 from .figure import figure, figure_note                                      # noqa: F401
 from ..design import tokens as theme                                         # noqa: F401
@@ -39,12 +39,12 @@ __all__ = [
     "slot", "SLOT_SIZES", "accent",
     "hdu", "swipe", "chip", "examchip", "marktag", "qmarks",
     "starline", "stars", "starnote", "athava",
-    "chapter_header", "section_head", "sub_head", "part_banner",
+    "chapter_header", "section_head", "sub_head", "part_banner", "type_banner",
     "year_head", "year_banner", "part_cover",
     "para", "work", "bullets", "numbered", "definition", "trio", "note",
     "rule", "sep",
-    "eq", "fbox", "fcard", "frow", "chem_structure", "chem_ring", "chem_rxn", "has_chain",
-    "pointer", "pointer_flat", "sticky", "callout_block", "simchip", "srcnote", "refbox",
+    "eq", "fbox", "fcard", "formula_list", "frow", "chem_structure", "chem_ring", "chem_rxn", "has_chain",
+    "subhead", "is_subhead_text", "pointer", "pointer_flat", "sticky", "callout_block", "simchip", "srcnote", "refbox",
     "fullnote", "PO",
     "qhead", "question_text", "options", "answer", "given", "qsep",
     "table", "figure", "figure_note",

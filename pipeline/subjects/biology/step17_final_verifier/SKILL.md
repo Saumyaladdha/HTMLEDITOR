@@ -96,3 +96,19 @@ IS the finding step07's permanently-reopening `flow`/`figure_brief`
   a new chapter should be compared against the 422px/0-gap baseline.
 - Never clear a queue by writing decisions you have not made — an empty
   queue is meant to mean "resolved."
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**What a green build means now.** Geometry passing is necessary and not
+sufficient: the build is judged against `build/REFERENCE_chapter-02.html`,
+and the two measurable gates are `overflow=0` and dead space in the
+neighbourhood of the reference's **105px free per column**. A build with no
+overflow but 250px+ of slack per column is packing wrong.

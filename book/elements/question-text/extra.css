@@ -1,0 +1,22 @@
+
+/* PRINT-CONTEXT SIZES FOR THE THREE MARKER-STROKE CHIPS.
+   `.qnum`, `.anslabel` and `.yearhead .yr` each draw an SVG stroke
+   behind a bold number, and the reference sets that number a size of its
+   own in the A4 context — ours inherited the chip's size, so every
+   question number, answer label and year printed noticeably smaller than
+   the reference's. Verbatim from the reference. */
+.qnum b { font-size:22.5px; }
+.anslabel b { font-size:16.5px; }
+.yearhead .yr b { font-size:29px; }
+
+/* THE ANSWER LABEL FLOATS; THE ROW CLEARS IT.
+   `.ansrow` was `display:flex`, which makes the label and the answer text
+   two flex items — so a long answer could not wrap AROUND the label and
+   instead formed a narrow column beside it, and the whitespace between
+   the two items was dropped (the same flex-whitespace trap the cover's
+   count pill hit). The reference floats the label and clears the row, so
+   the answer's first line sits beside `उत्तर:` and the rest runs full
+   measure under it. Verbatim from the reference. */
+.ansrow { display:block; margin:11px 0 6px; }
+.anslabel { float:left; margin:0 12px 2px 0; padding:2px 11px; }
+.ansrow:after { content:""; display:block; clear:both; }

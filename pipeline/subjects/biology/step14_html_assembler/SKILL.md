@@ -90,3 +90,27 @@ biology-motivated change to shared code (`render.py`, `markdown.py`,
   clean; `build/` is disposable and gitignored.
 - Never accept a biology-motivated change to shared code (`render.py`,
   `markdown.py`) without rebuilding and diffing a physics chapter first.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**The page shell and both halves changed.**
+
+- every page is `.page > .sheet-body`, with an always-on
+  `<footer class="page-bottom"><span class="page-number">`;
+- both halves are two-column `.acols`; a page holding a Part-1 item is
+  `.acols.revision-flow` and each such item is `.u.revision-unit`;
+- a part banner opening a page is hoisted out of the left column into the
+  page header, so it spans the sheet;
+- `.qhead` carries `id="q-N"`; the dashed rule between questions is its
+  `border-top`, not a `.qsep` element;
+- the cover is a LINEAR stack — `.source-front-title` then one
+  `.source-front-section` per `##` heading, in source order. It is not a
+  role-classified card grid.

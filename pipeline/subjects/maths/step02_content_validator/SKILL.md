@@ -75,3 +75,23 @@ correct, not a mismatch, and should be added to the tolerance in
 - **Never assume a ragged row is the renderer's problem.** `matrix.grid`
   padding hides it from the *page*; it does not make the source correct, and
   the transcription error is worth fixing at the root.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**Count the new constructs independently.** The whole point of this step is
+that it shares no code with the parser, so add a counter for anything the
+reader learned: `**त्रिक:**` lines, `· **N सवाल आए …**` heading trailers,
+`\boxed{…}` markers, and the three field kinds inside a `` `[…]` ``
+question tag (marks / year+Set / note).
+
+A tag naming several papers is **one** tag: `1 अंक · 2025 · Set H · 2023 ·
+Set A` is two papers, not four facts. Counting `·` rather than parsing will
+disagree with the reader for the right reason and the wrong one at once.

@@ -47,3 +47,17 @@ references an old id.
 - Never hand-edit `_index`. It is regenerated from the document every run.
 - Never make an id depend on page number or position in the flow. Pagination
   moves; a decision that moves with it is worthless.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below.
+
+Naming is unchanged by the reference work, with one thing to know: a
+`.qhead` now carries `id="q-N"`, so a question's number is an ANCHOR that
+prose links to (`#q-73`). Whatever you name a question, the number itself
+has to keep matching what the markdown wrote, or a cross-reference in an
+answer points at nothing.

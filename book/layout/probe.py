@@ -144,9 +144,34 @@ window.addEventListener('load', function(){
     var limit = parseFloat(cs.height) - pad - parseFloat(cs.paddingBottom);
     var h = 0;
     Array.prototype.forEach.call(p.children, function(c){
+      // THE PAGE-NUMBER FOOTER IS NOT FLOWED CONTENT.
+      //
+      // `<footer class="page-bottom">` sits `position:absolute` near the
+      // foot of every page (see `assemble/html.py:_number_pages`) — a
+      // sibling of `.sheet-body`, not part of it, and deliberately close
+      // to the page's bottom edge. Counted as an ordinary child here, its
+      // own bottom edge (by design, near the page's true bottom) read as
+      // every single page overflowing by the same ~37px, regardless of
+      // how much real content was on it.
+      if (c.tagName === 'FOOTER') return;
       var b = c.getBoundingClientRect().bottom - pr.top - pad;
       if (b > h) h = b;
     });
+    // A FIXED-HEIGHT BOX HIDES ITS OWN OVERFLOW FROM A BOUNDING RECT.
+    //
+    // `.sheet-body` is `height:1413px` — an exact box, so its rect's
+    // bottom sits at the limit no matter how much content spills out of
+    // it, and `.sheet-body` is `.page`'s only flowed child. The scan
+    // above therefore reported "fits" for every page in the book while
+    // content ran off the bottom of one and was clipped away by
+    // `.page { overflow:hidden }` — which DELETES it. `scrollHeight`
+    // against `clientHeight` is what the box actually holds versus what
+    // it shows, and is the only measure that survives a fixed height.
+    var sb = p.querySelector('.sheet-body');
+    if (sb) {
+      var spill = sb.scrollHeight - sb.clientHeight;
+      if (spill > 2 && limit + spill > h) h = limit + spill;
+    }
     if (h > limit + 1) bad.push({page: i+1, used: Math.round(h), limit: Math.round(limit)});
   });
   var d = document.createElement('div');
@@ -202,7 +227,11 @@ window.addEventListener('load', function(){
     var limit = parseFloat(cs.height) - pad - parseFloat(cs.paddingBottom);
     var boxes = [];
     var cols = p.querySelectorAll('.acol');
-    var scopes = cols.length ? cols : [p];
+    // `.sheet-body`, not `.page` itself — `.page`'s last child may be the
+    // `<footer class="page-bottom">` the page-number pass appends beside
+    // it (see `assemble/html.py:_number_pages`), which sits near the foot
+    // of the page BY DESIGN and is not the real content's own last block.
+    var scopes = cols.length ? cols : [p.querySelector('.sheet-body') || p];
     Array.prototype.forEach.call(scopes, function(sc, ci){
       var last = sc.lastElementChild;
       var used = last ? last.getBoundingClientRect().bottom - pr.top - pad : 0;

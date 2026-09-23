@@ -1,0 +1,34 @@
+/* THE GUTTER IS RULED, ON EVERY TWO-COLUMN PAGE.
+   The reference draws a solid blue rule down the middle of every `.acols`
+   spread — not only Part 1's. Ours drew none, so on a page where the left
+   column ended short the two columns read as one ragged block and a
+   reader had no line to tell them apart. Verbatim from the reference,
+   including the tighter 22px inner padding the rule is spaced against
+   (ours was 32px, which was standing in for the missing rule).
+
+   `.revision-flow > .acol:first-child` in `elements/revision-flow`
+   restates the same rule for Part 1 — the reference carries both, and
+   they agree. */
+.acol:first-child { border-right:2px solid #6f97d2; padding-right:22px; }
+.acol:last-child  { padding-left:22px; }
+
+/* A COLUMN IS A BLOCK, NOT A FLEX STACK.
+   `display:flex; flex-direction:column` made every `.u` a flex item, and
+   flex items do not collapse margins — so a column measured taller than
+   the same items measured in the packer's own probe, which is the one
+   invariant the packer depends on (see `_wrap`). The reference sets it
+   `display:block; height:100%`. */
+.acol  { display:block; height:100%; }
+.acols { flex:none; gap:0; min-height:0; }
+
+/* The first block on a column never carries its own top margin — it
+   would push the column head down past where the packer measured it. */
+.acol > .u:first-child > :first-child { margin-top:0; }
+.acol > .type-banner-inline:first-child { margin-top:0; }
+.acol > .u:first-child .qhead { border-top:none; margin-top:0; padding-top:0; }
+/* Nor does a question that opens straight under a year head. */
+.u[data-kind="year"] + .u .qhead { border-top:none; margin-top:0; padding-top:0; }
+
+/* The measurement contract, stated on `.u` itself — see `_wrap`. */
+.u { display:flow-root; margin:0; padding:.05px 0; }
+.u > :first-child { margin-top:6px; }

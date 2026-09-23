@@ -35,8 +35,121 @@
            width:auto; height:auto; object-fit:contain; }
 .bookart--character img { max-width:52%; }
 
+/* THE TOPIC-WEIGHT AND READING-ORDER CARDS ARE REAL TABLES.
+   `.priority-table`/`.study-table` replace the old bar-chart/step-icon
+   cards — see `components/cover.py`'s `priority_table`/`study_table`,
+   which took over `bar_card`/`steps_card`'s call sites in `render_cover`.
+   Verbatim from the reference. */
+.front-table-wrap { overflow:hidden; border:1.3px solid #9dbaf2; border-radius:16px; background:#fff; }
+.priority-table, .study-table { width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; }
+.priority-table { font-size:22px; line-height:1.35; }
+.priority-table th { background:#f1f2ff; text-align:left; font-size:22px; line-height:1.35;
+                     padding:9px 17px; font-weight:600; }
+.priority-table th:first-child { width:59%; padding-left:23px; }
+.priority-table th:nth-child(2) { width:19%; text-align:center; }
+.priority-table th:last-child { width:22%; padding-left:30px; }
+.priority-table td { height:54px; padding:7px 17px; vertical-align:middle; border-top:1px solid #d0def8; }
+.priority-table td:nth-child(2) { text-align:center; }
+.priority-table td:last-child, .priority-table th:last-child { border-left:1px solid #c5d6f7; }
+.priority-topic { display:grid; grid-template-columns:70px minmax(0,1fr); gap:18px; align-items:center; }
+.priority-id { display:flex; align-items:center; justify-content:center; color:#17245a;
+               background:var(--chip-color); border-radius:22px 24px 20px 25px;
+               font-size:23px; font-weight:600; line-height:1.2; min-height:37px; }
+.count-value { display:inline-flex; min-width:56px; min-height:37px; align-items:center;
+               justify-content:center; border-radius:25px 22px 25px 21px; background:#ffc8e2;
+               color:#c51862; font-size:25px; line-height:1; font-weight:700; }
+.priority-table .priority-marks { text-align:left; padding-left:35px; white-space:nowrap; font-size:22px; }
+.study-table { font-size:19px; line-height:1.35; }
+.study-table th { background:#eefaf5; color:#174b42; font-size:21px; font-weight:600;
+                  text-align:left; padding:8px 16px; }
+.study-table th:first-child { width:9%; text-align:center; }
+.study-table th:nth-child(2) { width:36%; }
+.study-table th:last-child { width:55%; }
+.study-table td { padding:6px 16px; height:45px; border-top:1px solid #b9e4dd; vertical-align:middle; }
+.study-table td + td, .study-table th + th { border-left:1px solid #b9e4dd; }
+.study-table td:first-child { text-align:center; padding:5px; }
+.study-number { display:inline-flex; align-items:center; justify-content:center; width:33px; height:33px;
+                border-radius:50% 47% 50% 45%; background:var(--chip-color); color:#24376f;
+                font-size:23px; line-height:1; font-weight:600; }
+.study-table tr:nth-child(2) .study-number { color:#b31b67; }
+.study-table tr:nth-child(3) .study-number { color:#b26b0e; }
+.study-table tr:nth-child(4) .study-number { color:#23685e; }
+.study-table .m { font-size:.97em; }
+
+/* THE COVER ITSELF IS A LINEAR STACK, NOT A CARD GRID.
+   Replaces the old `.cvhero`/`.cvcard` two-column dashboard — see
+   `components/cover.py`'s `front_title`/`front_section` and
+   `assemble/render.py`'s `render_cover`, which now walks the chapter's
+   front matter in SOURCE ORDER instead of classifying it into
+   `left`/`right`/`full` columns. Verbatim from the reference. */
+.page.source-cover { padding:42px 44px 72px; background:#fffefa; color:#142451; }
+.source-cover .sheet-body { gap:14px; }
+.source-cover .u > :first-child { margin-top:0; }
+.source-cover .page-bottom { left:44px; right:44px; border-top:0; bottom:19px; }
+.source-front-title { position:relative; flex:none; padding:0; }
+.source-title { position:relative; margin:0 0 16px; color:#102054; font-weight:700; z-index:1; }
+.chapter-badge { position:relative; display:table; padding:1px 19px 2px; border-radius:24px 19px 23px 16px;
+                 background:#ddccff; font-size:27px; line-height:1.35; transform:rotate(-2deg); }
+.chapter-topic { position:relative; display:table; font-size:70px; line-height:1.12; white-space:nowrap;
+                 padding:8px 0 12px; letter-spacing:-.3px; }
+.chapter-topic::after { content:""; position:absolute; left:40px; right:1px; bottom:4px; height:8px;
+                        border-radius:60% 30% 55% 40%;
+                        background:linear-gradient(90deg,#bd9bf3,#d5bfff 45%,#bd9bf3);
+                        transform:rotate(-1.5deg); z-index:-1; }
+.source-front-title .note { position:relative; display:flex; align-items:center; gap:19px; background:#fff7d8;
+                            border:1px solid #edc54c; border-right-color:transparent; border-radius:21px;
+                            padding:7px 22px; margin:0; min-height:64px; font-size:26px; line-height:1.4;
+                            color:#142451; }
+.source-front-title .note b { color:#102054; background:#ffda65; padding:1px 9px;
+                              border-radius:20px 15px 18px 14px; white-space:nowrap; }
+.source-front-section { min-width:0; flex:none; }
+.source-front-section h2 { position:relative; display:table; color:#132452; font-size:28px; line-height:1.35;
+                           margin:0 0 9px; padding:5px 18px 4px 11px; background:#e2d4ff;
+                           border-radius:25px 19px 24px 17px; }
+.front-section-1 h2::after {
+  content:""; position:absolute; width:17px; height:27px; right:-27px; top:11px;
+  background:linear-gradient(-25deg,transparent 40%,#9964dd 43% 54%,transparent 58%) 0 0/14px 9px no-repeat,
+             linear-gradient(#9964dd,#9964dd) 2px 13px/12px 3px no-repeat,
+             linear-gradient(25deg,transparent 40%,#9964dd 43% 54%,transparent 58%) 0 22px/14px 9px no-repeat; }
+.front-section-1 > .u[data-kind="note"] { padding-top:9px; }
+.front-section-1 .note { position:relative; display:block; background:#f3f8ff; border:0; border-radius:19px;
+                         padding:10px 19px 10px 74px; margin:10px 0 0; color:#23365b; font-size:19.5px;
+                         line-height:1.45; }
+.front-section-1 .note::before { content:""; position:absolute; left:25px; top:14px; width:26px; height:26px;
+                                 border-radius:50%; background:#4c8ced; box-shadow:inset 0 0 0 1px #457eda; }
+.front-section-1 .note::after { content:""; position:absolute; left:37px; top:20px; width:3px; height:14px;
+                                border-radius:2px; background:linear-gradient(#fff 0 3px,transparent 3px 5px,#fff 5px); }
+.front-section-2 { position:relative; padding:14px 23px 12px; border:1.3px solid #e5b937; border-radius:17px;
+                   background:linear-gradient(110deg,#fffdf6,#fff9e9); }
+.front-section-2 h2 { background:#ffde7c; border:1px solid #e9bd3f; border-radius:19px 22px 17px 15px;
+                      font-size:25px; padding:5px 19px 3px 10px; margin:0 0 12px; }
+.front-section-2::after { content:""; position:absolute; top:25px; right:23px; width:22px; height:22px;
+                          background:#e8a726;
+                          clip-path:polygon(50% 0,61% 37%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);
+                          transform:rotate(10deg); }
+.front-section-2 .q { font-size:20.5px; line-height:1.48; margin:9px 0; color:#1f305a; }
+.front-section-2 > .u:nth-child(2) .q { margin-top:0; }
+.front-section-2 > .u:last-child .q { margin-bottom:0; }
+.front-section-2 .inline-tag { display:inline-block; padding:1px 8px; border-radius:15px; background:#dad1ff;
+                               line-height:1.35; }
+.front-section-2 .qref { text-decoration:none; color:#253c97; font-weight:600; }
+.front-section-3 h2 { background:#c6f2e3; padding-right:22px; }
+
 /* Part 2 beginning underneath the tail of Part 1 — see _merged_page. The
    hairline is what tells a reader the single column above and the two
    columns below are different parts of the book rather than one broken
    layout. */
 .acols--tail { margin-top: 20px; padding-top: 16px; border-top: 1px dashed #d8d2c4; }
+
+/* THE COVER'S LAMP. Sized here, drawn in `components/cover.py`'s
+   `BULB_SVG`. `flex:none` keeps it from being squeezed by the note text
+   beside it — `.source-front-title .note` is a flex row. Verbatim from
+   the reference.
+
+   `.cover-capacitor` is the reference's other cover drawing: chapter-
+   specific artwork, positioned against the masthead. Nothing in the
+   markdown describes it, so no emitter derives one — the rule is kept so
+   a chapter whose decorator flow DOES supply that art lands in the right
+   place rather than inline at the top of the page. */
+.cover-bulb { flex:none; width:38px; height:51px; }
+.cover-capacitor { position:absolute; width:172px; height:126px; right:0; top:0; }

@@ -286,6 +286,33 @@ def _words(text):
 # they are not the same check.
 _FIG_BRIEF = re.compile(r'```\s*चित्र[^\n]*\n.*?```', re.S)
 
+# THE TAIL OF AN ITALIC FIGURE CAPTION IS A DRAWING BRIEF TOO.
+#
+# `21_figures_final.md` writes each figure twice: the image with a short
+# caption in its `![...]`, then a standalone italic line repeating that
+# caption and continuing for several hundred characters of drawing
+# description — "नीले रंग की पृष्ठभूमि पर … डैश (dashed) रेखा खिंची है".
+# One of them runs to 950 characters.
+#
+# Only the first sentence is a caption; `first_sentence` in the reader
+# keeps that and leaves the rest, exactly as it does for a fenced brief.
+# The reference agrees and settles it: its 35 figcaptions run to a MEDIAN
+# OF 51 CHARACTERS and a maximum of 76 — it prints the short caption and
+# none of the description.
+#
+# Counted whole as source prose, the unprinted tail reported as 112
+# vanished words: a hard failure on a document that dropped nothing the
+# design meant to keep, and exactly the noise a real loss would hide in.
+# The first sentence stays in the count, so a caption that genuinely
+# disappeared is still caught.
+_FIG_CAPTION_TAIL = re.compile(
+    r'^\*\s*चित्र\s*[0-9०-९.]+\s*[—·:-].*?(?:।|\.)(.*)\*\s*$', re.M | re.S)
+
+
+def _drop_caption_tails(src):
+    return _FIG_CAPTION_TAIL.sub(
+        lambda m: m.group(0)[:m.start(1) - m.start(0)] + " ", src)
+
 
 # An HTML comment, which the reader removes and the page never shows.
 #
@@ -350,6 +377,7 @@ def _md_words(path):
     src = io.open(path, encoding="utf-8").read()
     src = _COMMENT.sub(" ", src)
     src = _FIG_BRIEF.sub(" ", src)
+    src = _drop_caption_tails(src)
     src = _strip_fig_env(src)
     src = _ENV_NAME.sub(" ", src)
     # THE STRUCTURE FENCE'S FIELD NAMES ARE MARKUP, NOT PROSE.

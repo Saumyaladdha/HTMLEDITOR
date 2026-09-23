@@ -1,0 +1,10 @@
+
+/* ONE LABELLED FACT PER ROW inside a `**त्रिक:**` strip — see
+   `components/text.py`'s `trio`. `display:block` is what turns the
+   strip from a run-on sentence into a stack; `min-width:0` lets a long
+   maths value shrink instead of pushing the strip past its column, and
+   `white-space:nowrap` on the label keeps `राशि का प्रकार:` from
+   breaking across two lines away from its value. Verbatim from the
+   reference. */
+.trio .fact-item { display:block; min-width:0; max-width:100%; }
+.trio .fact-label { color:#2f7250; white-space:nowrap; margin-right:5px; }

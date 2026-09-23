@@ -8,7 +8,6 @@ HTML ASSEMBLER — IR + layout decisions -> the finished document.
     python3 book/build.py --md … --mode flow          # continuous scroll
     python3 book/build.py --md … --only part1         # Quick Revision edition
     python3 book/build.py --md … --only part2         # Yearwise PYQ edition
-    python3 book/build.py --md … --page-numbers       # optional header/footer
 
 CONTENT-DRIVEN. Nothing below names a chapter, a section, a year or a
 question. Every structural decision comes from the IR, which was itself
@@ -37,7 +36,8 @@ from ..design import tokens as theme                             # noqa: E402
 from ..layout.measure import measure as _measure_fn              # noqa: E402
 from ..layout.pack import (GAP as _GAP, pack_columns as _pack_columns,   # noqa: E402
                            pack_full as _pack_full, settle as _settle,
-                           pull_up as _pull_up)
+                           pull_up as _pull_up,
+                           pull_up_columns as _pull_up_columns)
 from ..layout import split as splitter                           # noqa: E402
 from ..readers import markdown as md_parser                      # noqa: E402
 from . import render as R                                        # noqa: E402
@@ -51,6 +51,7 @@ class _Paginate(object):
     pack_full = staticmethod(_pack_full)
     settle = staticmethod(_settle)
     pull_up = staticmethod(_pull_up)
+    pull_up_columns = staticmethod(_pull_up_columns)
 
     @staticmethod
     def verify_pages(path):
@@ -144,19 +145,72 @@ def _wrap(items):
     `.flowwrap` it is a plain block with 0.02px of vertical padding — both
     exist to stop the child's margins collapsing THROUGH the wrapper, so the
     height the packer measured is exactly the height the block occupies on
-    the page. Drop the wrapper and every measurement is short by a margin."""
-    return "".join('<div class="u" data-it="%s">%s</div>' % (it.get("id", ""), it["html"])
-                   for it in items)
+    the page. Drop the wrapper and every measurement is short by a margin.
+
+    A Part-1 item also carries `revision-unit` and its IR kind. Part 1 is
+    a DIFFERENT DESIGN from Part 2, not the same one with other content —
+    denser prose, a bulleted सूत्र panel, a two-column त्रिक strip — and
+    `.revision-unit` is the hook the whole of `elements/revision-flow`
+    hangs on. `data-kind` carries the kind because one of those rules
+    (`.revision-unit[data-kind="topic"]:not(:first-child)`) draws the
+    dashed rule BETWEEN topics and must not draw it above the first.
+    """
+    out = []
+    for it in items:
+        cls = "u revision-unit" if it.get("revision") else "u"
+        kind = it.get("kind") or ""
+        out.append('<div class="%s" data-it="%s"%s>%s</div>'
+                   % (cls, it.get("id", ""),
+                      (' data-kind="%s"' % kind) if kind else "", it["html"]))
+    return "".join(out)
 
 
-def _page(inner, keep=False, num=None, head=None):
-    cls = "page keep" if keep else "page"
-    chrome = ""
-    if head:
-        chrome += '<div class="page__head">%s</div>' % head
-    if num is not None:
-        chrome += '<div class="page__no">%d</div>' % num
-    return '<div class="%s">%s%s</div>\n' % (cls, chrome, inner)
+def _page(inner, keep=False, cover=False):
+    cls = "page"
+    if cover:
+        cls += " source-cover"
+    if keep:
+        cls += " keep"
+    return '<div class="%s"><div class="sheet-body">%s</div></div>\n' % (cls, inner)
+
+
+def _page_accent(items, prev):
+    """A page's accent is whichever topic's `.u` items last started on it —
+    the same `section`/`question` accent index `render.py` already tags
+    each heading item with — carried forward from the previous page when
+    nothing on this one starts a new topic (a page that is entirely a
+    continuation carries the colour along, exactly as the reference does
+    across a topic's multi-page runs)."""
+    acc = prev
+    for it in items:
+        a = it.get("accent")
+        if a is not None:
+            acc = a
+    return acc
+
+
+def _accent_style(acc):
+    """The reference's inline `--accent`/`--tint`, or "" for a page with no
+    topic of its own (the cover)."""
+    if acc is None:
+        return ""
+    _name, hexc, _fill, _hd = theme.ACCENTS[acc % len(theme.ACCENTS)]
+    return ' style="--accent:%s;--tint:%s;"' % (hexc, theme.TINTS[acc % len(theme.TINTS)])
+
+
+def _number_pages(pages, accents):
+    """Stamp every page with its final 1-based number, footer, and (for a
+    content page) its `--accent`/`--tint` custom properties — done in one
+    pass, after `cover_pages` have already been spliced in, so the numbers
+    the reader sees start at the cover and nothing after it drifts."""
+    out = []
+    for n, (pg, acc) in enumerate(zip(pages, accents), start=1):
+        pg = pg.replace('">', '" data-page="%d"%s>' % (n, _accent_style(acc)), 1)
+        foot = '<footer class="page-bottom"><span class="page-number">%d</span></footer>' % n
+        i = pg.rfind("</div>")
+        pg = pg[:i] + foot + pg[i:]
+        out.append(pg)
+    return out
 
 
 def _flow_page(items, cards_html, head_html=""):
@@ -195,8 +249,34 @@ def _merged_page(flow_items, cards_html, left, right, head_html="", raw=""):
 
 
 def _acols_page(left, right):
-    return _page('<div class="acols"><div class="acol">%s</div>'
-                 '<div class="acol">%s</div></div>' % (_wrap(left), _wrap(right)))
+    """One two-column sheet.
+
+    A page holding any Part-1 unit is a `revision-flow` spread — the
+    reference rules the gutter between its columns in blue and sizes the
+    whole page for a crib sheet. The class is decided from the CONTENT,
+    not from which packer ran, because the reference's last Part-1 page
+    also carries Part 2's opening banner and is still ruled.
+
+    A PART BANNER THAT OPENS THE PAGE SPANS IT, rather than sitting in
+    the left column. The reference puts `.type-banner` directly in
+    `.sheet-body`, above `.acols`, so "PART 1 · QUICK REVISION" runs the
+    full measure; packed as an ordinary column item it was drawn at 449px
+    with the right column starting level beside it, which read as a
+    heading for the left column only. The packer still charges its column
+    height, so hoisting it can only leave a page emptier than modelled,
+    never overfull.
+    """
+    left = list(left)
+    right = list(right)
+    head = ""
+    if left and left[0].get("tag") == "groupband":
+        head = left[0]["html"]
+        left = left[1:]
+    rev = " revision-flow" if any(it.get("revision")
+                                  for it in left + right) else ""
+    return _page(head + '<div class="acols%s"><div class="acol">%s</div>'
+                 '<div class="acol">%s</div></div>'
+                 % (rev, _wrap(left), _wrap(right)))
 
 
 def part_overview(part):
@@ -239,7 +319,7 @@ def part_notes(part, limit=4):
 # ==========================================================================
 # BUILD
 # ==========================================================================
-def build(md_path, out_path, mode="a4", only="all", chrome=False,
+def build(md_path, out_path, mode="a4", only="all",
           settle=True, verbose=True, stem=None, subject=None):
     # `subject`, WHEN THE CALLER NAMES ONE, MUST WIN — not be re-detected.
     #
@@ -272,9 +352,6 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
     # Set when the cover's last spill sheet is held back to share a page with
     # the start of the book — see `_merged_page`.
     cover_tail = None
-    # Cover cards that did not fit ONE sheet and were moved below the Part 1
-    # banner instead. See the one-sheet policy in the cover block below.
-    cover_overflow = []
     if front:
         # Take the stem from the CALLER, not from the output filename. step09
         # writes `build/<stem>/draft.html`, so deriving it gave "draft" and
@@ -282,268 +359,127 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
         from book.core import artifact as _art
         _dec = _art.read_decisions(stem or os.path.basename(out_path).rsplit(".", 1)[0],
                                    "step03_content_tagger")
-        parts = R.render_cover(front[0], ch, _dec)
-        if parts:
+        cov = R.render_cover(front[0], ch, _dec)
+        if cov:
             def _measure(html, width=None):
                 w = int(theme.CONTENT_W if width is None else width)
                 return paginate.measure([{"html": html}], w, mode=mode,
                                         extra_class="flowwrap cover")[0]["h"]
 
-            # A card lives in one of two grid columns, so it must be measured
-            # at COLUMN width. Measured at page width it comes out shorter
-            # than it will be on the page, and the balance is struck on
-            # numbers that never happen.
-            def _card_h(html):
-                return _measure(html, theme.CONTENT_W / 2.0)
-
-            # THE SCALE MUST BE SOLVED FOR, NOT DIVIDED OUT.
-            #
-            # `.cvfit` does not just shrink — it sets `width:100/k %` and THEN
-            # `scale(k)`, so the box the cards lay out in gets WIDER as k gets
-            # smaller. Wider means less wrapping, which means the content is
-            # genuinely SHORTER than the height measured at CONTENT_W. So
-            # `k = CONTENT_H / measured_at_CONTENT_W` is not the answer to
-            # "what scale fits?" — it is a lower bound on it, and using it
-            # directly threw away type size for nothing. On maths_chapter1 it
-            # picked 0.912 for a cover that fits at 0.973: 10.2px of printed
-            # type where 10.9px was available, a shrink that took it under the
-            # 11px floor when it never had to go there.
-            #
-            # `h(k) * k` is monotone in k (a wider box never gets taller), so
-            # a short bisection finds the largest k that fits. Six rounds is
-            # +/-0.008 of scale — finer than the difference is visible — and
-            # costs six measurements on a page that is measured anyway.
-            _scale_memo = {}
-
             def _fit_scale(html):
-                """Largest k <= 1 whose reflowed-at-width cover fits one sheet."""
-                if html in _scale_memo:
-                    return _scale_memo[html]
+                """Largest k <= 1 whose reflowed-at-width cover fits one
+                sheet — see the identical search in the old cover code this
+                replaced; the maths does not change, only what it is
+                applied to (one linear stack of sections, not two
+                measured-and-balanced columns)."""
                 h1 = _measure(html)
                 if h1 <= theme.CONTENT_H:
-                    _scale_memo[html] = 1.0
                     return 1.0
-                lo, hi, best = COVER_HARD_MIN, 1.0, None
-                # Cheap reject: even the theoretical bound is below the floor.
                 if (float(theme.CONTENT_H) / h1) < COVER_HARD_MIN:
-                    _scale_memo[html] = None
                     return None
+                lo, hi, best = COVER_HARD_MIN, 1.0, None
                 for _ in range(6):
                     mid = (lo + hi) / 2.0
                     if _measure(html, theme.CONTENT_W / mid) * mid <= theme.CONTENT_H:
                         best, lo = mid, mid
                     else:
                         hi = mid
-                _scale_memo[html] = best
                 return best
 
-            # ONE SHEET FIRST.
-            #
-            # The cover is the chapter's front page and reads as one: spilling
-            # it onto a second sheet splits the analytics in half and wastes
-            # most of the second page. So before dropping any card, try the
-            # whole thing scaled down to fit — smaller cards, smaller type,
-            # everything still there.
-            #
-            # Only if that would take it below COVER_MIN_SCALE — where the
-            # 14.5px table type stops being readable in print — does it fall
-            # back to spilling.
-            # Even the two columns by MEASURED height before anything else.
-            # Role decides where a card starts, but only a measurement can
-            # tell that three bar charts outweigh five notes.
-            _bl, _br = R.balance_cover_columns(parts, _card_h)
-            parts["left"], parts["right"] = _bl, _br
-
-            # ONE COVER PAGE, BY MOVING A CARD OFF IT — NOT BY SHRINKING.
-            #
-            # Measured on chapter 6: the cards total 3625px, or 1812px per
-            # column against the 1226px left after the 206px hero. Scaling
-            # that to one sheet needs k = 0.79, which prints the smallest
-            # cover type at 8.8px — under the 11px floor. That is why it
-            # "fitted" before and could not be read.
-            #
-            # One card is 1133px of the 3625: the अनुक्रमणिका. It is a CONTENTS
-            # LISTING, not cover analytics, and every textbook gives contents
-            # a page of its own. Moved off, the remaining cards fit one sheet
-            # at full size.
-            #
-            # So the tallest cards are moved out until the rest fits, and they
-            # are emitted on the page after — nothing is dropped, and the
-            # cover is one page at a size a reader can use.
-            #
-            # THE CANDIDATE POOL IS FLAT CARDS *AND* FULL-WIDTH ONES.
-            #
-            # Chapter 1's `full` list carries a card the two-column stack
-            # never sees — "प्रश्न किस तरीके से आते हैं", four stat boxes
-            # side by side — and at 463px it alone is bigger than any flat
-            # card on the page. Only ever trimming the two-column stack
-            # made it untouchable, so three small flat cards (topic
-            # frequency, reading order, most-repeated derivation — exactly
-            # the "at a glance" cards a reference cover carries) had to be
-            # moved to Part 1 to free the room ONE full card would have
-            # cleared by itself. Comparing both pools and moving whichever
-            # single card is tallest fits more of the cover's actual
-            # highlights before it reaches for the smaller ones.
-            # ONE SHEET FIRST — AND THAT MEANS *BEFORE* THE TRIM LOOP.
-            #
-            # The block comment above states the policy exactly: "before
-            # dropping any card, try the whole thing scaled down to fit".
-            # The loop below did not implement it. It ran first and
-            # unconditionally moved the tallest card off the cover until the
-            # remainder fitted at scale 1.0, so the `k >= COVER_MIN_SCALE`
-            # branch further down only ever saw an ALREADY-TRIMMED set and
-            # the scale-to-fit path was unreachable for the case it was
-            # written for.
-            #
-            # Measured on maths_chapter1: eleven cards balance to 1195px a
-            # column against a 1192px budget (1432 content less a 240px
-            # hero). Three pixels. The loop answered that by exiling the
-            # 471px `✅ किस क्रम में पढ़ना है` steps card into Part 1 — where
-            # it landed between the last Part-1 section and the PART 2
-            # banner, reading as neither — and left ~466px of the summary
-            # blank. Scaling instead needs k = 1192/1195 = 0.9975, which is
-            # not far above COVER_MIN_SCALE (0.97), it is very nearly 1:
-            # the smallest cover type goes from 15.2px to 15.16px.
-            #
-            # So: measure the untrimmed cover once, and if it is within the
-            # scale floor, keep every card and let the `elif k >=
-            # COVER_MIN_SCALE` branch set it. Only a cover that genuinely
-            # cannot be scaled into one sheet reaches the trim loop.
-            _keep_all = max(len(parts["left"]), len(parts["right"]))
-            _whole0, _left0 = R.cover_pages_html(parts, _keep_all, full_on_1=True)
-            _k0 = _fit_scale(_whole0) if not _left0 else None
-            _fits_scaled = _k0 is not None
-            if _fits_scaled and _k0 < COVER_MIN_SCALE and verbose:
-                print("  cover  : one sheet at scale %.3f — smallest type "
-                      "prints at %.1fpx (floor 11px)" % (_k0, 15.2 * _k0 * 0.734))
-
-            moved = []
-            while not _fits_scaled:
-                flat = [c for c in (parts["left"] + parts["right"])]
-                full = list(parts["full"])
-                if len(flat) + len(full) <= 3:
-                    break
-                trial, spill = R.cover_pages_html(
-                    parts, max(len(parts["left"]), len(parts["right"])),
-                    full_on_1=True)
-                if not spill and _measure(trial) <= theme.CONTENT_H:
-                    break
-                flat_tallest = max(flat, key=_card_h) if flat else None
-                full_tallest = max(full, key=_measure) if full else None
-                if full_tallest is not None and (
-                        flat_tallest is None
-                        or _measure(full_tallest) >= _card_h(flat_tallest)):
-                    tallest, from_full = full_tallest, True
-                else:
-                    tallest, from_full = flat_tallest, False
-                moved.append(tallest)
-                if from_full:
-                    parts["full"] = [c for c in parts["full"] if c is not tallest]
-                else:
-                    parts["left"] = [c for c in parts["left"] if c is not tallest]
-                    parts["right"] = [c for c in parts["right"] if c is not tallest]
-                    parts["left"], parts["right"] = R.balance_cover_columns(
-                        dict(parts, flat=parts["left"] + parts["right"]), _card_h)
-
-            keep_all = max(len(parts["left"]), len(parts["right"]))
-            whole, leftover = R.cover_pages_html(parts, keep_all, full_on_1=True)
-            if not leftover:
-                k = _fit_scale(whole) or 0.0
-                # The laid-out height AT THE SCALED WIDTH — the box `.cvfit`
-                # actually gets. Measuring at CONTENT_W here set an explicit
-                # height taller than the content, which is where the summary's
-                # trailing white band came from.
-                wh = (_measure(whole, theme.CONTENT_W / k) if 0 < k < 1.0
-                      else _measure(whole))
+            def _scaled_page(html, k):
                 if k >= 1.0:
-                    cover_pages = [_page(whole, keep=True)]
-                    # The cards moved off the cover go BELOW the Part 1
-                    # banner, not onto a second cover sheet.
-                    #
-                    # "Everything above `PART 1 · त्वरित रिवीज़न` is the cover"
-                    # — so a second sheet before that banner is still a cover
-                    # page, and putting the अनुक्रमणिका there did not make the
-                    # cover one page, it just moved the problem. Below the
-                    # banner it is the first thing in Part 1, which is where a
-                    # contents listing belongs.
-                    cover_overflow.extend(moved)
-                    front = []
-                elif k >= COVER_HARD_MIN:
-                    # An explicit height because `transform` leaves the layout
-                    # box unchanged — without it the packer still sees the
-                    # unscaled height and calls the page overfull.
-                    fitted = ('<div class="cvfit" style="width:%.4f%%;'
-                              'height:%dpx;transform:scale(%.4f)">%s</div>'
-                              % (100.0 / k, int(wh * k), k, whole))
-                    cover_pages = [_page(fitted, keep=True)]
-                    front = []
-            if front:
-                # Walk the number of cards on sheet 1 down until it measures
-                # under the page height. Same discipline as every other page.
-                keep = max(len(parts["left"]), len(parts["right"]))
-                while keep >= 0:
-                    p1, p2 = R.cover_pages_html(parts, keep)
-                    if _measure(p1) <= theme.CONTENT_H or keep == 0:
-                        break
-                    keep -= 1
-                # If the full-width cards also fit on sheet 1, put them there —
-                # a second sheet carrying one short card is a wasted page.
-                t1, t2 = R.cover_pages_html(parts, keep, full_on_1=True)
-                if _measure(t1) <= theme.CONTENT_H:
-                    p1, p2 = t1, t2
-                cover_pages = [_page(p1, keep=True)]
-            # The spill is measured too, and split across as many sheets as it
-            # needs. It used to be emitted unchecked — see cover_spill_html.
-                spill = R.cover_spill_html(
-                    parts, keep, p1 is t1,
-                    lambda html: _measure(html) <= theme.CONTENT_H,
-                    height_of=_card_h)
-                # THE LAST COVER SHEET IS NOT A PAGE OF ITS OWN.
-                #
-                # The maths cover's final sheet carried one card of eleven
-                # words and 1250px of nothing, and Part 1 opened the sheet
-                # after it. The part boundary below Part 1 already merges
-                # this way — a layout boundary is not a reason for a page
-                # break. Held back here and handed to the column packer as
-                # `tail_merge`, the card and the start of the book share a
-                # sheet.
-                if len(spill) > 1:
-                    last_h = _measure(spill[-1])
-                    if theme.CONTENT_H - last_h >= MERGE_MIN_H:
-                        cover_tail = dict(raw=spill[-1],
-                                          free=theme.CONTENT_H - last_h)
-                        spill = spill[:-1]
-                for sheet in spill:
-                    cover_pages.append(_page(sheet, keep=True))
-                front = []
+                    return _page(html, keep=True, cover=True)
+                wh = _measure(html, theme.CONTENT_W / k)
+                fitted = ('<div class="cvfit" style="width:%.4f%%;'
+                          'height:%dpx;transform:scale(%.4f)">%s</div>'
+                          % (100.0 / k, int(wh * k), k, html))
+                return _page(fitted, keep=True, cover=True)
 
-    # a "flow part" is one whose children are sections (Part-1 shaped);
-    # everything else is packed into two columns.
+            sections = cov["sections"]
+            whole = cov["hero"] + "".join(sections)
+            k = _fit_scale(whole)
+            if k is not None and k >= COVER_HARD_MIN:
+                cover_pages = [_scaled_page(whole, k)]
+                front = []
+            elif sections:
+                # EVEN SHRUNK TO THE LEGIBILITY FLOOR, IT WOULD NOT FIT —
+                # spill trailing SECTIONS onto as many further sheets as
+                # needed, each one individually fitted the same way. The
+                # unit here is a whole `front-section`, not a card: the
+                # reference never splits one mid-table.
+                sheets, cur, held = [], cov["hero"], []
+                for sec_html in sections:
+                    trial = cur + "".join(held) + sec_html
+                    if not held or _measure(trial) <= theme.CONTENT_H:
+                        held.append(sec_html)
+                    else:
+                        sheets.append(cur + "".join(held))
+                        cur, held = "", [sec_html]
+                if held:
+                    sheets.append(cur + "".join(held))
+                cover_pages = []
+                for sh in sheets:
+                    sk = _fit_scale(sh) or COVER_HARD_MIN
+                    cover_pages.append(_scaled_page(sh, sk))
+                # THE LAST SHEET IS NOT A PAGE OF ITS OWN, IF IT HAS ROOM
+                # TO SPARE — held back and handed to the column packer as
+                # `tail_merge`, so a short final section shares a sheet
+                # with the start of Part 1 instead of leaving most of a
+                # page blank. Only when unscaled (`sk == 1.0`): a shrunk
+                # sheet's measured height no longer means what
+                # `MERGE_MIN_H` assumes.
+                if len(cover_pages) > 1 and (_fit_scale(sheets[-1]) or 0) >= 1.0:
+                    last_h = _measure(sheets[-1])
+                    if theme.CONTENT_H - last_h >= MERGE_MIN_H:
+                        cover_tail = dict(raw=sheets[-1],
+                                          free=theme.CONTENT_H - last_h)
+                        cover_pages = cover_pages[:-1]
+                front = []
+    # EVERY PART IS PACKED INTO TWO COLUMNS, Part 1 included.
     #
-    # `VIDYUT_PART1_COLUMNS=1` sends the section parts through the COLUMN
-    # packer as well, so the revision half of the book is set in two columns
-    # like the questions. It is an option rather than the default because the
-    # two shapes are genuinely different: Part 1 is written around a 300px
-    # margin column of sticky notes and full-width सूत्र panels that clear
-    # it, and neither has anywhere to go in a 449px column. Build both and
-    # compare before choosing.
-    all_cols = os.environ.get("VIDYUT_PART1_COLUMNS") == "1"
-    flow_parts, col_parts = list(front), []
+    # A "revision part" is one whose children are sections (Part-1 shaped)
+    # rather than question groups. It used to be routed to a separate
+    # single-column `flowwrap` packer, with the chapter's sticky notes
+    # floated into a 300px margin column — and that was kept as the default
+    # because "Part 1 is written around a 300px margin column of sticky
+    # notes and full-width सूत्र panels that clear it, and neither has
+    # anywhere to go in a 449px column".
+    #
+    # The reference settles it: its Part 1 IS two columns (four
+    # `.acols.revision-flow` spreads, ruled down the gutter), it has no
+    # floated note column anywhere in the book (zero `.stickycol` — a note
+    # is set inline as a `.derivation-note`), and its सूत्र panel in Part 1
+    # is a flat bulleted `.formula-list`, not a row of boxed results that
+    # needs the full measure. So neither of the two things the margin
+    # column existed for is true of the design any more, and at full width
+    # a one-line सूत्र row left three-quarters of the measure empty — the
+    # ~880px holes at the foot of every Part-1 page.
+    #
+    # The classification stays, because Part 1 still gets a DIFFERENT SKIN
+    # (`.revision-unit`); only the routing changed.
+    flow_parts, col_parts, revision_parts = list(front), [], []
     for p in body:
         kids = p.get("children") or []
-        if (not all_cols) and kids and any(k["kind"] == "section" for k in kids) and \
+        if kids and any(k["kind"] == "section" for k in kids) and \
                 not any(k["kind"] == "qgroup" for k in kids):
-            flow_parts.append(p)
-        else:
-            col_parts.append(p)
+            revision_parts.append(id(p))
+        col_parts.append(p)
 
+    # `--only` selects a half of the book. Both halves are column parts
+    # now, so the filter is on the part's SHAPE rather than on which list
+    # it landed in.
     if only == "part1":
-        col_parts = []
+        col_parts = [p for p in col_parts if id(p) in revision_parts]
     elif only == "part2":
+        col_parts = [p for p in col_parts if id(p) not in revision_parts]
         flow_parts = []
 
     ctx = dict(accent=0)
     sections_html = []
+    # Parallel to `sections_html` — the resolved topic-accent index for each
+    # entry, `None` for the cover (see `_page_accent`/`_number_pages`).
+    page_accents = []
+    _acc = [0]
 
     # ---- scroll mode: one continuous document, no pagination at all -----
     # The browser flows `.cols2` itself; running the packer here would
@@ -563,7 +499,7 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
                                 notes=part_notes(p)) if p.get("label") else ""
             out.append('<div class="page">%s<div class="cols2">%s</div></div>'
                        % (head, "".join(x["html"] for x in R.render_part(p, ctx))))
-        html = R.document(title, "".join(out), mode=mode, chrome=False)
+        html = R.document(title, "".join(out), mode=mode)
         _ensure_dir(out_path)
         io.open(out_path, "w", encoding="utf-8").write(html)
         if verbose:
@@ -582,206 +518,20 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
     tail_merge = cover_tail if (cover_tail and not flow_parts) else None
 
     # ---------------------------------------------------------------- flow
-    if flow_parts:
-        items, cards = [], []
-        for p in flow_parts:
-            cards.extend(R.collect_asides(p))
-            if p.get("label"):
-                # Before measurement: the packer needs a height for it, and a
-                # block inserted afterwards has none.
-                items.append(_item_html(C.part_banner(p.get("label", ""),
-                                                      p.get("sub", "")),
-                                        tag="groupband"))
-            items.extend(R.render_part(p, ctx))
-
-        narrow_w = int(theme.CONTENT_W - R.ASIDE_W - R.ASIDE_GUTTER)
-        wide = paginate.measure([dict(x) for x in items], int(theme.CONTENT_W),
-                                mode=mode, extra_class="flowwrap")
-        narrow = paginate.measure([dict(x) for x in items], narrow_w,
-                                  mode=mode, extra_class="flowwrap")
-        for it, w, nw in zip(items, wide, narrow):
-            it["h"], it["h_narrow"] = w["h"], nw["h"]
-
-        card_items = [{"html": R.render_card(c, 1.6 if i % 2 == 0 else -1.4)}
-                      for i, c in enumerate(cards)]
-        if card_items:
-            card_items = paginate.measure(card_items, R.ASIDE_W, mode=mode)
-
-        # The reference opens Part 1 with the gold `partbanner` box, not a
-        # plain centred title. The component existed but nothing called it,
-        # so every Part-1 opening page was missing its banner.
-        # The part banner is a FLOW block, not a page header. The reference
-        # lets it take the width it is given — 624px beside the note column,
-        # 450px in a question column — so it sits in the rhythm of the page.
-        # Emitted as a full-width page header it spanned all 944px and
-        # dominated the sheet.
-        _p = flow_parts[-1]
-        head_html = ("" if _p.get("label")
-                     else C.chapter_header(ch.get("num", ""), ch.get("title", ""),
-                                           part_label=_p.get("sub", "")))
-        head_h = paginate.measure([{"html": head_html}], int(theme.CONTENT_W),
-                                  mode=mode)[0]["h"]
-
-        tag_items(items)
-
-        def pack_flow(its):
-            """One sticky note per page; blocks beside it use the narrow
-            height, blocks below it the wide one."""
-            limit, units, cur = theme.CONTENT_H, [], []
-            top = head_h + 24
-            used, ci = top, 0
-            for it in its:
-                fb = (top + 16 + card_items[ci]["h"]) if ci < len(card_items) else 0
-                # A block that CLEARS the float is never narrowed by it, so
-                # size it wide even inside the float region. Sizing the wide
-                # सूत्र panel at its narrow height (1029px vs 601px) made the
-                # packer think it could not fit and pushed it to the next
-                # sheet, leaving 886px of dead space behind it.
-                if it.get("clears"):
-                    hn = it["h"]
-                else:
-                    hn = max(it.get("h_narrow", 0), it["h"]) if used < fb else it["h"]
-                h = hn + (paginate.GAP if used > top else 0)
-                if used > top and max(used + h, fb) > limit:
-                    units.append(cur)
-                    cur, top, used, ci = [], 0, 0, ci + 1
-                    fb = (16 + card_items[ci]["h"]) if ci < len(card_items) else 0
-                    h = (it["h"] if it.get("clears")
-                         else (max(it.get("h_narrow", 0), it["h"]) if fb else it["h"]))
-                if os.environ.get("VIDYUT_DEBUG_PACK") and it.get("clears"):
-                    sys.stderr.write("PACK clears-item: page=%d used=%d h=%d "
-                                     "hwide=%s hnarrow=%s fb=%d limit=%d\n"
-                                     % (len(units), used, h, it.get("h"),
-                                        it.get("h_narrow"), fb, limit))
-                cur.append(it)
-                used += h
-            if cur:
-                units.append(cur)
-            if os.environ.get("VIDYUT_DEBUG_PACK"):
-                for pi, pg in enumerate(units):
-                    sys.stderr.write("MODEL page=%d items=%d used=%d\n"
-                                     % (pi, len(pg), model_used(pg, pi)))
-            return units
-
-        def model_used(pg, pi):
-            """What `pack_flow` BELIEVES a page holds.
-
-            The split pass has to size a head against this, not against the
-            rendered page. The two differ — the model charges narrow heights
-            inside the float region and settle only ratchets them up — and
-            sizing to the real 886px free produced a head the packer then
-            rejected at its own 828px, so the split bought nothing."""
-            top_ = (head_h + 24) if pi == 0 else 0
-            fbv = (top_ + 16 + card_items[pi]["h"]) if pi < len(card_items) else 0
-            u = top_
-            for n, x in enumerate(pg):
-                xh = (x["h"] if x.get("clears")
-                      else (max(x.get("h_narrow", 0), x["h"]) if u < fbv else x["h"]))
-                u += xh + (paginate.GAP if n else 0)
-            return u
-
-        def render_flow(us):
-            out = []
-            for i, pg in enumerate(us):
-                cards_html = [card_items[i]["html"]] if i < len(card_items) else []
-                out.append(_flow_page(pg, cards_html, head_html if i == 0 else ""))
-            return R.document(title, "".join(out), mode=mode, chrome=chrome)
-
-        units = (paginate.settle(items, pack_flow, render_flow, verbose=verbose,
-                                 wide_w=int(theme.CONTENT_W))
-                 if (settle and mode == "a4") else pack_flow(items))
-
-        if settle and mode == "a4":
-            # Reclaim the dead space an atomic panel leaves at a page foot by
-            # breaking the panel itself. Re-settle after each pass: the item
-            # list has changed, so the pagination that produced it is stale.
-            # Dispatches on the payload's kind — a सूत्र panel, a bullet
-            # list or an option list. See `render.split_payload`.
-            _rebuild = R.rebuild_split
-
-            def _measure(new_items):
-                paginate.measure(new_items, int(theme.CONTENT_W), mode=mode)
-                for n in new_items:
-                    n["clears"] = "fcard-wide" in n["html"]
-                return tag_items(new_items)
-
-            # Sizing a split against `model_used` was too conservative: on
-            # chapter 3 the model put 72px of room on a page the browser
-            # showed 469px of, so the split never fired. The rendered page is
-            # the truth, so the split is sized against THAT and then verified
-            # — keep the round only if the measured dead space actually fell.
-            # A split that does not pay for itself is undone, which means a
-            # wrong guess costs a render rather than a broken panel.
-            # Judged on the WORST hole, not the total. Splitting a panel to
-            # fill an 886px gap can nudge the total up while removing the one
-            # page a reader would notice — which is the point of the pass.
-            # Judged on the worst hole OR the total, matching the column
-            # pass. Worst-hole alone threw away splits that reclaimed real
-            # space on a page that simply was not the worst one — measured on
-            # the column half, three of four splits were reverted for that
-            # reason. `dead_space` is the flow equivalent of the column
-            # pass's total.
-            MIN_TOTAL_GAIN = 120
-            best = splitter.worst_hole(render_flow(units))
-            best_tot = splitter.dead_space(render_flow(units))
-            tried = set()
-            for _ in range(6):
-                trial = [dict(x) for x in items]
-                trial, changed = splitter.split_pass(
-                    trial, units, render_flow, _rebuild, _measure,
-                    verbose=verbose, tried=tried)
-                if not changed:
-                    break
-                tunits = paginate.settle(trial, pack_flow, render_flow,
-                                         verbose=False, wide_w=int(theme.CONTENT_W))
-                trial_html = render_flow(tunits)
-                got = splitter.worst_hole(trial_html)
-                got_tot = splitter.dead_space(trial_html)
-                better_worst = (best is not None and got is not None
-                                and got < best)
-                better_total = (best_tot is not None and got_tot is not None
-                                and got_tot <= best_tot - MIN_TOTAL_GAIN)
-                # A gain is not a gain if it clips a page.
-                if splitter.overflows(trial_html):
-                    if verbose:
-                        print("  split: reverted — it left a page overfull")
-                    continue
-                if not (better_worst or better_total):
-                    if verbose:
-                        print("  split: reverted — worst %s->%s, total %s->%s"
-                              % (best, got, best_tot, got_tot))
-                    continue        # that panel is in `tried`; try the next
-                if verbose:
-                    print("  split: kept — worst %spx->%spx, total %spx->%spx"
-                          % (best, got, best_tot, got_tot))
-                items, units = trial, tunits
-                best = got if got is not None else best
-                best_tot = got_tot if got_tot is not None else best_tot
-        # NOTE: a `pull_up` pass exists in layout/pack.py but is NOT enabled.
-        # Measured on chapter 3 it reclaimed 18 blocks and then made the total
-        # dead space slightly WORSE (5084px -> 5321px), because moving a block
-        # up changes the float geometry on both pages and the following settle
-        # re-inflates heights. Left in place, unused, with this note — it needs
-        # to run INSIDE the settle loop rather than after it.
-        # The LAST flow page is held back when a column part follows and the
-        # page has real room left: it is emitted by the column loop instead,
-        # with Part 2's first questions packed underneath it.
-        hold = -1
-        if col_parts and units:
-            li = len(units) - 1
-            free = theme.CONTENT_H - model_used(units[li], li)
-            if free >= MERGE_MIN_H:
-                hold = li
-                tail_merge = dict(
-                    items=units[li],
-                    cards=[card_items[li]["html"]] if li < len(card_items) else [],
-                    head=head_html if li == 0 else "",
-                    free=free)
-        for i, pg in enumerate(units):
-            if i == hold:
-                continue
-            cards_html = [card_items[i]["html"]] if i < len(card_items) else []
-            sections_html.append(_flow_page(pg, cards_html, head_html if i == 0 else ""))
+    # FRONT MATTER THAT NEVER BECAME A COVER.
+    #
+    # `flow_parts` used to be Part 1 as well; every body part now goes
+    # through the column packer (see the classification above), so what is
+    # left here is only front matter a chapter wrote but the cover builder
+    # did not consume. It is prepended to the column stream rather than
+    # packed on its own, so it cannot open a page of its own.
+    flow_raw = []
+    for p in flow_parts:
+        if p.get("label"):
+            flow_raw.append(_item_html(C.part_banner(p.get("label", ""),
+                                                     p.get("sub", "")),
+                                       tag="groupband"))
+        flow_raw.extend(R.render_part(p, dict(ctx, inline_asides=True)))
 
     # ------------------------------------------------------------- columns
     # ONE STREAM FOR EVERY COLUMN PART.
@@ -798,42 +548,51 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
     # One column two-thirds empty and the next completely empty, because the
     # questions began a new pagination run instead of continuing where the
     # revision text stopped. Packed as one stream they simply carry on.
-    raw = []
+    raw = list(flow_raw)
     for p in col_parts:
+        # WHEN THE PART OPENS ON A QUESTION-FORMAT GROUP, ITS MASTHEAD
+        # FOLDS INTO THAT GROUP'S BANNER.
+        #
+        # "PART 2 · QUESTIONS & ANSWERS" belongs INSIDE the first
+        # `.type-banner`, above the format heading and sharing its layered
+        # purple card — that is the one place the reference draws a
+        # `questions-banner`. Emitted as a separate banner above it, the
+        # masthead printed as its own block and the format heading below
+        # it got the plain skin.
+        #
+        # Two ways a Part 2 can arrive at that shape: `_regroup_by_qtype`
+        # built the buckets (and set `part_label` itself), or the source
+        # was already written format-first, in which case the label is
+        # tagged here. Both end up in the same banner.
+        _first = (p.get("children") or [{}])[0]
+        if (p.get("label") and _first.get("kind") == "qgroup"
+                and not _first.get("_qtype_banner")
+                and R.is_qtype_label(_first.get("label", ""))):
+            _first["part_label"] = p.get("label", "")
+            _first["part_sub"] = p.get("sub", "")
         # A two-column part has no margin column, so a section's sticky notes
         # must be set inline or they render nowhere at all.
-        part_raw = R.render_part(p, dict(ctx, inline_asides=True))
-        if p.get("label"):
+        part_raw = R.render_part(p, dict(ctx, inline_asides=True,
+                                         revision=id(p) in revision_parts))
+        _self_announced = bool(_first.get("part_label"))
+        if p.get("label") and not _self_announced:
             # ABOVE the banner of the FIRST part: the cover cards that
             # would otherwise have needed a second cover sheet.
             #
-            # These were inserted AFTER the banner (index 1, right below
-            # it), on the reasoning that this is "directly under" the
-            # banner rather than a second cover page. In practice a card
-            # sandwiched between the banner and the part's own first
-            # section reads as neither: it is still cover content — a
-            # marks-distribution card, a "most repeated" table — and
-            # putting it BELOW the "भाग 1 शुरू" marker makes it look like
-            # Part 1's own first topic. Placed above the banner instead,
-            # it reads as what it is: the tail end of the cover, spilling
-            # onto this page because the cover sheet itself ran out of
-            # room, with the banner still the first thing that visually
-            # marks Part 1 as started.
-            banner_pos = 0
-            if cover_overflow:
-                for card in cover_overflow:
-                    part_raw.insert(banner_pos, _item_html(
-                        '<div class="flowwrap cover cover-moved">%s</div>'
-                        % card, atomic=True))
-                    banner_pos += 1
-                cover_overflow = []
-            part_raw.insert(banner_pos, _item_html(
+            part_raw.insert(0, _item_html(
                 C.part_banner(p.get("label", ""), p.get("sub", "")),
                 atomic=True, tag="groupband"))
+        # What carries "this is Part 1" all the way to the page: `_wrap`
+        # turns it into `.revision-unit`, `_acols_page` into
+        # `.revision-flow`. Set on the part's items rather than on the
+        # page, because the reference's last Part-1 spread also holds
+        # Part 2's opening banner and is still ruled as a revision page.
+        if id(p) in revision_parts:
+            for it in part_raw:
+                it["revision"] = True
         raw.extend(part_raw)
 
     if raw:
-        cover_html = ""
         items = tag_items(paginate.measure(raw, int(theme.COL_W), mode=mode))
 
         # Part 1's held-back last page, if the flow half left room on it.
@@ -857,8 +616,8 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
                 cs.extend([pg[0] if len(pg) > 0 else [], pg[1] if len(pg) > 1 else []])
             return cs
 
-        def render_cols(cs, _cover=cover_html, _merge=merge):
-            out = [_cover] if _cover else []
+        def render_cols(cs, _merge=merge):
+            out = []
             i = 0
             if _merge and cs:
                 out.append(_merged_page(
@@ -869,7 +628,7 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
             while i < len(cs):
                 out.append(_acols_page(cs[i], cs[i + 1] if i + 1 < len(cs) else []))
                 i += 2
-            return R.document(title, "".join(out), mode=mode, chrome=chrome)
+            return R.document(title, "".join(out), mode=mode)
 
         cols = (paginate.settle(items, pack_cols, render_cols, verbose=verbose)
                 if (settle and mode == "a4") else pack_cols(items))
@@ -987,14 +746,33 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
             cols, render_cols, splitter.free_by_column, splitter.overflows,
             verbose=verbose)
 
-        if cover_html:
-            sections_html.append(cover_html)
+        # RECLAIM WHAT THE HEIGHT MODEL OVER-CHARGED.
+        #
+        # `settle` corrects heights UPWARD only, and with the overflow
+        # probe now able to see content spilling a fixed-height
+        # `.sheet-body` it makes several hundred corrections a build.
+        # Every one of those is an upper bound the packer then packs
+        # against, so columns close while they still have room: a column
+        # measuring 285px free with the next column opening on a 126px
+        # block. This moves such a block back, by MEASUREMENT — render,
+        # see which columns really have space, move one, keep it only if
+        # the render still has no overflow. Runs last, after the splitter
+        # has already done what it can, because both passes compete for
+        # the same free space and the splitter's gains are the bigger
+        # ones.
+        cols = paginate.pull_up_columns(
+            cols, render_cols, splitter.free_by_column, splitter.overflows,
+            verbose=verbose)
+
         i = 0
         if merge and cols:
             sections_html.append(_merged_page(
                 merge.get("items") or [], merge.get("cards") or [],
                 cols[0], cols[1] if len(cols) > 1 else [],
                 merge.get("head", ""), merge.get("raw", "")))
+            _acc[0] = _page_accent((merge.get("items") or []) + cols[0]
+                                   + (cols[1] if len(cols) > 1 else []), _acc[0])
+            page_accents.append(_acc[0])
             i = 2
         elif merge:
             # Nothing fitted after all — the held-back page still has to be
@@ -1004,23 +782,28 @@ def build(md_path, out_path, mode="a4", only="all", chrome=False,
                 _page(merge["raw"], keep=True) if merge.get("raw")
                 else _flow_page(merge["items"], merge["cards"],
                                 merge["head"]))
+            _acc[0] = _page_accent(merge.get("items") or [], _acc[0])
+            page_accents.append(_acc[0])
         while i < len(cols):
             sections_html.append(_acols_page(cols[i], cols[i + 1] if i + 1 < len(cols) else []))
+            _acc[0] = _page_accent(cols[i] + (cols[i + 1] if i + 1 < len(cols) else []), _acc[0])
+            page_accents.append(_acc[0])
             i += 2
 
     # ------------------------------------------------------------- numbers
-    if chrome:
-        n = 0
-        out = []
-        for pg in sections_html:
-            n += 1
-            out.append(pg.replace('">', '"><div class="page__head">%s</div>'
-                                        '<div class="page__no">%d</div>' % (title, n), 1))
-        sections_html = out
-
+    #
+    # THE COVER MUST BE SPLICED IN *BEFORE* NUMBERING, NOT AFTER.
+    #
+    # The old `--page-numbers` chrome numbered `sections_html` and only then
+    # inserted `cover_pages` ahead of it — so with numbering on, the cover
+    # itself was never numbered and every page after it was off by the
+    # cover's own page count. Splice first; number the finished book once.
     for i, cp in enumerate(cover_pages):
         sections_html.insert(i, cp)
-    html = R.document(title, "".join(sections_html), mode=mode, chrome=chrome)
+        page_accents.insert(i, None)
+    sections_html = _number_pages(sections_html, page_accents)
+
+    html = R.document(title, "".join(sections_html), mode=mode)
     _ensure_dir(out_path)
     io.open(out_path, "w", encoding="utf-8").write(html)
 
@@ -1041,13 +824,11 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "chapter-01.html"))
     ap.add_argument("--mode", default="a4", choices=["a4", "flow"])
     ap.add_argument("--only", default="all", choices=["all", "part1", "part2"])
-    ap.add_argument("--page-numbers", action="store_true",
-                    help="header + page numbers (the reference book has neither)")
     ap.add_argument("--no-settle", action="store_true")
     ap.add_argument("--verify", action="store_true")
     a = ap.parse_args()
 
-    out, n, _ = build(a.md, a.out, mode=a.mode, only=a.only, chrome=a.page_numbers,
+    out, n, _ = build(a.md, a.out, mode=a.mode, only=a.only,
                       settle=not a.no_settle)
 
     if a.verify and a.mode == "a4":

@@ -9,15 +9,19 @@ reflow, and pagination does not have to be re-run.
 
     assets/manifest.json
     {
-      "fig:1.13":       "assets/ch01/fig-1.13.png",
-      "fig:1.13@svg":   "assets/ch01/fig-1.13.svg",
       "doodle-sm":      "doodles/star.png",
       "character":      "decorators/cropped/teacher-callouts/keep-going.png",
       "emblem":         "assets/emblem-atom.svg"
     }
 
-Lookup order for a figure slot:  fig:<num>@svg  ->  fig:<num>  ->  <role>
-Anything unresolved simply stays an empty reserved box.
+Lookup is by <role> alone. Anything unresolved simply stays an empty
+reserved box.
+
+Real figures do NOT go through this file — `components/figure.py` resolves
+its own `ref` (a local path or an upload URL, see `util/upload_image.py`)
+and renders the photo directly, no manifest involved. This module is only
+for the generic decorator `.slot()` placeholders (character art, doodles,
+the emblem) that `components/slot.py` emits.
 
 Nothing calls this in the default build. It is the seam the diagram and
 doodle generators will plug into, and it exists now so that adding them
@@ -35,9 +39,6 @@ MANIFEST = os.path.join(ROOT, "assets", "manifest.json")
 _SLOT_RE = re.compile(
     r'<div class="(?P<cls>slot[^"]*)" data-slot="(?P<role>[^"]*)" '
     r'style="(?P<style>[^"]*)">(?P<body>.*?)</div>', re.S)
-_FIG_RE = re.compile(
-    r'<div class="figwrap" data-fig="(?P<num>[^"]*)" data-ref="(?P<ref>[^"]*)" '
-    r'data-desc="[^"]*" style="[^"]*">', re.S)
 
 
 def load_manifest(path=None):
@@ -71,29 +72,18 @@ def apply(html, manifest=None, verbose=True):
     if not man:
         return html, 0, html.count('data-slot=')
 
-    # figure number -> the slot that follows it in the markup
-    fig_at = {}
-    for m in _FIG_RE.finditer(html):
-        fig_at[m.end()] = m.group("num")
-
     filled = [0]
     total = [0]
 
     def sub(m):
         total[0] += 1
         role = m.group("role")
-        num = fig_at.get(m.start())
-        keys = []
-        if num:
-            keys += ["fig:%s@svg" % num, "fig:%s" % num]
-        keys.append(role)
-        for k in keys:
-            if k in man:
-                body = _embed(man[k])
-                if body:
-                    filled[0] += 1
-                    return ('<div class="%s slot--filled" data-slot="%s" style="%s">%s</div>'
-                            % (m.group("cls"), role, m.group("style"), body))
+        if role in man:
+            body = _embed(man[role])
+            if body:
+                filled[0] += 1
+                return ('<div class="%s slot--filled" data-slot="%s" style="%s">%s</div>'
+                        % (m.group("cls"), role, m.group("style"), body))
         return m.group(0)
 
     out = _SLOT_RE.sub(sub, html)

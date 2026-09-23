@@ -82,3 +82,27 @@ same misclassification into a different component.
 - Never shrink font size to fit a wide configuration table. The type scale
   is a system; one table opting out is visible immediately (same doctrine
   as physics and as FORMAT_SPEC §8.2's matrix-sizing rule).
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**The cover's two analytics tables have their own skins.** A ranked value
+column becomes `priority_table`, a numbered procedure becomes
+`study_table` — picked by shape, not by heading text.
+
+**Only emit a column the source actually has.** `priority_table` used to
+emit three cells unconditionally to match the reference's three-column
+table; a chapter writing only `टॉपिक | कितने अंक` then got a ruled,
+permanently blank third strip down the cover's biggest block. The header is
+trimmed to match the body for the same reason.
+
+A qualifier in a value cell (`लगभग 2 अंक`) is set OUTSIDE the count pill:
+`.count-value` is `display:inline-flex`, and a flex container discards the
+whitespace between its children, which rendered `लगभग2 अंक`.

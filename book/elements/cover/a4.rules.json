@@ -178,5 +178,9 @@
  {
   "i": 410,
   "css": "/* The chapter masthead — board, class, subject. Small and quiet: it\n   is the same on every chapter, so it identifies the book rather\n   than this chapter, and it must not compete with the title above\n   it. 15.5px prints at 11.4px, just clear of the floor. */\n.cvmast { font-size:15.5px; font-weight:600; color:#6b7383;\n          letter-spacing:.2px; margin-top:4px; }"
+ },
+ {
+  "i": 137,
+  "css": "/* Each paragraph of a cover note — see `components/cover.note`. The\n   chapter's reading guide is a heading plus four labelled items, and\n   flattened into one run they read as a single sentence. */\n.cvnote-p + .cvnote-p { margin-top:5px; }"
  }
 ]

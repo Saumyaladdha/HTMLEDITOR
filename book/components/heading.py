@@ -25,20 +25,40 @@ def chapter_header(num, title, part_label="", part_sub=""):
     return "".join(out)
 
 
-def section_head(num, title, acc=0, chips=(), exams=(), en="", flag=""):
+def section_head(num, title, acc=0, chips=(), exams=(), en="", flag="",
+                 freq="", revision=False):
     """`(3.5) गतिशीलता (Mobility)  [🔥 UP 2025 · 3 अंक]`
 
     `en` is the English gloss, and it belongs INSIDE this row. Emitted as a
     block after it — which is what a `<div class="exp">` did — it took a
     whole line of its own beneath a two-word heading, so every section spent
     a line on a translation and the gloss read as a subtitle instead.
+
+    `freq` is the topic's exam-frequency trailer — `13 सवाल आए · 1 व 5 अंक
+    में`. It arrives as part of the markdown's heading line and used to be
+    left there, so the heading printed as one run with the count welded to
+    the name and wrapped onto a second line in a 449px column. The
+    reference sets it as a red seal beside the name instead; see
+    `.topic-frequency`.
+
+    `revision` switches the Part-1 shape: an `<h2>` rather than a `<span>`,
+    wrapped with its chips in a `.topic-heading` flex box, which is what
+    `.revision-unit .sechead`'s 40px/rest grid lays out.
     """
     name, ink, _fill, hd = accent(acc)
     out = ['<div class="sechead">']
     if num:
         out.append('<span class="secno" style="border-color:%s;color:%s;">%s</span>'
                    % (ink, ink, plain(num)))
-    out.append(hdu(inline(title), hd))
+    if revision:
+        out.append('<div class="topic-heading">')
+    out.append(hdu(inline(title), hd, tag="h2" if revision else "span"))
+    if freq:
+        # Same seal, same 🔥, as the `[UP 2025 · 3 अंक]` stamp — see
+        # `examchip`. The two are the same statement in two authoring
+        # dialects ("asked in UP 2023, worth 2 marks" / "13 questions
+        # came, in the 1- and 5-mark slots"), so they get one design.
+        out.append('<span class="topic-frequency">🔥 %s</span>' % inline(freq))
     if en:
         out.append('<span class="exp">(%s)</span>' % plain(en))
     # `☞ बार-बार` — maths flags a frequently-asked section this way. It is a
@@ -52,6 +72,8 @@ def section_head(num, title, acc=0, chips=(), exams=(), en="", flag=""):
         out.append(examchip(e))
     for c in chips:
         out.append(chip(c))
+    if revision:
+        out.append('</div>')
     out.append('</div>')
     return "".join(out)
 
@@ -60,10 +82,58 @@ def sub_head(title):
     return '<div class="h2">%s</div>' % inline(title)
 
 
-def part_banner(label, sub=""):
-    out = ['<div class="partbanner"><div class="pt">%s</div>' % inline(label)]
+def _part_heading(label, sub, tag="h2", extra_class=""):
+    # `PART 1 · QUICK REVISION` IS TWO THINGS, AND THE MARKDOWN WRITES IT
+    # AS ONE STRING.
+    #
+    # The reference sets the number in its own tinted pill
+    # (`.part-label`), the name beside it under a pencil flourish
+    # (`.part-name`), and a `·` between them (`.part-divider`) — three
+    # elements this function has always been able to build. But the part
+    # heading arrives from the reader as a single label with the `·`
+    # inside it and nothing in `sub`, so the whole line went into the
+    # pill: one long tinted box reading "PART 1 · QUICK REVISION", with
+    # the name unstyled inside it and the flourish attached to nothing.
+    #
+    # Split on the FIRST `·` only, so a name that contains one of its own
+    # keeps it.
+    if not sub and "·" in (label or ""):
+        label, _, sub = [x.strip() for x in (label or "").partition("·")]
+    cls = ("part-heading " + extra_class).strip()
+    out = ['<%s class="%s">' % (tag, cls)]
+    if label:
+        out.append('<span class="part-label">%s</span>' % inline(label))
+    if label and sub:
+        out.append('<span class="part-divider"> · </span>')
     if sub:
-        out.append('<div class="ps">%s</div>' % inline(sub))
+        out.append('<span class="part-name">%s</span>' % inline(sub))
+    out.append('</%s>' % tag)
+    return "".join(out)
+
+
+def part_banner(label, sub=""):
+    """Part 1's single opening banner — `.type-banner.revision-banner`."""
+    return ('<div class="type-banner revision-banner">%s</div>'
+            % _part_heading(label, sub))
+
+
+def type_banner(label, accent=None, part_label="", part_sub=""):
+    """One of Part 2's question-format banners — बहुविकल्पीय / अतिलघु
+    उत्तरीय / लघु उत्तरीय-I / -II / विस्तृत उत्तरीय — pooled across every
+    topic (see `readers.markdown._regroup_by_qtype`). The FIRST one also
+    carries Part 2's own "PART 2 · QUESTIONS & ANSWERS" masthead, folded
+    into the same banner rather than a separate one above it — that is the
+    shape the reference uses, and a standalone part-banner above the first
+    bucket read as one extra, empty-looking page break."""
+    cls = "type-banner questions-banner" if part_label else "type-banner"
+    style = ' style="--accent:%s;"' % theme.ACCENTS[accent % len(theme.ACCENTS)][1] \
+            if accent is not None else ""
+    out = ['<div class="%s"%s>' % (cls, style)]
+    if part_label:
+        out.append(_part_heading(part_label, part_sub))
+        out.append('<h2 class="question-type-heading">%s</h2>' % inline(label))
+    else:
+        out.append('<h2>%s</h2>' % inline(label))
     out.append('</div>')
     return "".join(out)
 

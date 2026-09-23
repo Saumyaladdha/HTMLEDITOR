@@ -66,3 +66,28 @@ correct.
 - Never treat lopsided columns as a defect on its own. The packer fills
   column 1 before column 2 by design, and the final page of a run is
   legitimately uneven.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**There is now a measured benchmark.** Probing the reference edition the
+same way this step probes a build:
+
+| | pages | avg free / column | worst column |
+|---|---|---|---|
+| reference | 35 | **105px** | 418px (on the last page) |
+
+So ~105px of slack per column is what a good build looks like — not zero.
+A column far above that wants explaining; the whole book far above it means
+the packer is stopping early, which is what a wrong `GAP` did (it charged
+9px a boundary against a real 0.22px and cost ~100px a column).
+
+Judge the **worst hole** as well as the total: one column two-thirds empty
+reads as a mistake, the same slack spread over six does not.

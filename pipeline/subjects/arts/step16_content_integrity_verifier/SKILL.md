@@ -222,3 +222,26 @@ with no heading/title explanation?
   word appears on. A book that quietly drops a paragraph — or, as here, a
   distinguishing label repeated 24 times — is the exact failure this whole
   pipeline exists to prevent.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**Two shapes that legitimately move text around** — neither is content
+loss:
+
+- a question tag is split three ways (`1 अंक` → `.qmarks`, each
+  `year/set` → a `.paper-ref`, the rest → `.inline-tag`), so the tag's own
+  words are rearranged and `Set A/C` becomes `2026/set_a · 2026/set_c`;
+- a topic heading's `· **13 सवाल आए · 1 व 5 अंक में**` trailer moves out of
+  the title into a `.topic-frequency` seal.
+
+A real figure's caption IS content: `figure()` must carry the chapter's own
+italic caption, not just the `चित्र N` label. Dropping it silently lost 162
+distinct words once.

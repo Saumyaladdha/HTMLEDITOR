@@ -1,0 +1,141 @@
+/* FINAL NUMERIC ALIGNMENT TO THE REFERENCE.
+   Every value here is the reference's own, for a selector this codebase
+   already styles but at a slightly different number. They are collected
+   in one file, named to sort LAST (`ids()` is sorted, and `bundle()`
+   appends each element's `extra.css` in that order), because each one
+   has to win over the archived `*.rules.json` value it corrects and
+   scattering them would make that ordering a matter of luck.
+
+   Found by diffing the reference's stylesheet against `bundle("a4")`
+   selector by selector — none of these is large enough to notice on one
+   block, and together they are why a rebuilt page never quite sat where
+   the reference's did. */
+
+/* The options grid: a little tighter type, a little more column gap. */
+.opts { font-size:17px; gap:9px 14px; line-height:1.55; }
+
+/* A callout's box. Ours had no border-radius or border-width of its own
+   at this level, so both came from whichever earlier rule matched. */
+.po { border-radius:13px; border-width:1.6px; font-size:16.5px;
+      line-height:1.55; margin:9px 0; padding:10px 13px; }
+
+/* The year/marks chip beside a heading. */
+.chip { font-size:14.5px; padding:2px 11px; }
+
+/* Answer prose. */
+.anstext { line-height:1.65; }
+
+/* THE MARKS ROW SITS UNDER ITS QUESTION, NOT PULLED UP OVER IT.
+   Ours carried `margin:-14px 0 8px` — a negative top margin dragging the
+   row up into the block above it. That is a local patch for a gap the
+   reference does not have, and against the reference's own spacing it
+   printed the marks overlapping the question's last line. */
+.marksrow { margin:2px 0 4px; }
+
+/* The sheet itself: the reference's drop shadow is lighter and warmer,
+   and it stands 26px clear of its neighbour rather than 22px. */
+.page { margin:26px auto; box-shadow:0 7px 30px #30271924; }
+
+/* THE QUESTION HEAD DRAWS ITS OWN SEPARATOR.
+   The reference has no `.qsep` element anywhere; the dashed pink rule
+   between questions is this border. Doing it here is what lets a
+   question opening a column suppress the rule (see
+   `elements/acols/extra.css`) — a separate `<div>` would have left a
+   rule stranded across the column top with nothing above it. */
+.qhead { border-top:2px dashed #ec97b5; padding-top:13px; margin:12px 0 9px;
+         gap:8px; }
+/* The marks chip is pushed to the far end of the head's row, and the
+   paper band drops to a row of its own under both (`flex-basis:100%`
+   on `.question-meta`). */
+.qhead .qmarks { margin-left:auto; font-size:13px; }
+
+/* THE CALLOUT SKINS, AS THE REFERENCE FINALLY SETS THEM.
+   Every one of the eight differs from the archived values this codebase
+   carried: the reference's fills are paler and its borders a little more
+   saturated, so a page holding four callouts reads as four tinted rules
+   rather than four coloured blocks. Taken from the LAST definition of
+   each in the reference's cascade (it overrides its own base in the A4
+   layer, which is the half this codebase never picked up). */
+.po-calc { background:#fff3f7; border-color:#e7739b; }
+.po-key  { background:#f2fbfb; border-color:#59bbcb; }
+.po-opt  { background:#f5f9ff; border-color:#76a3e5; }
+.po-step { background:#f4fbf4; border-color:#74c478; }
+.po-tip  { background:#fffbed; border-color:#dfbf34; }
+.po-trap { background:#fff8ee; border-color:#efa842; }
+.po-turn { background:#f8f3fe; border-color:#a780df; }
+.po-warn { background:#fff4f7; border-color:#eb86a5; }
+
+/* ONE RULE DOWN THE GUTTER, NOT TWO.
+   `.acols::after` drew a 2.5px DASHED blue line, absolutely positioned
+   down the middle at a hard-coded 1432px (the old CONTENT_H, itself now
+   stale). With `.acol:first-child`'s solid rule also in place — which is
+   the one the reference draws — every two-column page showed a dashed
+   line and a solid line side by side. The reference has no `.acols::after`
+   at all. */
+.acols::after { content:none; }
+
+/* A DISPLAY EQUATION HAS NO LEFT HAIRLINE.
+   `.dm` carried `border-left:2px solid #e4dfd2` and 14px of left padding
+   to "group the step with the sentence that introduced it". The reference
+   has neither: its `.dm` is `font-size:19px; line-height:1.65; margin:8px
+   0` and nothing else. The hairline printed as a faint vertical bar
+   beside every derivation — and beside an equation that had wrapped, as
+   two stranded bars with nothing between them. Centring lives on
+   `.eqline` now, so the `.dm` no longer needs to own it either. */
+.dm { border-left:none; padding:0; font-size:19px; line-height:1.65;
+      margin:8px 0; }
+.acol .dm { padding-left:0; }
+
+/* A FRACTION IS NEVER SMALLER THAN IT IS LEGIBLE.
+   `.fr` is `.86em`, which is right in body text (18.5 -> 15.9px, and the
+   reference sets 82% of its fractions at exactly that). But `em`
+   COMPOUNDS: inside a 17px `.opts` row it lands at 14.6px, and a fraction
+   nested in a fraction takes .86 twice again — 13.3px. At PRINT_ZOOM
+   0.734 those print at 10.7px and 9.8px, both under the 11px floor, and
+   that is what the visual QA kept reporting as `tiny_text`.
+
+   Measured across the built book against the reference: ours spread over
+   15.9 / 15.5 / 14.6 / 13.3px where the reference is overwhelmingly one
+   size. A floor collapses the small clusters upward without touching the
+   dominant case (.86em of body text is 15.9px, already above it), so the
+   page gets one fraction size instead of four — which is what reads as
+   inconsistent — and nothing shrinks below legibility.
+
+   15.5px x 0.734 = 11.4px printed. */
+.fr { font-size: max(.86em, 15.5px); }
+
+/* CLEARANCE EITHER SIDE OF THE FRACTION RULE.
+   `sup, sub { line-height:0 }` — which this book needs, or a superscript
+   grows the line box and pushes a radical's overline off its radicand —
+   means a script contributes NO height of its own. So nothing keeps the
+   `⁻²` of `9×10⁻²` in a denominator from riding up into the rule above
+   it: our `.fr>.dn` ended the cascade on `padding-top:1px`, and the
+   exponent sat on the line.
+
+   The reference pays for that clearance explicitly, on both sides — 3px
+   under the rule and 2px above it — and draws the rule itself a little
+   heavier and in ink rather than `currentColor`. Verbatim from it; the
+   `margin-top` ours carried is dropped, since the padding is what holds
+   the script off. */
+.fr>.dn { border-top:1.6px solid #1f2430; padding:3px 6px 0; margin-top:0; }
+.fr>span:first-child { padding-bottom:2px; }
+
+/* THE COLUMNS FILL THE SHEET, SO THE GUTTER RULE RUNS THE WHOLE PAGE.
+   `.acol` is `height:100%` — but a percentage height resolves against a
+   parent that HAS one, and `.acols` was `flex:none`, i.e. sized to its
+   own content. So on any page whose columns ended short the blue rule
+   stopped where the text stopped, halfway down the sheet, instead of
+   running to the foot of the page.
+
+   The reference solves this by writing an explicit height onto every
+   `.acols` it emits — all 35 of them carry `style="height:1410px"`, or
+   less on a page whose banner takes space above the columns. Rather than
+   compute that number in the renderer and get it wrong on banner pages,
+   let flex do the same arithmetic: `.sheet-body` is already a fixed-height
+   flex column, so `flex:1` gives `.acols` exactly the remainder after the
+   banner — which is the number the reference is writing by hand.
+
+   `min-height:0` because a flex item's default `min-height:auto` refuses
+   to shrink below its content, which would silently re-introduce the
+   overflow this is measured against. */
+.acols { flex:1 1 auto; min-height:0; }

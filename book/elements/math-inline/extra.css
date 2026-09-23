@@ -11,3 +11,25 @@
 .m, .fr, .up, .dm, .frow>.fx, .work, p.work, .cvformula {
   font-variant-numeric: lining-nums;
 }
+
+/* A HINDI WORD INSIDE MATHS IS SET IN THE BODY FACE, EXPLICITLY.
+   `.mt` said `font-family:inherit`, and what it inherits inside `.m`/`.fr`
+   is the notation stack (Charter, Times) — none of which carries a single
+   Devanagari glyph. So every Hindi word in an equation fell to whatever
+   the browser picked as a last resort, which is not Kalam and not what
+   the rest of the page is set in: `$\dfrac{कूलॉम}{वोल्ट}$` drew its two
+   words in a different typeface from the same two words one line above.
+   The reference names the face rather than inheriting it (its `.k`), and
+   naming it here is what makes a unit ratio match its own prose. */
+.m .mt, .dm .mt, .fr .mt { font-family:'Kalam',cursive; font-style:normal; }
+
+/* A LONG HINDI NUMERATOR WRAPS INSTEAD OF WIDENING THE FRACTION.
+   A fraction is `white-space:nowrap` so an expression cannot come apart
+   mid-operand — right for `2kp/r³`, wrong for a unit ratio spelled out in
+   words, where `विद्युत आवेश`/`विभवांतर` made the rule as wide as the
+   column and pushed the equation off the sheet. Capped and allowed to
+   wrap, the words stack inside the fraction and the rule stays the width
+   of the equation. Verbatim from the reference, which scopes it to `.k`;
+   `.mt` is this book's name for the same run. */
+.dm .fr .mt, .dm .fr .k { display:inline-block; max-width:190px;
+                          white-space:normal; }

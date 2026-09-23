@@ -16,6 +16,8 @@ The finalised edition widened the family from 8 to 16. The extra variants
 are real distinctions the book makes (a calculation slip is not a board
 trap), so they get their own colours rather than being folded together.
 """
+import re as _re
+
 from ..design import tokens as theme
 from ..format.inline import inline, plain
 from .inline import stars, starnote
@@ -92,7 +94,19 @@ def srcnote(text):
 
 
 def refbox(text):
-    return '<div class="note">%s</div>' % inline(text)
+    """A quoted note. Blank-line-separated paragraphs stay separate.
+
+    The reader marks a `>` quote's paragraph breaks with a blank line (see
+    the `refbox` node it builds); rendered through one `inline` call those
+    breaks were whitespace and the cover's reading guide — a heading plus
+    the two parts it introduces — printed as a single run-on sentence.
+    """
+    parts = [p.strip() for p in (text or "").split("\n\n") if p.strip()]
+    if len(parts) <= 1:
+        return '<div class="note">%s</div>' % inline(text)
+    return ('<div class="note">%s</div>'
+            % "".join('<div class="note-p">%s</div>' % inline(p)
+                      for p in parts))
 
 
 def fullnote(n_stars, text):
@@ -100,10 +114,26 @@ def fullnote(n_stars, text):
     return '<div>%s%s</div>' % (st, starnote(text))
 
 
+# A DERIVATION CARD IS READ DOWN, NOT GLANCED AT.
+#
+# Every other sticky note is a short aside — a few rows, set inline, tilted
+# a degree or two so it reads as pinned to the page. A `निगमन के चरण` card
+# is not that: it is the numbered steps of a derivation, several lines each,
+# and the shared `.callout.sticky` rules set its rows `display:inline` and
+# rotate the whole card, so the steps ran together into a paragraph on a
+# slant. The reference gives exactly this card its own class, which
+# un-rotates it and puts each step back on its own line — see
+# `.derivation-note` in `elements/revision-flow/extra.css`.
+_DERIVATION_RE = _re.compile(r'निगमन|व्युत्पत्ति')
+
+
 def sticky(label, rows, bg=None, pin="red", ink="#c81e1e", rotate=None, icon=""):
     """A titled card. `.sticky` + the pin are added by the A4 stylesheet."""
-    out = ['<div class="callout sticky" style="border-color:%s;background:%s;">'
-           % (ink, bg or "#fdf3b4")]
+    cls = "callout sticky"
+    if _DERIVATION_RE.search(label or ""):
+        cls += " derivation-note"
+    out = ['<div class="%s" style="border-color:%s;background:%s;">'
+           % (cls, ink, bg or "#fdf3b4")]
     out.append('<span class="pin %s"></span>' % pin)
     out.append('<div class="ch" style="color:%s;">%s %s</div>'
                % (ink, icon or "📌", inline(label)))

@@ -148,7 +148,14 @@ def parse_figure(body):
     Both become a `figure` node; `mode` records which.
     """
     ref = None
-    m = re.search(r'\|\s*ref:\s*(\S+?)[;\s]', body + ' ')
+    # THE SEPARATOR BEFORE `ref:` IS THE CHAPTER'S CHOICE, NOT PART OF THE FACT.
+    #
+    # This required a PIPE, and `FINAL_FOR_BUILD.md` writes all eight of its
+    # references `[IMAGE: चित्र 9.1 — … · ref: figures/img/F005.jpg]` with a
+    # middle dot. The path was never lifted out, so it stayed inside `desc`
+    # — harmless while nothing printed the description, and a production
+    # file path on the page the moment something did.
+    m = re.search(r'[|·•—–;]\s*ref:\s*(\S+?)[;\s]', body + ' ')
     if m:
         ref = m.group(1).rstrip(';')
         body = body[:m.start()] + ' ' + body[m.end():]

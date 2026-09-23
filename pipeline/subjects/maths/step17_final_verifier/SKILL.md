@@ -63,3 +63,19 @@ description: Give the final ship/hold verdict on a maths build — the matrix-sp
   gates passed. Passing gates on content that contains zero integrals is
   not evidence about integrals — say so plainly rather than letting a
   clean report imply more than it tested.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**What a green build means now.** Geometry passing is necessary and not
+sufficient: the build is judged against `build/REFERENCE_chapter-02.html`,
+and the two measurable gates are `overflow=0` and dead space in the
+neighbourhood of the reference's **105px free per column**. A build with no
+overflow but 250px+ of slack per column is packing wrong.

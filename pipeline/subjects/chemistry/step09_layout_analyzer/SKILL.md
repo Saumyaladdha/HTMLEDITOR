@@ -72,3 +72,31 @@ IF the reaction splits somewhere OTHER than at the arrow or the final "+"
   restructuring the source content, never a partial split.
 - Never raise `CONTENT_H` to make a wide reaction "fit" — see the physics
   doctrine: that hides clipping, it does not remove it.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**Three structural changes to the packer's world.**
+
+- **Part 1 is two columns**, packed by `pack_columns` in the same stream as
+  Part 2 — a part boundary is no longer a page boundary. There is no
+  `flowwrap` half and no floated note column.
+- **`GAP` is 0**, and that is measured: across 54 built columns and 601
+  block boundaries the real space between stacked blocks is 0.22px. It was
+  9, which invented ~100px of phantom occupancy per column. If the
+  stylesheet ever puts real space back between `.u` siblings, **re-probe**
+  and set it to what the browser reports.
+- A part banner that opens a page is **hoisted out of the column** into the
+  page header so it spans the sheet. The packer still charges its column
+  height, so that can only leave a page emptier than modelled, never
+  overfull.
+
+`.page` is `overflow:hidden` — clipped content is DELETED, so the settle
+pass measuring a real render is not optional.

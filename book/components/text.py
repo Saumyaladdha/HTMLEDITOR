@@ -5,6 +5,8 @@ Body text — paragraphs, bullets, definitions.
 Bullet dots take the SECTION's accent through the `--acc` custom property,
 which is what keeps a page reading as one system.
 """
+import re as _re
+
 from ..design import tokens as theme
 from ..format.inline import inline, plain
 from .inline import accent
@@ -49,8 +51,57 @@ def definition(term, text, acc=None):
             '<div class="def">%s</div>' % (inline(term), inline(text)))
 
 
+# One fact inside a `**त्रिक:**` strip: `मात्रक: फैरड (F)`. The label runs
+# to the FIRST colon and is never maths, so a `:` inside the value — a
+# ratio, a range — cannot be mistaken for a second label.
+_FACT_RE = _re.compile(r'^\s*([^:：$`]{1,24})\s*[:：]\s*(\S.*)$', _re.S)
+
+# What separates one fact from the next. `·` is this book's own multi-item
+# separator (`9 सवाल आए · 1 व 2 अंक में`), so the same glyph is read the
+# same way here. A `|` is accepted because the pipe-table dialect leaks
+# into hand-written strips often enough to be worth tolerating.
+_FACT_SPLIT_RE = _re.compile(r'\s+[·|]\s+')
+
+
 def trio(text):
-    return '<div class="trio">%s</div>' % inline(text)
+    """The compact unit/dimension/quantity strip — `**त्रिक:**`.
+
+    ONE `.fact-item` PER FACT, not one run-on line. The reference sets
+    each fact as its own block with the label in green
+    (`.trio .fact-label`), so `मात्रक: … · विमीय सूत्र: … · राशि का
+    प्रकार: …` reads as three labelled rows rather than a single
+    sentence with colons in it. Split on this book's own `·` separator;
+    a part with no `label:` head is passed through as plain text, which
+    is what keeps a one-fact strip (and every older chapter's free-form
+    `त्रिक` line) rendering exactly as it always did.
+
+    The leading `त्रिक:` the reader prepends is dropped — it names the
+    construct, and the reference never prints it.
+    """
+    body = (text or "").strip()
+    m = _FACT_RE.match(body)
+    if m and m.group(1).strip() == "त्रिक":
+        body = m.group(2).strip()
+
+    parts = [p for p in _FACT_SPLIT_RE.split(body) if p.strip()]
+    facts = []
+    for p in parts:
+        fm = _FACT_RE.match(p)
+        if fm:
+            facts.append('<span class="fact-item">'
+                         '<b class="fact-label">%s:</b> %s</span>'
+                         % (inline(fm.group(1).strip()),
+                            inline(fm.group(2).strip())))
+        else:
+            facts.append('<span class="fact-item">%s</span>' % inline(p.strip()))
+    if not facts:
+        return '<div class="trio">%s</div>' % inline(text)
+    # `data-fact-labels` records that this strip parsed into labelled
+    # facts — the reference carries it, and it lets the QA pass tell a
+    # real strip from a free-form one without re-parsing the text.
+    labelled = ' data-fact-labels="1"' if any(
+        _FACT_RE.match(p) for p in parts) else ""
+    return '<div class="trio"%s>%s</div>' % (labelled, "\n".join(facts))
 
 
 def note(text):

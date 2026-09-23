@@ -60,3 +60,19 @@ the library in their head. This design has one table.
   rendered through `para` produces a paragraph containing a filename.
 - Never add a component without adding it to `__init__.py`'s `__all__` —
   `verify()` will catch it, but only after you have wasted a build.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**Part 1 and Part 2 both pack into two columns now.** There is no
+single-column `flowwrap` half and no 300px floated note column; a sticky
+note is assigned INLINE, into the column its section sits in. A Part-1
+item carries `revision`, which is what gives it `.revision-unit` and its
+page `.revision-flow`.

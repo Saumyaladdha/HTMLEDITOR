@@ -122,6 +122,25 @@ def _fr_right(s, i):
     depth, j, n = 0, i, len(s)
     while j < n:
         ch = s[j]
+        if ch == '[' and depth == 0 and j > i:
+            # A SQUARE BRACKET AFTER THE DENOMINATOR IS A NEW FACTOR.
+            #
+            # `1/(4πε₀)[q·2q/(d-x) + …]` — the bracket multiplies the
+            # fraction, it is not part of its denominator. Counted as an
+            # opening group the scan ran straight through it and took the
+            # whole bracketed expression as the denominator, so
+            # `\dfrac{1}{4πε₀}\left[\dfrac{q·2q}{d-x} + …\right]` came out
+            # as ONE enormous fraction with every inner `\dfrac` left as
+            # literal `a/b` text inside it — the mangled derivations, with
+            # stacked and flat fractions side by side on the same line.
+            #
+            # Only when the denominator has already taken something
+            # (`j > i`): a bracket AT the start is the denominator's own
+            # grouping (`a/[b+c]`) and must still be consumed. `(` is left
+            # alone — after a name it is function application (`a/f(x)`),
+            # and `tex()` parenthesises a compound denominator anyway, so
+            # a bare `(` here never means a new factor the way `[` does.
+            break
         if ch in '([':
             depth += 1
         elif ch in ')]':
@@ -242,21 +261,43 @@ _WRAPPED_RE = re.compile(r'^\s*([(\[{])(.*)([)\]}])\s*$', re.S)
 
 
 def _paren_groups(s):
-    """Every top-level `(...)` span in `s`: [(start, end_exclusive), …].
+    """Every top-level bracket span in `s`: [(start, end_exclusive), …].
 
     A group nested inside another is not listed on its own — recursing into
-    the outer group's own text (below) reaches it."""
-    out, depth, start = [], 0, None
+    the outer group's own text (below) reaches it.
+
+    SQUARE BRACKETS COUNT, NOT ONLY ROUND ONES. `_top_slash` sees only a
+    slash at depth 0, so every fraction inside a bracketed factor is
+    invisible to it and reaches this fallback instead. Listing `(…)` alone
+    meant a `[…]` group was never recursed into, and physics writes its
+    derivations exactly that way:
+
+        1/(4πε₀) q[1/(r−l cosθ) − 1/(r+l cosθ)]
+
+    The leading `1/(4πε₀)` stacked and everything inside the bracket stayed
+    flat text — a stacked fraction and two literal `a/b` slashes on the same
+    line, in the same expression. The two bracket kinds are the same
+    structure here; only the glyph differs.
+    """
+    out, depth, start, opener = [], 0, None, None
+    pairs = {'(': ')', '[': ']'}
     for i, ch in enumerate(s):
-        if ch == '(':
+        if ch in pairs:
             if depth == 0:
-                start = i
+                start, opener = i, ch
             depth += 1
-        elif ch == ')':
+        elif opener is not None and ch == pairs[opener]:
             depth -= 1
             if depth == 0 and start is not None:
                 out.append((start, i + 1))
-                start = None
+                start, opener = None, None
+        elif ch in (')', ']') and depth > 0:
+            # A closer of the OTHER kind inside this group — malformed, but
+            # real: `[a)` happens in transcribed sources. Treat it as
+            # closing the nesting level so the scan cannot run away.
+            depth -= 1
+            if depth == 0:
+                start, opener = None, None
     return out
 
 
@@ -304,9 +345,9 @@ def _fr_one(s, _depth=0):
     # backtick run `X₂/निर्जल FeX₃` still came out with `X₂` stacked over
     # `निर्जल` in a box, in a सूत्र panel of reagents. A reagent and its
     # condition are a pair, not a quotient, wherever they are written.
-    if REACTIONS and _both_formulae(s[:i].strip().split()[-1] if s[:i].strip()
-                                   else "",
-                                   (s[i + 1:].strip().split() or [""])[0]):
+    if REACTIONS and _chem_slash(s[:i].strip().split()[-1] if s[:i].strip()
+                                else "",
+                                (s[i + 1:].strip().split() or [""])[0]):
         return s
     # SPACES around the slash are not operand boundaries.
     #
@@ -334,22 +375,26 @@ def _fr_one(s, _depth=0):
         # maths here: the source note came out with 2025 stacked over set_jv
         # like a fraction. Left as a slash.
         return s[:i + 1] + _fr_one(s[i + 1:])
-    # A TALL BOXED FRACTION FOR "1/2" IS A SLEDGEHAMMER.
+    # A NUMERIC FRACTION STACKS LIKE ANY OTHER. NO COMPACT FORM.
     #
-    # `stack_fracs` gives `q/4\pi\epsilon_0 r^2` the full bordered `.fr`/
-    # `.dn` box it needs — that quotient IS the content. `1/2` sitting in
-    # the same answer as a coefficient does not: two plain digits, no
-    # variable, no unit, and the reference sets it as a compact `¹⁄₂`
-    # the same way running prose sets a half. Boxing it stacked it as tall
-    # as the real fraction two words later, so a one-character number read
-    # as visually as important as the physics next to it.
+    # This used to set a digits-over-digits quotient as a compact `1/2`
+    # built from superscript and subscript digits, on the reasoning that a
+    # bare `1/2` is a coefficient rather than content and should not get a
+    # box as tall as the physics beside it. The reference disagrees
+    # outright: it contains ZERO compact fractions (no U+2044 anywhere)
+    # and stacks these the same as every other quotient. Ours emitted 21.
     #
-    # Both sides, not one — `1/r` is still a real quotient (r varies), and
-    # `3/x` is an unknown over a variable, not a numeral pair.
-    if _SIMPLE_DIGITS_RE.fullmatch(left) and _SIMPLE_DIGITS_RE.fullmatch(right):
-        compact = (''.join(_SUP_DIGIT_MAP[c] for c in left)
-                   + '\u2044' + ''.join(_SUB_DIGIT_MAP[c] for c in right))
-        return s[:left_start] + compact + _fr_one(s[right_end:], _depth)
+    # The form also failed on its own terms the moment either side ran to
+    # two digits: `54/2` came out as superscript `54` over subscript `2`
+    # inside an already-small run, well under the 11px print floor, which
+    # is what the visual QA kept reporting as `tiny_text`.
+    #
+    # And it was wrong arithmetically. In `1/C = 1/4 + 1/4 = 1/2` — a
+    # series-capacitance sum — every one of those IS the content, and
+    # compacting them made a calculation read as a row of vulgar
+    # fractions.
+    #
+    # `_SIMPLE_DIGITS_RE` and the digit maps stay; other passes use them.
     # NESTED FRACTIONS.
     #
     # Each operand is stacked in its own right, so a fraction whose numerator
@@ -403,6 +448,32 @@ def _both_formulae(a, b):
     return ok(a) and ok(b) and (formula(a) or formula(b))
 
 
+def _chem_slash(a, b):
+    """Is `a/b` a chemical pair rather than a division?
+
+    TWO SHAPES, ONE RULE, ONE OWNER.
+
+    Both the prose path (`_fraction_worthy`) and the maths path (`_fr_one`)
+    have to answer this, and they had two separate copies of half the
+    answer — so `Br₂/CCl₄` was protected in both but `o/p` in neither.
+
+      · a reagent and its condition — `HX/ZnCl₂`, `Br₂/CCl₄`,
+        `X₂/निर्जल FeX₃` — a pair, not a quotient;
+      · two RING POSITIONS — `o/p`, `m/p` — "the ortho and para products".
+        A position prefix is a bare lower-case letter, so `_both_formulae`
+        can never see it. Five of these printed as `o` over `p` with a rule
+        between them: a fraction of two ring positions.
+
+    The side may carry the word it prefixes (`p-समावयवी`), so only the part
+    before a hyphen is tested. `mv/qB`, `E/B` and `v = s/t` are untouched —
+    no side of those is a single o, m or p.
+    """
+    if _both_formulae(a, b):
+        return True
+    pa, pb = a.split("-")[0].strip(), b.split("-")[0].strip()
+    return pa in ("o", "m", "p") and pb in ("o", "m", "p")
+
+
 def _fraction_worthy(text):
     """Is this `a/b` a division, or a word-alternative like `और/या`?
 
@@ -435,8 +506,22 @@ def _fraction_worthy(text):
     # an element-shaped token: a capital, an optional lower-case letter, and
     # subscript digits — and BOTH sides must look like one, so `mv/qB` and
     # `E/B` stay divisions.
-    if REACTIONS and _both_formulae(a, b):
+    if REACTIONS and _chem_slash(a, b):
         return False
+    # (see `_chem_slash` for what that covers)
+    # `o/p` IS TWO RING POSITIONS, NOT A QUOTIENT.
+    #
+    # `o`, `m` and `p` name the ortho, meta and para positions on a ring,
+    # and the chapter writes a pair of them as `o/p` — "the ortho and para
+    # products". Stacked, `o` sat over `p` with a rule between: a fraction
+    # of two ring positions, which is not a quantity that exists. Five of
+    # these on the page. `_both_formulae` cannot catch them because a
+    # position prefix is a bare lower-case letter, not an element symbol.
+    #
+    # The side may carry the word it prefixes (`p-समावयवी`), so only the
+    # part before a hyphen is tested. `mv/qB` and `E/B` are unaffected:
+    # neither side of those is a single o, m or p.
+
     if re.search(r'[A-Za-z\u0370-\u03ff0-9]', a + b):
         return True
     # A compound unit: `(ऐम्पियर·मीटर)` is two unit names joined by a middle
@@ -544,6 +629,32 @@ def _marks_value(raw):
     # it; spelled out it read `1 \times 5` on the page.
     v = v.replace('\\times', '×')
     return _VULGAR.get(v, v)
+
+
+def marks_chip(value):
+    """The chip for an ALREADY-EXTRACTED marks value.
+
+    `render_block` built this by re-wrapping: `qmarks("[%s]" % marks)`, which
+    put the value back inside brackets so `marks_chips` could find it again
+    inside `inline`. Two things went wrong with that round trip:
+
+      · the chip came out nested in a second identical `.qmarks` span,
+        82 times on one page;
+      · a value the tag pattern does not itself match — `1×5`, normalised
+        from `[1 \times 5]` — was never re-found, so `[1×5]` printed as
+        literal text in the middle of an answer.
+
+    The value has already been extracted and normalised once. Spelling it
+    as a chip needs no second parse.
+    """
+    v = (value or "").strip()
+    if not v:
+        return ""
+    # The tag's own word is what makes the number unambiguous — see
+    # `marks_chips`. Some spellings carry it already.
+    if not re.search(r'(?:अंक|marks?|mark)\s*$', v):
+        v += " अंक"
+    return '<span class="qmarks">%s</span>' % _html.escape(v, quote=False)
 
 
 def marks_value(raw):
@@ -1796,8 +1907,26 @@ def inline(s, math=False, swipe="sw-yellow"):
         #
         # A run with no Latin letter and no digit has nothing in it that the
         # maths face is for.
+        #
+        # UNLESS IT CARRIES AN OPERATOR \u2014 A UNIT RATIO IS MATHS.
+        #
+        # `$\dfrac{\u0915\u0942\u0932\u0949\u092E}{\u0935\u094B\u0932\u094D\u091F}$` \u2014 how a chapter states the unit of
+        # capacitance, "coulomb per volt" \u2014 reaches here as `\u0915\u0942\u0932\u0949\u092E/\u0935\u094B\u0932\u094D\u091F`,
+        # because `strip_latex` converts a `$\u2026$` span to plain Unicode and
+        # re-wraps it in backticks precisely so this path will stack its
+        # fraction. Devanagari on both sides and no Latin or digit anywhere,
+        # it matched the all-words test and was set as prose: the `.m`
+        # wrapper never went on, so the fraction never stacked and the page
+        # showed a flat `\u0915\u0942\u0932\u0949\u092E/\u0935\u094B\u0932\u094D\u091F` with a slash where the reference draws
+        # a rule. Every unit written as a ratio in Hindi has this shape.
+        #
+        # An operator is the thing `\u0907\u0924\u093F \u0938\u093F\u0926\u094D\u0927\u092E\u094D` does not have. Only real
+        # BINARY operators count \u2014 brackets and the ASCII hyphen are left
+        # out on purpose, since Hindi prose uses both (`\u0915\u0941\u091B (\u0916\u093C\u093E\u0938)`,
+        # `\u0905\u0930\u094D\u0926\u094D\u0927-\u0938\u0942\u0924\u094D\u0930\u0940`) and neither makes a phrase into notation.
         if (re.search(r'[\u0900-\u097F]', inner)
-                and not re.search(r'[A-Za-z0-9]', inner)):
+                and not re.search(r'[A-Za-z0-9]', inner)
+                and not re.search(r'[/=+\u00D7\u00F7\u2212<>\u2264\u2265\u2248^' + _FR_MARK + r']', inner)):
             return plain_text_run(inner)
         # The underscore may already be the sentinel `protect_slugs`
         # swapped in, so both spellings have to match here — the same

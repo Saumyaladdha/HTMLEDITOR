@@ -87,3 +87,33 @@ chapter's pagination just as surely as any other subject's.
   by design (see `step13` physics reference file); trimming it for arts
   would require gating `css.py` per subject, which is a real change to a
   shared file, not a step12/13-scoped decision.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**New CSS goes in `book/elements/<id>/extra.css` — never in the numbered
+`base.rules.json` / `a4.rules.json`.** Those are regenerated verbatim from
+the archived old reference by `tools/split_css.py`, so hand edits there
+disappear on the next split, silently, with the class still applied and no
+rule behind it.
+
+`bundle()` appends each element's `extra.css` last, in element-id order.
+`book/elements/zz-reference-parity/` is named to sort last on purpose: it
+carries final numeric alignments that have to win over the archived value
+they correct.
+
+New element directories: `revision-flow` (Part 1's skin, `.formula-list`,
+`.paper-refs`, `.topic-frequency`, `.derivation-note`, `.qref`,
+`.subhead`), `acols` (the ruled gutter and the `.u` measurement contract),
+`display-math` (`.eqline`, `.math-result`, `.eq-tail`), `trio`.
+
+To find what is still missing, diff the class inventories — parse `<style>`
+out of the reference, parse `bundle("a4")`, normalise declarations, report
+what is missing or differing.

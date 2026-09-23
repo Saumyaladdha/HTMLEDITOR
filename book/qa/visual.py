@@ -34,9 +34,24 @@ window.addEventListener('load', function(){
 
     var maxb = 0;
     Array.prototype.forEach.call(p.children, function(c){
+      // Not flowed content — see the matching note in layout/probe.py's
+      // JS_OVERFLOW. Counted here, every page's own page-number footer
+      // read as that page overflowing.
+      if (c.tagName === 'FOOTER') return;
       var b = c.getBoundingClientRect().bottom - pr.top - pad;
       if (b > maxb) maxb = b;
     });
+    // `.sheet-body` is a FIXED 1413px box, so its bounding rect sits at
+    // the limit however much content spills out of it — and it is
+    // `.page`'s only flowed child, so the scan above reported "fits" for
+    // every page while one was clipping 63px of a question away. See the
+    // matching note in layout/probe.py's JS_OVERFLOW; `scrollHeight` vs
+    // `clientHeight` is the only measure a fixed height cannot hide.
+    var sb = p.querySelector('.sheet-body');
+    if (sb) {
+      var spill = sb.scrollHeight - sb.clientHeight;
+      if (spill > 2 && limit + spill > maxb) maxb = limit + spill;
+    }
     if (maxb > limit + 1)
       rec.issues.push({kind:'overflow', px: Math.round(maxb - limit)});
     if (maxb < limit * 0.18 && p.textContent.trim().length < 200)
@@ -44,7 +59,7 @@ window.addEventListener('load', function(){
 
     p.querySelectorAll('.sechead, .qhead').forEach(function(h){
       var hb = h.getBoundingClientRect().bottom - pr.top - pad;
-      var col = h.closest('.acol') || p;
+      var col = h.closest('.acol') || p.querySelector('.sheet-body') || p;
       var last = col.lastElementChild;
       var cb = last ? last.getBoundingClientRect().bottom - pr.top - pad : hb;
       if (cb - hb < 40)

@@ -161,9 +161,21 @@ def _augment_at(spec):
 
 
 def _cells(body):
-    """The rows of a LaTeX matrix body. `&` separates columns, `\\\\` rows."""
+    """The rows of a LaTeX matrix body. `&` separates columns, `\\\\` rows.
+
+    `\\\\[6pt]` — LaTeX's own syntax for "and leave 6pt more space before
+    the next row" — is one row break, not two tokens. Splitting on the
+    bare `\\\\` alone left the `[6pt]` sitting on the FRONT of the next
+    row's raw text, so it read as part of that row's first cell: a
+    derivation's second line started `[6pt]\\nE &= …`, and by the time
+    that cell reached the page the literal text "[6pt]" had been fused
+    into the middle of a fraction's denominator, corrupting every step
+    after it. Any bracketed length LaTeX allows there — `pt`, `em`, `ex`,
+    `mm`, `cm`, or no unit at all — is consumed as part of the row-break
+    delimiter itself, same as the row break it rides on.
+    """
     rows = []
-    for raw in re.split(r'\\\\', body):
+    for raw in re.split(r'\\\\\s*(?:\[[^\]]*\])?', body):
         raw = raw.strip()
         if not raw:
             continue

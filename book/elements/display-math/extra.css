@@ -1,0 +1,25 @@
+
+/* THE FINAL-ANSWER HIGHLIGHT.
+   Wraps exactly what the source itself marks with `\boxed{…}` — see
+   `components/math.py`'s `_stash_boxed`/`_restore_boxed`. Verbatim from
+   the reference. */
+.math-result { display:inline-block; padding:3px 7px; margin:1px 2px;
+               border:1.4px solid #dfb633; background:#fffae5;
+               border-radius:5px 7px 5px 6px; }
+
+/* ONE ROW OF A DERIVATION. `.dm` holds one or more of these — a single-
+   line equation gets exactly one, a multi-step derivation one per step.
+   Replaces the old flat `<br>`-joined single line; see
+   `components/math.py`'s `_wrap_eqlines`. Verbatim from the reference. */
+.eqline { display:block; text-align:center; padding:3px 0; }
+.math-line { display:inline-block; max-width:100%; vertical-align:middle; }
+
+/* THE `…(i)` / MARKS-CHIP ROW. A sibling of `.dm`, not glued to its last
+   line — see `components/math.py`'s `_tail_html`. Verbatim from the
+   reference. `.eq-lead` (the connector-word row BEFORE a `.dm`, e.g.
+   "अर्थात्") shares this file but has no emitter wired up yet — its
+   trigger in the source markdown is not yet confirmed against
+   21_figures_final.md, see the pipeline's open-issues list. */
+.eq-tail { font-size:15px; text-align:right; margin-bottom:7px; }
+.eq-tail .qmarks { font-style:normal; }
+.eq-lead { font-size:17px; margin-top:8px; }

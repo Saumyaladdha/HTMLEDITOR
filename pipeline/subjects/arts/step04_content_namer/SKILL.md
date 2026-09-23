@@ -113,3 +113,17 @@ IS the colliding id's group label a single year ("2026", "2025", …)?
 - Never assume `open_items: 0` means no collision happened — it means every
   collision that DID happen was already silently resolved. Read the id
   list itself, as this file does above, before reporting a chapter clean.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below.
+
+Naming is unchanged by the reference work, with one thing to know: a
+`.qhead` now carries `id="q-N"`, so a question's number is an ANCHOR that
+prose links to (`#q-73`). Whatever you name a question, the number itself
+has to keep matching what the markdown wrote, or a cross-reference in an
+answer points at nothing.

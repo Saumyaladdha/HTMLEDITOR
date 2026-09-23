@@ -1,0 +1,53 @@
+
+/* THE REDESIGNED PART/TYPE BANNER.
+   Replaces the old flat `.partbanner` box — see `components/heading.py`'s
+   `part_banner`/`type_banner`. `.revision-banner` opens Part 1 (once);
+   `.questions-banner` opens Part 2, folded into its own FIRST question-format
+   banner rather than sitting above it as a banner of its own — see
+   `readers/markdown.py:_regroup_by_qtype`. Every later format gets a plain
+   `.type-banner` with just its own `<h2>`. Verbatim from the reference. */
+.type-banner { display:flex; flex-direction:column; align-items:flex-start; gap:7px;
+               border-bottom:3px solid var(--accent); padding:5px 0 18px;
+               margin-bottom:20px; flex:none; }
+.type-banner h2 { font-size:35px; line-height:1.25; margin:0; color:var(--blue); }
+.type-banner.revision-banner { border-bottom:0; padding:5px 0 13px; }
+.type-banner .part-heading { display:flex; align-items:center; gap:13px; color:#142451;
+                              font:700 36px/1.15 'Kalam',sans-serif; letter-spacing:.6px; }
+:is(.revision-banner,.questions-banner) .part-heading,
+.questions-banner .question-type-heading { position:relative; isolation:isolate; }
+.revision-banner .part-heading { padding:13px 47px 13px 21px; }
+:is(.revision-banner,.questions-banner) .part-heading::before,
+.questions-banner .question-type-heading::before {
+  content:""; position:absolute; inset:0; z-index:-1; background:#f1e8ff;
+  border:2px solid #9667c7; border-left-width:5px;
+  border-radius:24px 10px 27px 9px / 13px 23px 14px 20px; transform:rotate(-.6deg); }
+:is(.revision-banner,.questions-banner) .part-heading::after,
+.questions-banner .question-type-heading::after {
+  content:""; position:absolute; inset:5px -5px -5px 5px; z-index:-2; background:#ddc8f5;
+  border-radius:20px 13px 24px 11px / 15px 22px 12px 18px; transform:rotate(.3deg); }
+.part-heading .part-label { display:inline-block; padding:5px 18px 3px;
+                             border-radius:24px 18px 23px 16px; background:#e2d4ff;
+                             font-size:23px; line-height:1.2; transform:rotate(-2deg); }
+.part-heading .part-divider { color:#aa88e3; font-size:23px; }
+:is(.revision-banner,.questions-banner) .part-label { background:#ddc4fc; }
+:is(.revision-banner,.questions-banner) .part-divider { color:#8660b7; }
+.part-heading .part-name { position:relative; padding:0 0 5px; white-space:nowrap; }
+.part-heading .part-name::after {
+  content:""; position:absolute; left:3px; right:-5px; bottom:-3px; height:7px;
+  border-radius:60% 30% 55% 40%;
+  background:linear-gradient(90deg,#bd9bf3,#d5bfff 45%,#bd9bf3); transform:rotate(-1.2deg); }
+.part-heading .part-name::before {
+  content:""; position:absolute; width:17px; height:27px; right:-32px; top:8px;
+  background:linear-gradient(-25deg,transparent 40%,#9964dd 43% 54%,transparent 58%) 0 0/14px 9px no-repeat,
+             linear-gradient(#9964dd,#9964dd) 2px 13px/12px 3px no-repeat,
+             linear-gradient(25deg,transparent 40%,#9964dd 43% 54%,transparent 58%) 0 22px/14px 9px no-repeat; }
+.type-banner.questions-banner { gap:18px; border-bottom:0; padding:5px 0 9px; }
+.questions-banner .part-heading { gap:9px; font-size:26px; letter-spacing:.2px;
+                                   padding:10px 34px 11px 12px; max-width:calc(100% - 6px); }
+.questions-banner .part-label { flex:none; padding:4px 13px 2px; font-size:21px; }
+.questions-banner .part-divider { font-size:20px; }
+.questions-banner .part-name::after { height:6px; }
+.questions-banner .part-name::before { top:2px; right:-26px; }
+.questions-banner .question-type-heading { padding:7px 20px 7px 14px; background:transparent;
+                                            color:#142451; font-size:33px; line-height:1.3; }
+.type-banner .type-en { font:700 13px/1.4 Arial,sans-serif; letter-spacing:1.3px; color:var(--accent); }

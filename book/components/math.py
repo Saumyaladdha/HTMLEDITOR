@@ -16,6 +16,7 @@ import re as _re
 from ..format import display as _display
 from ..format import reaction as _reaction
 from ..format.inline import inline, plain
+from ..format import inline as _inline                        # noqa: E402
 from ..validators.latex_convert import tex as _latex_tex
 
 WIDE_ROWS = 5          # rows from which a two-column card pays off
@@ -174,7 +175,90 @@ def has_chain(text):
     return bool(_split_chain(body.strip().strip("$").strip()))
 
 
+# `\boxed{…}` -> the gold-bordered `.math-result` highlight around a
+# derivation's final answer — the reference boxes EXACTLY what the source
+# itself wraps in `\boxed{}`, never a guessed "last line" heuristic. Brace
+# balance goes one level deep, which is every real case in this book's
+# derivations (`\boxed{\;E = \frac{1}{2}CV^2\;}`, `\boxed{C_{eq} = ...}` —
+# the subscript's own `{eq}` is the one nested pair `\boxed` ever needs to
+# survive).
+#
+# MARK THE POSITION; DO NOT EXTRACT AND CONVERT SEPARATELY.
+#
+# A first version pulled the inner LaTeX out into a side list and ran
+# `inline(inner, math=True)` on it alone once the surrounding text was
+# fully converted — cleaner-looking, and wrong: a bare `\frac{1}{2}`
+# never stacks into a fraction outside the `\begin{aligned}…\end{aligned}`
+# wrapper that made the REST of the derivation convert correctly (that
+# wrapper is what routes a row through the environment-aware LaTeX pass;
+# `inline()` alone does not re-trigger it for an arbitrary fragment). So
+# the boxed content is left exactly where it was, inside the same
+# environment, and converts by the SAME pass as every sibling line —
+# only its start/end position is marked, with a sentinel pair that
+# carries no digit and no LaTeX meaning of its own, so nothing in
+# between (a fraction, a subscript, whatever it converts to) can trip a
+# formatting pass into eating the marker itself.
+_BOXED_RE = _re.compile(r'\\boxed\{((?:[^{}]|\{[^{}]*\})*)\}')
+_BOXED_OPEN, _BOXED_CLOSE = "\ue050", "\ue051"
+_BOXED_SPAN_RE = _re.compile(_BOXED_OPEN + r'(.*?)' + _BOXED_CLOSE, _re.S)
+
+
+def _stash_boxed(text):
+    return _BOXED_RE.sub(
+        lambda m: _BOXED_OPEN + m.group(1) + _BOXED_CLOSE, text or "")
+
+
+def _restore_boxed(html):
+    return _BOXED_SPAN_RE.sub(
+        lambda m: '<span class="math-result">%s</span>' % m.group(1), html)
+
+
+def _wrap_eqlines(html, eqno=""):
+    """One `.eqline > .math-line` div per row of a `.dm` — the reference's
+    shape for EVERY display equation, one row or many. A multi-step
+    derivation (`\\begin{aligned}`, or a plain `A = B = C` chain) still
+    reaches here as one `<br>`-joined string from the matrix/chain
+    conversion below; splitting on it and dropping the `<br>` in favour of
+    block-level rows is what makes each step its own centred line instead
+    of a soft wrap glued to the one above it."""
+    parts = html.split("<br>") if "<br>" in html else [html]
+    # THE EQUATION NUMBER RIDES THE LAST LINE, INSIDE IT.
+    #
+    # `…(ii)` is a label ON the step, and the reference sets it in the
+    # step's own `.math-line` as a `.k` run — `= U/V′   …(i)` reads as one
+    # line with a reference hanging off its right. Put in a row of its own
+    # it sat under the equation with air above and below, which reads as a
+    # second, empty step. Only the MARKS chip is a row of its own; see
+    # `_tail_html`.
+    if eqno and parts:
+        parts[-1] = '%s <span class="k">%s</span>' % (parts[-1], eqno)
+    return "".join(
+        '<div class="eqline"><span class="math-line">%s</span></div>' % p
+        for p in parts)
+
+
+def _tail_html(marks):
+    """The marks-chip row that follows a `.dm`, or `""`.
+
+    A SIBLING OF `.dm`, NOT PART OF IT. The reference right-aligns the
+    chip below the equation rather than gluing it to the last line, so a
+    `2 अंक` tag cannot be mistaken for part of the maths — see `.eq-tail`
+    in `elements/display-math/extra.css`. The equation NUMBER is not this;
+    it stays inline, see `_wrap_eqlines`."""
+    if not marks:
+        return ""
+    return '<div class="eq-tail">%s</div>' % _inline.marks_chip(marks)
+
+
 def eq(text, eqno="", step=None, marks=""):
+    """One display equation, centred on its own line — see `_eq` for the
+    real body. This wrapper only stashes/restores `\\boxed{…}` around it,
+    so every return path (chain, stepped, reaction, plain) gets the same
+    treatment without repeating it at each one."""
+    return _restore_boxed(_eq(_stash_boxed(text), eqno, step, marks))
+
+
+def _eq(text, eqno="", step=None, marks=""):
     """One display equation, centred on its own line.
 
     A trailing `…(i)` is an equation NUMBER, not maths: the reference sets its
@@ -196,41 +280,22 @@ def eq(text, eqno="", step=None, marks=""):
     # A long `=` chain becomes one aligned step per line — see _split_chain.
     chain = _split_chain(body.strip().strip("$").strip())
     if chain:
-        # A GRID: the operator in its own cell, the expression in the next.
-        # A hanging indent was not enough — the `=` is wrapped in an operator
-        # span by `upright`, and left inline at the head of a row it neither
-        # lined up with the row above nor stayed visible. Two cells align the
-        # signs down the page by construction, which is the whole point of
-        # breaking the chain up.
-        # THREE columns: left-hand side, the sign, the expression.
-        #
-        # With only two, the left-hand side had to occupy a row of its own with
-        # an empty operator cell beside it — so `B₁` sat alone above the chain
-        # with a gap under it and read as a stray symbol. A textbook puts the
-        # left-hand side on the SAME line as the first `=`; every row after it
-        # leaves that cell empty and the signs still line up.
+        # ONE `.eqline` PER STEP — same shape a `\begin{aligned}` derivation
+        # gets below, not a separate aligned-grid design. The reference
+        # never draws a chain as a grid: it puts the left-hand side on the
+        # SAME row as the first `=`, then one bare `= …` row per step after
+        # it, each just another `.eqline` in the same `.dm`.
         lhs, steps = chain[0], chain[1:]
         rows = []
         for i, part in enumerate(steps):
-            op, rest = "", part
-            if part[:1] in "=≈≡<>≤≥":
-                op, rest = part[0], part[1:].strip()
-            rows.append('<div class="chl">%s</div>'
-                        '<div class="chop">%s</div>'
-                        '<div class="chex">%s</div>'
-                        % (inline(lhs, math=True) if i == 0 else "",
-                           inline(op, math=True) if op else "",
-                           inline(rest, math=True)))
-        rows = "".join(rows)
-        tail = eqno
-        if marks:
-            tail = ('%s <span class="qmarks">[%s]</span>'
-                    % (tail, marks)).strip()
-        return ('<div class="dm dm-chain">%s%s</div>'
-                % (rows,
-                   (' <span class="k">%s</span>' % tail) if tail else ""))
+            rows.append(("%s %s" % (lhs, part)).strip() if i == 0 else part)
+        html = "<br>".join(inline(r, math=True) for r in rows)
+        html = _wrap_eqlines(html, eqno)
+        return '<div class="dm">%s</div>%s' % (html, _tail_html(marks))
 
     html = inline(body, math=True)
+    html = _wrap_eqlines(html, eqno)
+    tail = _tail_html(marks)
 
     # THE MD'S OWN NUMBER, and only that.
     #
@@ -239,21 +304,21 @@ def eq(text, eqno="", step=None, marks=""):
     # (iv) से स्पष्ट है". Two numbers on one equation told a reader nothing
     # about which the text meant, so the invented one is gone. What the
     # markdown says is what the page shows.
-    # `…(i)  [1]` together, at the end of the step. The marks tag used to be
-    # a block of its own after the equation, so it sat alone on a line at the
-    # far right with a gap either side and read as an orphan. The reference
-    # sets the two side by side on the step's own line.
-    tail = eqno
-    if marks:
-        tail = ('%s <span class="qmarks">[%s]</span>' % (tail, marks)).strip()
-    if tail:
-        html += ' <span class="k">%s</span>' % tail
+    #
+    # `.eq-tail` IS A ROW OF ITS OWN, NOT GLUED TO THE LAST LINE.
+    #
+    # The reference never puts `…(i)` or a marks chip inside `.dm` — both
+    # sit in a `<div class="eq-tail">` sibling below it, right-aligned. A
+    # single string return still carries this: the caller drops whatever
+    # `eq()` returns into one IR item, so two adjacent divs work exactly
+    # like one.
+    #
     # The step number sits in the gutter the left hairline already occupies,
     # so it costs no width and reads as a marker on the step rather than as
     # part of the maths.
     if step:
-        return ('<div class="dm dm-step"><span class="stepno">%s</span>%s</div>'
-                % (plain(step) if isinstance(step, str) else step, html))
+        return ('<div class="dm dm-step"><span class="stepno">%s</span>%s</div>%s'
+                % (plain(step) if isinstance(step, str) else step, html, tail))
     # A REACTION IS NOT A LINE OF TEXT — see format/reaction.structure.
     #
     # Given no structure in the DOM, the line breaker decided the geometry of
@@ -264,7 +329,7 @@ def eq(text, eqno="", step=None, marks=""):
     #
     # Returns `html` untouched when there is no arrow, so an ordinary display
     # equation keeps the geometry it has always had.
-    return '<div class="dm">%s</div>' % _reaction.structure(html)
+    return '<div class="dm">%s</div>%s' % (_reaction.structure(html), tail)
 
 
 PAIR_CHARS = 20        # a formula this short can share a row with the next
@@ -294,6 +359,42 @@ def frow(expr, caption="", cond="", colour="#c2337a"):
                    '<b>शर्त:</b> %s</span>' % (colour, inline(cond)))
     out.append('</div>')
     return "".join(out)
+
+
+def formula_list(rows, title="सूत्र", cont=False):
+    """The सूत्र panel, PART 1's skin — a bulleted list, not boxed rows.
+
+    In the crib sheet the formulas are a LIST to read down: the reference
+    sets each one as a `.formula-list` item with a small purple dot, all
+    inside one flat purple card. `frow`'s per-result box is right in Part
+    2, where a formula is an answer you are meant to memorise and there
+    are one or two of them; applied to a six-formula topic in a 449px
+    column it drew six separate bordered cards down the column and the
+    topic read as six things rather than one.
+
+    A caption or condition is not dropped — it follows the expression
+    inside the same item, which is how the reference sets `सामान्य V =
+    …` and `तीनों में शर्त r ≫ a`.
+    """
+    def _parts(r):
+        expr = r[0] if isinstance(r, (list, tuple)) else r
+        cap = r[1] if isinstance(r, (list, tuple)) and len(r) > 1 else ""
+        cond = r[2] if isinstance(r, (list, tuple)) and len(r) > 2 else ""
+        return expr, cap, cond
+
+    items = []
+    for r in rows:
+        expr, cap, cond = _parts(r)
+        body = [inline(expr, math=True)]
+        if cap:
+            body.append('<span class="fd">%s</span>' % inline(cap))
+        if cond:
+            body.append('<span class="fc"><b>शर्त:</b> %s</span>' % inline(cond))
+        items.append('<li><div class="formula-body">%s</div></li>'
+                     % " ".join(body))
+    head = "" if cont else '<div class="ft"><b>%s:</b></div>' % inline(title)
+    return ('<div class="fcard%s">%s<ul class="formula-list">%s</ul></div>'
+            % (" fcard-cont" if cont else "", head, "".join(items)))
 
 
 def fcard(rows, title="सूत्र", cont=False):
@@ -401,10 +502,7 @@ def chem_structure(b):
     # The lookbehind is what keeps a COEFFICIENT safe: in `2H` the digit
     # comes before the letter and must stay full size, while in `CH3` and
     # `Cl5` it follows one and is a subscript.
-    def cell(t):
-        if not t:
-            return ""
-        return inline("$%s$" % _re.sub(r'(?<=[A-Za-z\)])(\d+)', r'_{\1}', t))
+    cell = chem_text
     # RAW atoms — `draw` applies `render` to every cell itself, so rendering
     # them here as well escaped the HTML from the first pass and the chain
     # printed `&lt;span class=` in place of each atom.
@@ -438,6 +536,23 @@ def chem_structure(b):
     return html
 
 
+def chem_text(t):
+    """Set a chemical formula's digits as subscripts.
+
+    `C7H7Cl` -> `C₇H₇Cl`. The lookbehind is what keeps a COEFFICIENT safe:
+    in `2H` the digit comes before the letter and stays full size, while in
+    `CH3` and `Cl5` it follows one and is a subscript.
+
+    Lifted out of `chem_structure`'s cell renderer, which had the only copy,
+    so a figure CAPTION gets the same treatment its structure grid already
+    did — `चित्र 6.44 — C7H7Cl बनना` printed its formula flat while the
+    drawing beside it was correctly subscripted.
+    """
+    if not t:
+        return ""
+    return inline("$%s$" % _re.sub(r'(?<=[A-Za-z\)])(\d+)', r'_{\1}', t))
+
+
 def _tail_eq(b):
     """The `+ X` the source wrote on the line after a drawn molecule.
 
@@ -446,7 +561,9 @@ def _tail_eq(b):
     which is what puts it here instead of leaving it a block of its own.
     """
     tail = (b or {}).get("tail_eq", "")
-    return (' <span class="m">%s</span>' % inline("$%s$" % tail)) if tail else ""
+    # `inline("$…$")` already returns a `.m` run; wrapping it again nested
+    # one `.m` span inside another.
+    return (" " + inline("$%s$" % tail)) if tail else ""
 
 
 def chem_ring(b):
@@ -459,6 +576,11 @@ def chem_ring(b):
     from ..format import ring as _ring
     html = _ring.draw_ring(b.get("smiles", ""), plain(b.get("name", "")))
     if html:
+        # A drawn structure names itself, exactly as `chem_rxn` does — the
+        # drawing shows the compound, the caption says which figure it is.
+        cap = plain(b.get("caption", ""))
+        if cap:
+            html += '<div class="cst-name">%s</div>' % chem_text(cap)
         return html + _tail_eq(b)
     name = plain(b.get("name", ""))
     return ('<span class="sp"><span class="sp-c">◯</span>'
@@ -499,6 +621,6 @@ def chem_rxn(b):
         # is and which figure number the question refers to.
         return ('<div class="dm"%s><span class="m">%s</span>%s</div>'
                 % (attr, html,
-                   '<div class="cst-name">%s</div>' % inline(cap) if cap else ""))
+                   '<div class="cst-name">%s</div>' % chem_text(cap) if cap else ""))
     return ('<div class="dm"%s><span class="m">%s</span></div>' % (attr, cap)
             if cap else "")

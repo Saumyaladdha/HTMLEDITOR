@@ -108,12 +108,53 @@ def count_source(md_path):
         if pat:
             out[kind] = sum(1 for l in lines if re.search(pat, l))
     # a pipe table is a RUN of |...| lines, not one per line
-    tables, prev = 0, False
+    #
+    # A RUN THAT IS REALLY AN MCQ IS NOT A TABLE. A chapter lays its four
+    # choices out as a 2x2 pipe grid with an empty header, because that is
+    # how markdown gets two columns; the reader turns that into an
+    # `options` block, not a `table` (see `_table_as_options` in
+    # readers/markdown.py). Counted as tables here, five of this chapter's
+    # seven "tables" had no IR counterpart and the cross-check called it
+    # content being DROPPED — a hard failure that stopped the build on a
+    # change that lost nothing.
+    #
+    # Deliberately a SECOND implementation of the same rule, not a shared
+    # call: two independent counts disagreeing is the whole point of this
+    # step, and importing the reader's own helper would make the check
+    # agree with the reader by construction.
+    _opt_cell = re.compile(r'^\(?\s*(?:[ivx]{1,4}|[a-dA-D]|[कखगघङअबसद])\s*[\).]')
+    tables, run = 0, []
+
+    def _close(run):
+        """-> 1 if this run of pipe lines is a real table, 0 if an MCQ."""
+        if not run:
+            return 0
+        # The separator must actually contain a dash. `|  |  |` — an
+        # EMPTY header, which is exactly what an MCQ grid opens with —
+        # is nothing but pipes and spaces and matched a `[\s:|-]+`
+        # separator pattern, so it was dropped as the rule row and the
+        # first row of CHOICES became the header. `any(head)` was then
+        # true and every MCQ grid counted as a real table.
+        body = [l for l in run
+                if not re.match(r'^\s*\|[\s:|-]*-[\s:|-]*\|\s*$', l)]
+        if len(body) < 2:
+            return 1
+        head = [c.strip() for c in body[0].strip().strip("|").split("|")]
+        if any(head):
+            return 1
+        cells = [c.strip() for l in body[1:]
+                 for c in l.strip().strip("|").split("|") if c.strip()]
+        if cells and all(_opt_cell.match(c) for c in cells):
+            return 0
+        return 1
+
     for l in lines:
-        is_row = bool(re.match(r'^\s*\|.+\|\s*$', l))
-        if is_row and not prev:
-            tables += 1
-        prev = is_row
+        if re.match(r'^\s*\|.+\|\s*$', l):
+            run.append(l)
+            continue
+        tables += _close(run)
+        run = []
+    tables += _close(run)
     out["table"] = tables
     # The standalone italic चित्र caption — see the "SIXTH AND SEVENTH
     # SPELLING" note on the `figure` rule above for why adjacency decides it.

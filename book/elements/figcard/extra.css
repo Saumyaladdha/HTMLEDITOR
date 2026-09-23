@@ -26,3 +26,19 @@
    text around it. */
 .figcard > .fcap { margin:8px 2px 0; font-style:italic; font-size:15px;
                    line-height:1.55; color:#4d5666; text-align:left; }
+
+/* A REAL PHOTO'S CARD — no dashed placeholder, no `.fh` header, just the
+   picture and its caption. See `components/figure.py`'s `has_image` branch;
+   the box still keeps a light dashed border so a photo reads as the same
+   family of card as an unfilled figure slot, just no longer empty. */
+.figcard.has-img { width:100%; padding:10px 12px 8px; margin:10px 0;
+                   border:1.5px dashed #7ba7d4; background:#f8fbff;
+                   border-radius:13px; }
+.figure-image { border:none; padding:6px; display:block; width:100%;
+                background:white; border-radius:7px; }
+.figure-image img { display:block; width:100%; height:auto;
+                     max-height:315px; object-fit:contain; }
+.figcard figcaption { display:block; text-align:center; font-size:15px;
+                       font-weight:600; color:#593e86; margin-top:7px;
+                       line-height:1.45; }
+.figcard figcaption b { color:inherit; font-size:inherit; }

@@ -56,17 +56,27 @@ ACCENTS = [
 ]
 ACCENT_BY_NAME = {a[0]: a for a in ACCENTS}
 
+# Pale per-accent backgrounds — the reference's per-page `--tint`, set
+# alongside `--accent` on each content page and consumed by any card/chip
+# that wants a topic-coloured wash without the full-strength ink. Same
+# order as ACCENTS (pink, blue, green, purple, orange, teal).
+TINTS = ["#ffe4ec", "#e7f0ff", "#e4f7e5", "#ede2fc", "#fff0d8", "#ddf6f6"]
+
 SWIPE_YELLOW = "#f6c945"
 SWIPE_ANS    = "#2fa356"
 
 # --- page geometry (MEASURED) --------------------------------------------
 PAGE_W        = 1080
 PAGE_H        = 1527
-PAD_TOP       = 40
+# PAD_TOP/PAD_BOTTOM grew (40/55 -> 56/58) to make room for the always-on
+# `.page-bottom` footer the reference reserves at the foot of every sheet
+# (see `book/assemble/html.py:_number_pages`) — CONTENT_H shrinks to match,
+# and every chapter repaginates against the new, smaller budget.
+PAD_TOP       = 56
 PAD_X         = 68
-PAD_BOTTOM    = 55
+PAD_BOTTOM    = 58
 CONTENT_W     = 944            # PAGE_W - 2*PAD_X                (measured)
-CONTENT_H     = 1432           # PAGE_H - PAD_TOP - PAD_BOTTOM   (measured)
+CONTENT_H     = 1413           # PAGE_H - PAD_TOP - PAD_BOTTOM   (measured)
 COL_W         = 440.0          # per .acol, measured              (measured)
 #                              was 449.5 with a 43px gutter; the gutter is
 #                              64px now (see elements/acols) and the packer

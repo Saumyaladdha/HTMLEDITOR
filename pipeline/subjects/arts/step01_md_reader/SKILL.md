@@ -229,3 +229,28 @@ group banners.
 
 - History's para share sits at 48% (just over the step's own 45% flag
   threshold). Not yet triaged into reader-gap vs source-convention.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**New constructs to read.** Four shapes the reader now understands; none
+is mandatory, so a chapter that omits one simply has none — never
+synthesise them:
+
+| Source | IR |
+|---|---|
+| `**त्रिक:** मात्रक: … · विमीय सूत्र: … · राशि का प्रकार: …` | `trio` — one fact per ` · ` segment, each `label: value` |
+| `### 2.3 नाम · **13 सवाल आए · 1 व 5 अंक में**` | section title + a frequency trailer split off it |
+| `` `[1 अंक · 2026 · Set A/C]` `` | the question tag — marks, papers, notes (see §3 of the shared doc) |
+| `\boxed{…}` | kept verbatim; the renderer turns it into the final-answer highlight |
+
+If a construct is not in `docs/FORMAT_SPEC.md`, it falls through to a plain
+paragraph and the page silently loses its formatting. Adding a convention
+means adding it to the spec **and** here.

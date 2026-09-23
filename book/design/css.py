@@ -20,10 +20,20 @@ rendering bug and why the fix is shaped the way it is:
 Rewriting any of these from scratch would reintroduce the bug they fix, so
 they are copied rather than paraphrased.
 
-Three bundles:
-    CSS_BASE   components — shared by every output mode
+Two bundles:
+    CSS_BASE   components AND the scroll edition's own shell (topbar, TOC,
+               card pages) — shared by every output mode
     CSS_A4     page geometry, columns, float flow, print
-    CSS_FLOW   the scroll edition's shell (topbar, TOC, card pages)
+
+Neither is what actually ships, and neither has been touched for the
+newer `book/chapter-02.html` reference (real figures, the always-on page
+footer, the redesigned part banner, per-page `--accent`/`--tint`) — those
+additions live where every other post-archive change does, in each
+element's own `extra.css` under `book/elements/<id>/`, layered on top by
+`book/elements/bundle()`. See that module's docstring for why: splitting
+CSS across files and re-joining by hand-picked index would silently
+change which rule wins, so anything genuinely new never touches the
+numbered `*.rules.json` files at all.
 """
 
 CSS_BASE = r"""
@@ -388,6 +398,19 @@ hr.sep { margin:11px 0; }
 .figbox { background:#fbfcfe; }
 .figbox > .fh { margin-bottom:8px; }
 .figspace { border:1.5px dashed #c3d6ea; border-radius:11px; background:#fff; }
+/* A REAL PICTURE DOES NOT SIT IN A BOX BUILT FOR AN EMPTY ONE.
+   `.is-photo` is set the moment `ref` resolves to an actual URL — see
+   `components/figure.figure`. The dashed border and white fill exist to
+   make a RESERVED, empty plate read as intentional; a photo already reads
+   as intentional on its own, and the dashed line drawn over it looked like
+   a printing defect. `object-fit:contain` keeps a wide or tall photo from
+   being cropped or stretched to whatever height the (now-unused) reserved
+   space guessed at — the image sets its OWN height, and the layout pass
+   measures what actually rendered, the same way it measures everything
+   else on the page. */
+.figbox.is-photo .figspace { border:0; background:none; border-radius:0; }
+.figspace img { display:block; width:100%; height:auto; max-height:340px;
+     object-fit:contain; border-radius:4px; }
 .figrow { display:flex; gap:12px; align-items:flex-start; margin:5px 0; }
 .figrow > .figcard { flex:1; min-width:0; margin:0; }
 .fig-solo { width:66%; margin-left:auto; margin-right:auto; }

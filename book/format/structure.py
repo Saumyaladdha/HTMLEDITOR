@@ -184,6 +184,43 @@ def draw(atoms, bonds, branches, numbers=None, render=None):
         out.append('</div>')
         return "".join(out)
 
+    def sub_row(cls, cells):
+        """A substituent row. The group OVERHANGS the bond columns.
+
+        A SUBSTITUENT MUST NOT WIDEN THE CARBON IT HANGS FROM.
+
+        Every row shares the parent's column tracks — that is what puts a
+        group directly over its own carbon. But it also means an `auto`
+        carbon track grows to the widest thing in it, and on
+        `CH3-C(-CH3)(-CH3)-Br` the widest thing is the `CH3` hanging off
+        it, not the `C`. The chain row then had to centre a one-character
+        `C` in a three-character track, so the bonds either side stretched
+        and the chain read `CH3 —    C   — Br`: the carbon visibly out of
+        line with the bromine it is bonded to.
+
+        A textbook lets the group overhang instead. Spanning the bond
+        column either side, the group's width is shared across three
+        tracks that between them already have room for it, so the carbon
+        track stays carbon-width and the bonds stay bond-length. The span
+        is symmetric, so the group is still centred on its own carbon.
+
+        A group on a TERMINAL atom has no column on one side, so it keeps
+        its single track — an asymmetric span would centre it off the atom
+        it names, which is worse than a wide track.
+        """
+        out = ['<div class="cst-r %s">' % cls]
+        for c in sorted(cells):
+            if 0 < c < ncol - 1:
+                # 1-based grid lines: column `c` spans from the line before
+                # its left neighbour to the line after its right one.
+                out.append('<span style="grid-column:%d/%d">%s</span>'
+                           % (c, c + 3, cells[c]))
+            else:
+                out.append('<span style="grid-column:%d">%s</span>'
+                           % (c + 1, cells[c]))
+        out.append('</div>')
+        return "".join(out)
+
     # THE NUMBER ROW SITS DIRECTLY OVER THE CHAIN, UNDER THE SUBSTITUENTS.
     #
     # Emitted first it came out at the very TOP of the grid — above the
@@ -193,7 +230,7 @@ def draw(atoms, bonds, branches, numbers=None, render=None):
     # they belonged to the substituent. They are the numbering OF THE
     # CHAIN, so they go immediately above it.
     if up:
-        rows.append(row("cst-sub", {2 * i: r(g) for i, g in up.items()}))
+        rows.append(sub_row("cst-sub", {2 * i: r(g) for i, g in up.items()}))
         rows.append(row("cst-bond", {2 * i: "|" for i in up}))
     if numbers:
         rows.append(row("cst-n", {2 * i: str(numbers[i])
@@ -207,7 +244,7 @@ def draw(atoms, bonds, branches, numbers=None, render=None):
     rows.append(row("cst-c", chain))
     if dn:
         rows.append(row("cst-bond", {2 * i: "|" for i in dn}))
-        rows.append(row("cst-sub", {2 * i: r(g) for i, g in dn.items()}))
+        rows.append(sub_row("cst-sub", {2 * i: r(g) for i, g in dn.items()}))
 
     return ('<div class="cst" style="--n:%d">%s</div>'
             % (ncol, "".join(rows)))

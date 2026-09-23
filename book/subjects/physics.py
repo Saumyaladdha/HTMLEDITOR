@@ -21,7 +21,19 @@ PROFILE = {
         "सूत्र": "formula_card",
         "दिया है": "given",
         "त्रिक": "trio",
-        "शर्त": "condition",
+        # ONE INLINE-BOLD SENTENCE, NOT A DEFINITION CARD.
+        #
+        # `**सीमा:**` (a formula's limits) and `**नमूना:**` (a sample
+        # question prompt) print in the reference as a single
+        # `<p class="para"><b>Label:</b> …</p>` — see the `"plain"` branch
+        # in readers/markdown.py. `शर्त` was mapped to `"condition"`, a
+        # rubric value nothing in the reader has ever consumed (it fell
+        # through to the same `definition()` two-div shape `सीमा`/`नमूना`
+        # did before this fix) — given the identical one-line-aside shape,
+        # it gets the same treatment rather than staying a dead mapping.
+        "सीमा": "plain",
+        "नमूना": "plain",
+        "शर्त": "plain",
     },
 
     # Which IR kinds may be broken across a column boundary to use the dead

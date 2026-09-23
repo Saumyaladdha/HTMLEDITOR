@@ -6,16 +6,115 @@ In the A4 edition `.qcard` is stripped of its border and background — the
 questions are separated by the dashed `.qsep` rule instead, so one can flow
 across a column boundary. The scroll edition keeps the card.
 """
+import re as _re
+
 from ..design import tokens as theme
 from ..format.inline import inline, plain
 from .inline import chip, swipe, stars, starnote, qmarks
 
 
+# THE QUESTION TAG, `[1 अंक · 2024 · Set A/G · आंकिक प्रश्न]`.
+#
+# One `·`-separated list holding three different KINDS of fact: what the
+# question is worth, which papers it came from, and the occasional note
+# about it. The whole string used to be dropped into a single `.chip`, so
+# a question head read `1 अंक · 2026 · Set A/C/D/E` in one blue pill — the
+# marks buried in the middle of a provenance list, and the list itself
+# unreadable as a list. The reference separates them: the marks as the
+# yellow `.qmarks` chip on the head's own line, the papers as a gold
+# `.paper-refs` band under it with one `.paper-ref` per paper, and a note
+# as a small `.inline-tag`.
+#
+# The grammar is positional only in that marks come first. After that a
+# year opens a group and an optional `Set …` fills it, so
+# `2025 · Set H · 2023 · Set A` is two papers, not four facts.
+_TAG_MARKS = _re.compile(r'^\s*\d+(?:[.·]\d+)?\s*(?:अंक|marks?|M)\s*$', _re.I)
+_TAG_YEAR = _re.compile(r'^\s*(\d{4}[A-Za-z]?)\s*$')
+_TAG_SETS = _re.compile(r'^\s*Set\s+(.+?)\s*$', _re.I)
+
+
+def split_qtag(chip_text):
+    """`[1 अंक · 2024 · Set A/G · आंकिक]` -> ("1 अंक", ["2024/set_a",
+    "2024/set_g"], ["आंकिक"]).
+
+    A year with no `Set` keeps its own spelling (`2022A`) as one ref —
+    that is how the source names a paper that had no sets.
+    """
+    marks, refs, notes = "", [], []
+    cur = None                      # the year currently collecting sets
+    for field in (chip_text or "").split("·"):
+        f = field.strip()
+        if not f:
+            continue
+        if not marks and _TAG_MARKS.match(f):
+            marks = f
+            continue
+        m = _TAG_YEAR.match(f)
+        if m:
+            cur = m.group(1)
+            refs.append(cur)        # stands alone unless a `Set` follows
+            continue
+        m = _TAG_SETS.match(f)
+        if m and cur:
+            # Replace the bare year with one ref per set it was sat in.
+            refs.pop()
+            for s in m.group(1).split("/"):
+                s = s.strip()
+                if s:
+                    refs.append("%s/set_%s" % (cur, s.lower()))
+            continue
+        notes.append(f)
+    return marks, refs, notes
+
+
+def _qtag_html(chip_text, note=""):
+    """The `.qmarks` chip and the `.question-meta` band for one tag.
+
+    `note` is the `*2023 में भी आया था*` aside the source writes after the
+    stars. It belongs ON the paper band, in brackets — it says something
+    ABOUT those papers ("came up in 2023 too"), and given a row of its own
+    under them it read as an unrelated line of pink italic between the
+    head and the question.
+    """
+    marks, refs, notes = split_qtag(chip_text)
+    out = []
+    if marks:
+        out.append(qmarks(marks))
+    meta = []
+    if refs:
+        meta.append('<span class="paper-refs">%s</span>'
+                    % " · ".join('<span class="paper-ref">%s</span>' % plain(r)
+                                 for r in refs))
+    for n in notes:
+        meta.append('<span class="inline-tag">%s</span>' % inline(n))
+    if (note or "").strip():
+        meta.append('<span class="starnote">(%s)</span>' % inline(note.strip()))
+    if meta:
+        out.append('<div class="question-meta">%s</div>' % " ".join(meta))
+    return "".join(out)
+
+
 def qhead(num, chip_text, acc=0, n_stars=0, note=""):
-    out = ['<div class="qhead">']
+    # THE ANCHOR THE PROSE POINTS AT.
+    #
+    # Answers cross-refer to other questions by number — "पूरा निगमन ☞
+    # प्र. 73" — and the reference makes each of those a real link to
+    # `#q-73`. Ours emitted no `id` on any question head at all, so there
+    # was nothing in the document for such a link to reach; the reference
+    # carries one on every `.qhead`. Emitted here whether or not anything
+    # currently links to it, because the anchor is a property of the
+    # question, not of who happens to cite it.
+    _id = _re.sub(r'[^0-9A-Za-z.-]', '', str(num or ""))
+    out = ['<div class="qhead"%s>' % ((' id="q-%s"' % _id) if _id else "")]
     out.append(swipe("प्र. %s" % num, "qnum"))
     if chip_text:
-        out.append(chip(chip_text))
+        # Marks chip, then the paper band — see `split_qtag`. A tag that
+        # parses to nothing recognisable keeps the old single chip rather
+        # than being dropped, so an unfamiliar dialect still prints.
+        tag = _qtag_html(chip_text, note)
+        out.append(tag if tag else chip(chip_text))
+        if tag:
+            note = ""              # folded into the band above
     if n_stars:
         out.append(stars(n_stars))
     if note:
@@ -24,12 +123,44 @@ def qhead(num, chip_text, acc=0, n_stars=0, note=""):
     return "".join(out)
 
 
+def subhead(text):
+    """A short blue heading — `.subhead`.
+
+    The reference uses one shape for four jobs, and they are the same
+    job: naming the thing that follows, in one short line.
+
+      · a SHORT question stem (`वैद्युत विभव का मात्रक है`) — its stems
+        run to a median of 25 characters against 108 for the ones set as
+        bold body text;
+      · a bare `**उत्तर:**` opening a long answer;
+      · a section heading INSIDE a long answer (`परावैद्युत ध्रुवण`,
+        `वैद्युत संधारित्र`) — which is what makes a page of answer read
+        as sections rather than as one wall;
+      · a numbered sub-part of a multi-part question (`(i) जब बिन्दु …`).
+    """
+    return '<div class="subhead"><b>%s</b></div>' % inline(text)
+
+
+# How long a line may be and still be a heading rather than a sentence.
+# Measured on the reference: its `.subhead` stems have a median length of
+# 25 characters and a maximum of 43, while the stems it sets as bold body
+# text have a median of 108. 46 sits clear of both.
+SUBHEAD_MAX = 46
+
+
+def is_subhead_text(text):
+    """Is this short enough, and plain enough, to be a heading?"""
+    t = (text or "").strip()
+    if not t or len(t) > SUBHEAD_MAX:
+        return False
+    # A heading does not end a sentence, and does not contain one.
+    return not _re.search(r'[।?!]', t[:-1]) and not t.endswith((".", "।"))
+
+
 def question_text(text, marks=""):
     m = (" " + qmarks(marks)) if marks else ""
     return '<p class="q">%s%s</p>' % (inline(text), m)
 
-
-import re as _re
 
 _OPT_MARK = _re.compile(r'^(\(?[ivxa-dA-D]{1,4}\)?[).])\s*(.*)$', _re.S)
 
@@ -177,14 +308,22 @@ def answer(text, title=""):
     # and the reader lifts it into its own block so the column packer can
     # measure and place it. That left an EMPTY `.anstext` here, and the div
     # brings its own line box and margin, so the page showed the green
-    # `उत्तर :` chip, a gap where an answer should be, and the drawing
+    # `उत्तर:` chip, a gap where an answer should be, and the drawing
     # further down: it read as a missing answer. Dropped when there is
     # nothing in it, the chip sits directly above the block that answers.
     if not body.strip():
-        return ('<div class="ansrow ans-lead">'
-                '<span class="anslabel"><i></i><b>उत्तर :</b></span></div>')
+        # A BARE `**उत्तर:**` OPENS A LONG ANSWER — IT IS A HEADING.
+        #
+        # The green chip is an INLINE label: it works because the answer's
+        # first line sits beside it. With nothing beside it the chip sat
+        # alone on a row of its own, reading as an answer that had gone
+        # missing. The reference sets exactly this case as a `.subhead` —
+        # blue, 20px, bold, on its own line — which is what a multi-section
+        # answer wants above it anyway. Five of its nineteen `.subhead`s
+        # are this.
+        return subhead("उत्तर:")
     return ('<div class="ansrow">'
-            '<span class="anslabel"><i></i><b>उत्तर :</b></span>'
+            '<span class="anslabel"><i></i><b>उत्तर:</b></span>'
             '<div class="anstext">%s</div></div>' % body)
 
 

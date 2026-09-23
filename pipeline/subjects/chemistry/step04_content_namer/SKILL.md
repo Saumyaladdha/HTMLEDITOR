@@ -52,3 +52,17 @@ entries: they are drawn organic structures, not a typo.
   moves, and chemistry chapters with heavy structure-image density
   (organic, ~78 images in one measured chapter) repaginate more than most
   when a figure's actual asset size differs from its reserved slot.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below.
+
+Naming is unchanged by the reference work, with one thing to know: a
+`.qhead` now carries `id="q-N"`, so a question's number is an ANCHOR that
+prose links to (`#q-73`). Whatever you name a question, the number itself
+has to keep matching what the markdown wrote, or a cross-reference in an
+answer points at nothing.

@@ -54,5 +54,9 @@
  {
   "i": 31,
   "css": "/* POINT 3 — WHITESPACE ON PURPOSE.\n   The complaint was rhythm, not quantity: dense, dense, then a large\n   empty region. A band above every question and a fixed band around\n   every equation give the column a repeating beat, so the space that is\n   left reads as a rest rather than as a gap where something failed to\n   fit. */\n.subj-chemistry .qhead { margin-top:15px; }\n.subj-chemistry .ansrow { margin-top:9px; }\n.subj-chemistry .figcard { margin:13px 0; }\n.subj-chemistry p.q+.dm, .subj-chemistry .anstext+.dm { margin-top:9px; }"
+ },
+ {
+  "i": 137,
+  "css": "/* THE GLYPH MUST SIT UNDER ITS OWN LABEL.\n   `.rxn` is a three-row grid — label, arrow, label — at least 44px\n   wide, and `.rxn>.rxn-a` is `width:100%` because a plain arrow DRAWS\n   itself with a border across that whole width. A harpoon does not:\n   it drops the border and puts a `\\u21cc` character in `::after`, which\n   then sits at the LEFT edge of the 44px row while the label above it\n   is centred over the row. That is the gap between `\\u092e\\u0928\\u094d\\u0926` and the\n   equilibrium arrow in the S\\u0274 1 first step. Same for the both-ways\n   arrow, which is built the same way. */\n.rxn-harpoon>.rxn-a, .rxn-both>.rxn-a { text-align:center; }"
  }
 ]

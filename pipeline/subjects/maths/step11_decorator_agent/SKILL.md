@@ -52,3 +52,22 @@ IS the space at the end of a part, or after the LAST derivation on a page,
 - Never propose art beside a matrix or a derivation "to balance the page."
   A matrix's own bracket and grid lines are already the page's visual
   interest; adding a doodle next to one reads as clutter, not balance.
+
+---
+
+## Reference edition
+
+The design source of truth is `build/REFERENCE_chapter-02.html`
+(source: `content/21_figures_final.md`). Read `docs/REFERENCE_EDITION.md`
+before judging anything below — most of what changed is not visible from
+this step alone. Where your output disagrees with the reference, the
+reference wins.
+
+**There is no floated note column any more.** The reference carries zero
+`.stickycol`: a note is set inline, in the column it belongs to. A
+निगमन (derivation) card additionally gets `.derivation-note`, which drops
+the rotation and puts each step on its own line — those cards are read
+down, not glanced at.
+
+So "move it to the margin" is no longer an available fix. A note that does
+not fit belongs earlier or later in its own column.

@@ -5,7 +5,7 @@
  },
  {
   "i": 1,
-  "css": ".page { width:1080px; height:1527px; overflow:hidden; position:relative;\n        background:#fdfcf7; border-radius:0; margin:22px auto;\n        box-shadow:0 6px 30px rgba(0,0,0,.25);\n        padding:40px 68px 55px; }"
+  "css": ".page { width:1080px; height:1527px; overflow:hidden; position:relative;\n        background:#fdfcf7; border-radius:0; margin:22px auto;\n        box-shadow:0 6px 30px rgba(0,0,0,.25);\n        padding:56px 68px 58px; }"
  },
  {
   "i": 129,

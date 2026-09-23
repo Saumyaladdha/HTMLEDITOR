@@ -14,5 +14,9 @@
  {
   "i": 69,
   "css": ".callout>div.ci>span.b { flex:none; font-weight:700; }"
+ },
+ {
+  "i": 137,
+  "css": "/* Each paragraph of a quoted note. The chapter's reading guide is a\n   heading and the two parts it introduces; run together they read as\n   one sentence. First one keeps the box's own top edge. */\n.note-p + .note-p { margin-top:6px; }"
  }
 ]

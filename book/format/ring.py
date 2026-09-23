@@ -92,7 +92,19 @@ def _board_abbreviations():
     """
     if _ABBREV_CACHE:
         return _ABBREV_CACHE[0]
-    defs = list(rdAbbreviations.GetDefaultAbbreviations())
+    # A FUNCTIONAL GROUP MAY BE A LABEL; A CARBON SKELETON MAY NOT.
+    #
+    # RDKit's 37 defaults include the chemist's alkyl shorthand — `Et`,
+    # `nPr`, `iPr`, `nBu`, `tBu`, `iPent`, `nHex` … — and those collapse
+    # exactly the chain the question is asking about. चित्र 6.8 asks which
+    # alkene a pentyl bromide gives, and with the defaults on it drew
+    # `nPr` and `Et` in place of the two ends: the reader cannot count the
+    # carbons, which is the whole task. Only groups a board answer itself
+    # writes as a label are kept.
+    _KEEP = {"NO2", "NO", "SO3H", "CN", "COOH", "CO2H", "CHO", "CCl3",
+             "CF3", "Ac"}
+    defs = [d for d in rdAbbreviations.GetDefaultAbbreviations()
+            if d.label in _KEEP]
     for d in defs:
         if d.label == "Ac":
             # `label` is what reaches the drawing as `atomLabel`;
@@ -194,6 +206,42 @@ def draw_ring(smiles, name=""):
     return "".join(html)
 
 
+_CHARGE_SUP = {1: "\u207a", -1: "\u207b", 2: "\u00b2\u207a", -2: "\u00b2\u207b",
+               3: "\u00b3\u207a", -3: "\u00b3\u207b"}
+
+
+def _lone_ion_text(frag):
+    """A ONE-ATOM FRAGMENT IS A FORMULA, NOT A DRAWING.
+
+    RDKit scales every fragment to fill its own canvas, so `[Cl-]` — a
+    single atom — was given a 90x90 box all to itself and its label drawn
+    at roughly five times the size of the atoms in the benzene ring next
+    to it. On the diazonium reaction the counter-ion towered over the
+    compound it belongs to.
+
+    A counter-ion is written as a formula in this book anyway (`Cl⁻`,
+    `Br⁻`, `Na⁺`), never sketched, so it is set as text at the surrounding
+    type size. Returns None for anything with more than one heavy atom,
+    which still draws.
+    """
+    if not _HAVE_RDKIT:
+        return None
+    try:
+        m = Chem.MolFromSmiles(frag)
+    except Exception:
+        return None
+    if m is None or m.GetNumAtoms() != 1:
+        return None
+    a = m.GetAtomWithIdx(0)
+    # A BARE ION ONLY. Anything carrying hydrogens is a molecule with its
+    # own conventional spelling — water is `H₂O`, not `OH2` — and the
+    # by-product escape (`!H₂O`) is where those belong.
+    if a.GetTotalNumHs():
+        return None
+    return "%s%s" % (a.GetSymbol(),
+                     _CHARGE_SUP.get(a.GetFormalCharge(), ""))
+
+
 def _one_side(smiles_side):
     """`A.B` -> the rings for A and B joined by a plain-text `+`. A
     fragment RDKit cannot parse falls back to its bare SMILES as text —
@@ -216,6 +264,11 @@ def _one_side(smiles_side):
         if p.startswith("!"):
             pieces.append('<span class="m">%s</span>'
                           % _html.escape(p[1:], quote=False))
+            continue
+        ion = _lone_ion_text(p)
+        if ion:
+            pieces.append('<span class="m">%s</span>'
+                          % _html.escape(ion, quote=False))
             continue
         r = draw_ring(p)
         pieces.append(r if r else ('<span class="m">%s</span>'

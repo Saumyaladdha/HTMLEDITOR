@@ -271,6 +271,19 @@ def _starts_athava(ln):
 # bare one printed its own hashes as body text.
 RE_H4 = re.compile(r'^####\s+(.*)$')
 
+# A QUESTION-TYPE DIVIDER, INSIDE A TOPIC'S QUESTION BANK.
+#
+# `#### 🅾️ ऑब्जेक्टिव (1 अंक)`, `#### ✏️ लघु उत्तरीय (2–3 अंक)`, `#### 📝
+# दीर्घ उत्तरीय (4–5 अंक)` mark which FORMAT the questions beneath them are
+# — the finalised edition pools these across every topic in Part 2 into one
+# banner per format (see `_regroup_by_qtype`). Matched narrowly, on the
+# three known Hindi labels: a topic's OWN closing "🪞 आईना" checklist is
+# also an H4, and is not one of these — matching every H4 here would have
+# swallowed it into `pending_qtype` and silently dropped its heading text.
+RE_QTYPE_H4 = re.compile(
+    r'^####\s*(?:[^\w\s]+\s*)*'
+    r'(ऑब्जेक्टिव|लघु\s*उत्तरीय|दीर्घ\s*उत्तरीय)')
+
 # The bare `*` that this chapter leaves around an `*अथवा*`, and the
 # `* *(2026)*` that names the year the variant was set. Left alone, the first
 # became a paragraph containing one asterisk and the second an EMPTY bullet
@@ -316,6 +329,11 @@ RE_REPEAT_STARS = re.compile(r'^`(?:\[[^\]]*\d[^\]]*\]\s*)+`\s*(★+)?\s*$')
 _MARKS_LATEX = r'\d{0,2}\s*\\frac\s*\{\s*[13]\s*\}\s*\{\s*[24]\s*\}|\d{1,2}\s*\\times\s*\d{1,2}'
 _MARKS_VALUE = (r'(?:' + _MARKS_LATEX +
                 r'|\d{1,2}\s*[Mm]?|(?:(?:\d+\s*)?[½¼¾]|\d+(?:[/·]\d+)?)\s*अंक)')
+# A `$…$`-wrapped marks tag CLOSING a line — see `_para_run`, which
+# ends its run on one so the tag never lands mid-paragraph.
+_DOLLAR_MARKS_TAIL_RE = re.compile(
+    r'\$\s*\[[^\]]{1,24}\]\s*\$\s*(?:\*\*\[[^\]]*\]\*\*)?\s*$')
+
 RE_MARKS_ONLY = re.compile(r'^\**\$?\s*\[(' + _MARKS_VALUE + r')\]\s*\$?\**\s*$')
 # `… है। [2]` — the marks tag closing a sentence. Requires the line to
 # END there, so a bracketed reference mid-sentence is untouched.
@@ -362,7 +380,12 @@ RE_ATHAVA_YEAR_LEAD = re.compile(
 # Recognised only as a WHOLE line starting with `+` inside `$…$`, so a
 # formula that merely contains a plus is untouched.
 RE_EQ_CONTINUES = re.compile(
-    r'^\s*\$\s*\+[\s\\]*(?P<rest>.+?)\s*\$\s*(?P<marks>\*\*\[[^\]]*\]\*\*)?\s*$')
+    # `[\s\\]*` here ate the backslash of the command that FOLLOWS the plus:
+    # `$+\ \overline{\mathrm{O}}\mathrm{H}$` handed on `overline{...}` and the
+    # page printed `+ overlineOH ⟶`. Only LaTeX's own spacing commands are
+    # skipped — `\ `, `\,`, `\;`, `\:`, `\!` — never a bare backslash.
+    r'^\s*\$\s*\+(?:\\[ ,;:!>]|\s)*(?P<rest>.+?)\s*\$\s*'
+    r'(?P<marks>\*\*\[[^\]]*\]\*\*)?\s*$')
 # The kinds a continuation may attach to: the ones that draw a molecule and
 # so have no text line of their own for it to join.
 _DRAWN_KINDS = ("ring", "structure", "rxn_smiles")
@@ -593,8 +616,29 @@ def opt_tokens(text):
         if _RE_CONNECTOR_ONLY.match(gap):
             return []
     family = _marker_family(cands[0].group(0).strip("()"))
-    return [m for m in cands
-            if _marker_family(m.group(0).strip("()")) == family]
+    cands = [m for m in cands
+             if _marker_family(m.group(0).strip("()")) == family]
+    # AN OPTION LIST ONLY EVER GOES FORWARD.
+    #
+    # `(A) प्रत्यावर्ती … (B) दिष्ट … (C) (A) और (B) दोनों के लिए (D) इनमें
+    # से कोई नहीं` — the "both of the above" option, which every MCQ paper
+    # writes sooner or later, cites the two options it is about. All six
+    # markers are the same upper-Latin family, so the family filter above
+    # cannot separate them, and the splitter cut four options into six:
+    # a `(C)` with no text at all, then `(A) और` and `(B) दोनों के लिए` as
+    # two more.
+    #
+    # What a cited marker cannot do is ADVANCE the sequence — it names an
+    # option already given. Keeping only markers that move forward leaves
+    # A, B, C, D and reads the citation as what it is, the text of (C).
+    out, best = [], -1
+    for m in cands:
+        r = _marker_rank(m.group(0).strip("()"), family)
+        if r is None or r > best:
+            out.append(m)
+            if r is not None:
+                best = r
+    return out
 
 
 _RE_QREF_BEFORE = re.compile(r'प्रश्न\s*\d+\s*$')
@@ -606,6 +650,44 @@ _RE_CONNECTOR_ONLY = re.compile(r'^\s*(?:तथा|और|व|एवं)\s*$')
 _RE_MARKER_CHAIN = re.compile(
     r'^\(?(?:[ivx]{1,4}|[a-dA-D]|[कखगघङअबसद])\)\s*(?:तथा|और|व|एवं)\s*'
     r'\(?(?:[ivx]{1,4}|[a-dA-D]|[कखगघङअबसद])\)')
+
+
+# Where each marker sits in its family's order — see the monotonic filter
+# in `opt_tokens`. `None` for anything unrecognised, which is kept rather
+# than dropped: an unknown marker is not evidence of a citation.
+_ROMAN = ("i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x")
+_DEVA_MARKERS = ("क", "ख", "ग", "घ", "ङ")
+_DEVA_ALT = ("अ", "ब", "स", "द")
+
+
+# The marker an MCQ cell opens with — `(A)`, `(a)`, `(i)`, `(क)`.
+_RE_OPT_CELL = re.compile(
+    r'^\(?\s*(?:[ivx]{1,4}|[a-dA-D]|[कखगघङअबसद])\s*[\)\.]')
+
+
+def _table_as_options(head, rows):
+    """-> the cells in reading order if this table is really an options
+    grid, else None. See the note above `_Scanner._table`."""
+    if not rows or any((h or "").strip() for h in head):
+        return None
+    cells = [c.strip() for r in rows for c in r if c and c.strip()]
+    if len(cells) < 2 or not all(_RE_OPT_CELL.match(c) for c in cells):
+        return None
+    return cells
+
+
+def _marker_rank(inner, family):
+    inner = (inner or "").strip()
+    if family == "roman":
+        return _ROMAN.index(inner) if inner in _ROMAN else None
+    if family == "devanagari":
+        for seq in (_DEVA_MARKERS, _DEVA_ALT):
+            if inner in seq:
+                return seq.index(inner)
+        return None
+    if len(inner) == 1 and inner.isalpha() and inner.isascii():
+        return ord(inner.lower()) - ord("a")
+    return None
 
 
 def _marker_family(inner):
@@ -883,7 +965,18 @@ def _result_rows(text):
     t = (text or "").strip()
     t = re.sub(r'\s*\$\\cdot\$\s*', ' · ', t)
     parts = [p.strip() for p in t.split(" · ") if p.strip()]
-    if len(parts) < 2:
+    # A LONE RESULT IS STILL A PANEL, NOT A DEFINITION.
+    #
+    # `**सूत्र:** $V = W/q_0$` — one formula, no ` · ` to split on — used to
+    # return `[]` here on the reasoning that "A · B · C" needs at least two
+    # parts to be worth calling a list. But the caller's only alternative
+    # for an empty `rows` is `node("definition", term="सूत्र", text=...)`,
+    # which prints as a plain bold-label paragraph — not the bordered सूत्र
+    # box every OTHER formula in the chapter gets. The reference boxes a
+    # single result exactly the same as a list of them (see physics
+    # chapter 2's 2.1, one formula, still a full `.fcard`), so a length of
+    # one is a one-row panel, not nothing.
+    if not parts:
         return []
     return [(p, "", "") for p in parts]
 
@@ -1250,8 +1343,44 @@ class _Scanner(object):
             if ln.strip() == "$$":
                 in_dollar = not in_dollar
             buf.append(self.take().strip())
+            # A MARKS TAG CLOSES WHAT IT MARKS.
+            #
+            # The tag states what the step above it was worth, so nothing
+            # after it continues that step. Two of this chapter's answers
+            # write `… पृष्ठ संख्या 80 देखें। $[1\frac{1}{2}]$` and then
+            # carry straight on with the next part on the following line;
+            # the run swallowed both, which left the tag stranded in the
+            # MIDDLE of the joined text where the end-of-run extraction
+            # below cannot reach it, and it printed as a bracketed `[1½]`
+            # mid-sentence.
+            #
+            # Deliberately only the `$…$` spelling: every other spelling is
+            # already handled somewhere above, and breaking on those would
+            # change how four shipped chapters paginate.
+            if depth == 0 and not in_dollar and _DOLLAR_MARKS_TAIL_RE.search(
+                    buf[-1]):
+                break
         return " ".join(_close_open_maths(b) for b in buf).strip()
 
+    # A HEADERLESS GRID OF OPTION CELLS IS AN MCQ, NOT A TABLE.
+    #
+    # A chapter lays its four choices out as a 2x2 pipe table with an
+    # empty header, because that is the easiest way to get two columns in
+    # markdown:
+    #
+    #     |  |  |
+    #     |---|---|
+    #     | (A) $2C$ | (B) $C$ |
+    #     | (C) $\dfrac{C}{2}$ | (D) $\dfrac{1}{2C}$ |
+    #
+    # Read as a table it printed with rules, a blank header strip and
+    # centred cells — a bordered box where the reference sets a plain
+    # two-column `.opts` grid, and visibly unlike the options of every
+    # other question in the chapter.
+    #
+    # Required: a header that is entirely blank (a real table names its
+    # columns), and EVERY cell opening with an option marker. Both, so a
+    # genuine two-column table of data is never swallowed.
     def _table(self):
         head, rows, align = [], [], []
         first = self.take().strip()
@@ -1265,6 +1394,9 @@ class _Scanner(object):
                              else "c")
         while not self.eof() and RE_TABLE_ROW.match(self.peek()):
             rows.append([c.strip() for c in self.take().strip().strip("|").split("|")])
+        opts = _table_as_options(head, rows)
+        if opts is not None:
+            return node("options", items=opts, layout="grid")
         return node("table", head=head, rows=rows, align=align)
 
     def _blockquote(self):
@@ -1341,7 +1473,33 @@ class _Scanner(object):
                 tail, body = mt.group(1), body[:mt.start()].strip()
             return node("formula_box", text=body, colour="blue", tail=tail)
 
-        return node("refbox", text=" ".join(x for x in buf if x.strip()).strip())
+        # A BLANK LINE INSIDE THE QUOTE IS A PARAGRAPH BREAK.
+        #
+        # Joining every line with a space collapsed the chapter's whole
+        # "how to read this" note into ONE paragraph — `… आते हैं। इसे कैसे
+        # पढ़ें भाग 1 — … भाग 2 — …` — so a heading and the two parts it
+        # introduces ran together in a single sentence on the cover.
+        #
+        # A line that is ONLY a bold label (`**इसे कैसे पढ़ें**`) also opens
+        # one: the chapter writes those with no blank line before the item
+        # they head, and run into the sentence above they read as part of it.
+        paras, cur = [], []
+        for x in buf:
+            t = x.strip()
+            if not t:
+                if cur:
+                    paras.append(" ".join(cur)); cur = []
+                continue
+            # A bold label alone (`**इसे कैसे पढ़ें**`), or a bold label
+            # opening a labelled item (`**भाग 1** — पूरे अध्याय की …`), both
+            # start their own line in the source and their own paragraph
+            # here — `भाग 1` and `भाग 2` are two items, not one sentence.
+            if cur and re.match(r'^\*\*[^*]+\*\*\s*(?:[—–-]|$)', t):
+                paras.append(" ".join(cur)); cur = []
+            cur.append(t)
+        if cur:
+            paras.append(" ".join(cur))
+        return node("refbox", text="\n\n".join(p for p in paras if p).strip())
 
     def _options(self, first_line):
         """`i) a   ii) b` on one or more lines -> options node."""
@@ -1420,7 +1578,14 @@ class _Scanner(object):
                 break
             lines.append(self.take())
         text = " ".join(x.strip() for x in lines)
+        # EVERY SPELLING OF THE TAG, NOT JUST A PLAIN DIGIT.
+        #
+        # This matched `[2]` and `[1/2]` only, so an option row closing
+        # `… पृष्ठ संख्या 79 देखें। $[1\frac{1}{2}]$` kept its tag and the
+        # marks printed as a bracketed `[1½]` in the middle of the answer.
+        # `_strip_trailing_marks` is the one place that knows them all.
         text = re.sub(r'\[(\d+(?:/\d+)?)\]\s*$', '', text).strip()
+        text, opt_marks = _strip_trailing_marks(text)
         # AN IMAGE IN AN OPTION ROW IS STILL A FIGURE.
         #
         # An option row's text is set with `inline`, which has no business
@@ -1444,6 +1609,20 @@ class _Scanner(object):
             return " "
 
         text = _ANS_IMG_RE.sub(_lift_fig, text).strip()
+        # A PART LABEL WHOSE WHOLE CONTENT WAS THE IMAGE GOES WITH IT.
+        #
+        # `(vii) ![चित्र 6.18](…)` is the seventh part of an IUPAC question
+        # and the image IS its content. Once the plate is lifted out, the
+        # bare `(vii)` has nothing left, does not split into an item of its
+        # own, and was appended to the part above — the page read
+        # `(vi) (CH₃)₂CH 2025 (vii)`, two parts run into one line. The
+        # label moves onto the plate, which is where its content went.
+        _mlab = re.search(r'\((?:i{1,3}|iv|vi{0,3}|ix|x)\)\s*$', text)
+        if _mlab and opt_figs:
+            text = text[:_mlab.start()].rstrip()
+            _lbl = _mlab.group(0).strip()
+            opt_figs[-1]["caption"] = (
+                "%s %s" % (_lbl, opt_figs[-1].get("caption", ""))).strip()
         cuts = [m.start() for m in opt_tokens(text)]
         items = []
         if cuts:
@@ -1471,10 +1650,11 @@ class _Scanner(object):
                 and (len(items[0]) > 62
                      or re.search(r'[→⟶⇌]|\\xrightarrow|\\longrightarrow',
                                   items[0]))):
-            return node("para", text=items[0], _figs=opt_figs)
+            return node("para", text=items[0], marks=opt_marks, _figs=opt_figs)
         longest = max((len(x) for x in items), default=0)
         layout = "stack" if longest > 44 or len(items) > 4 else "grid"
-        return node("options", items=items, layout=layout, _figs=opt_figs)
+        return node("options", items=items, layout=layout,
+                    marks=opt_marks, _figs=opt_figs)
 
     # ---- main loop -------------------------------------------------------
     def _structure_fence(self):
@@ -2077,6 +2257,20 @@ class _Scanner(object):
                         and re.search(r'[→⟶⇌⟷]|\\xrightarrow'
                                       r'|\\longrightarrow', rest)):
                     term = "अभिक्रिया"
+                # A "PLAIN" RUBRIC LABEL IS ONE SENTENCE, NOT A CARD.
+                #
+                # `**सीमा:** …` and `**नमूना:** …` print in the reference as
+                # an ordinary `<p class="para"><b>सीमा:</b> …</p>` — ONE
+                # inline-bold sentence, no wrapper div, no border. Handed to
+                # `definition()` instead (the fallback below, for every OTHER
+                # `**Label:**` line) they came out as its two stacked
+                # `.deflead`/`.def` divs, the term on its own line — a shape
+                # the reference reserves for a real glossary definition, not
+                # a one-line aside about a formula's limits or a sample
+                # question prompt.
+                if _PROFILE.get("rubric", {}).get(term) == "plain":
+                    self.out.append(node("para", text="**%s:** %s" % (term, rest)))
+                    continue
                 self.out.append(node("definition", term=term, text=rest))
                 continue
 
@@ -2356,8 +2550,14 @@ class _Scanner(object):
                                          caption=d.get("caption", ""),
                                          desc=d.get("tail", "")))
                 elif d.get("smiles"):
+                    # The caption names the compound AND carries the figure
+                    # number the question refers to. Dropped here, `चित्र
+                    # 6.19 — 2-क्लोरो-6-नाइट्रोफीनॉल` never reached the page
+                    # and step16 counted `नाइट्रोफीनॉल` as vanished — the
+                    # only word of the five it reported that really was.
                     self.out.append(node("ring", smiles=d["smiles"],
                                          name=d.get("सूत्र", ""),
+                                         caption=d.get("caption", ""),
                                          desc=d.get("tail", "")))
                 continue
 
@@ -2378,6 +2578,27 @@ class _Scanner(object):
             # commonest form: "…निर्भर नहीं करता है। [2]". `RE_MARKS_ONLY`
             # only caught the standalone line, so these stayed as body text
             # and the marks chip they were meant to be never appeared.
+            # CHECKED BEFORE THE MARKS BRANCHES.
+            #
+            # `$+\ \mathrm{HCl}$ **[1 अंक]**` ends with a marks tag, so
+            # `RE_MARKS_TRAILING` below matched it first and emitted the
+            # by-product as an ordinary paragraph — which is why `+ HCl`
+            # still printed on a line of its own under the benzene ring
+            # it belongs to. The continuation is the more specific shape
+            # and takes the line; it lifts the marks tag itself.
+            mc = RE_EQ_CONTINUES.match(ln)
+            if mc and self.out and self.out[-1].get("kind") in _DRAWN_KINDS:
+                self.take()
+                prev = self.out[-1]
+                prev["tail_eq"] = ("+ " + mc.group("rest")).strip()
+                if mc.group("marks"):
+                    # The group is the BARE tag, and `strip_trailing_marks`
+                    # wants text in front of one, so it never matched.
+                    _mv = RE_MARKS_ONLY.match(mc.group("marks").strip())
+                    if _mv:
+                        prev["marks"] = _mv.group(1)
+                continue
+
             # A VARIANT LINE IS NOT A MARKS LINE, however it ends.
             #
             # `_MARKS_VALUE` accepts an unbounded `\d+` before `अंक`, so
@@ -2394,17 +2615,6 @@ class _Scanner(object):
                     self._emit_prose(body)
                 if self.out:
                     self.out[-1]["marks"] = mt.group(2)
-                continue
-
-            mc = RE_EQ_CONTINUES.match(ln)
-            if mc and self.out and self.out[-1].get("kind") in _DRAWN_KINDS:
-                self.take()
-                prev = self.out[-1]
-                prev["tail_eq"] = ("+ " + mc.group("rest")).strip()
-                if mc.group("marks"):
-                    _mv = _strip_trailing_marks(mc.group("marks"))[1]
-                    if _mv:
-                        prev["marks"] = _mv
                 continue
 
             mm = RE_MARKS_ONLY.match(ln)
@@ -2987,9 +3197,19 @@ def _parse_questions(lines, stats):
     qs, cur, pre = [], None, []
     banner_pending = None
     pending_stars = 0
+    # The most recent `#### 🅾️/✏️/📝 …` divider — carries forward onto
+    # every question until the next one changes it, same as `pending_stars`.
+    # See `_regroup_by_qtype`, which is what actually reads this.
+    pending_qtype = ""
     i = 0
     while i < len(lines):
         ln = lines[i]
+        mt = RE_QTYPE_H4.match(ln)
+        if mt:
+            stats["consumed"] += 1
+            pending_qtype = mt.group(1)
+            i += 1
+            continue
         # HISTORY'S OWN REPEAT-FREQUENCY SUMMARY: a line of its own, right
         # before a question head, chaining every `[year, ...]` an alternative
         # of that question ever appeared under —
@@ -3038,7 +3258,8 @@ def _parse_questions(lines, stats):
                     i += 1
             chip = parse_chip(_chip_text(chip_txt))
             cur = dict(num=qhead_num(mq), stars=(len(stars or "") or pending_stars),
-                       fullnote=_clean_fullnote(note), body=[], **chip)
+                       fullnote=_clean_fullnote(note), body=[], qtype=pending_qtype,
+                       **chip)
             pending_stars = 0
             qs.append(cur)
             i += 1
@@ -3892,7 +4113,9 @@ def assign_accents(doc):
 
     The rotation is what makes the book read as one system: a section's
     `.secno` border, its `.swipe` fill and its bullet dots all take the
-    same accent, and neighbours never collide."""
+    same accent, and neighbours never collide. Returns the last index
+    used, so a later pass (`_regroup_by_qtype`) can continue the same
+    rotation rather than restarting it."""
     n = 6
     prev = -1
     for part in doc["parts"]:
@@ -3907,6 +4130,119 @@ def assign_accents(doc):
                         a = (prev + 1) % n
                         q["accent"] = a
                         prev = a
+    return prev
+
+
+# THE FINALISED EDITION POOLS PART 2 BY QUESTION FORMAT, NOT BY TOPIC.
+#
+# `content/physics_chap2.md` nests every topic's question bank as
+# ऑब्जेक्टिव -> लघु उत्तरीय -> दीर्घ उत्तरीय (see `RE_QTYPE_H4`), one bank
+# per topic — so today's parser builds one `qgroup` per TOPIC, each
+# holding a flat run of questions of every format in source order. The
+# reference instead gives Part 2 one banner per FORMAT — बहुविकल्पीय /
+# अतिलघु उत्तरीय / लघु उत्तरीय-I / लघु उत्तरीय-II / विस्तृत उत्तरीय — each
+# pooling every topic's questions of that format, newest year first.
+#
+# ऑब्जेक्टिव splits again into MCQ vs very-short-answer by whether the
+# question actually carries an `options` block — "ऑब्जेक्टिव" labels both
+# in the source, and only the question's own shape tells them apart.
+# लघु उत्तरीय splits by its own marks value (2 अंक vs 3 अंक). दीर्घ उत्तरीय
+# does not split — the reference shows one "विस्तृत उत्तरीय" banner for
+# both its 4- and 5-mark questions.
+#
+# NOT MODELLED: the reference's sixth banner, "आंकिक प्रश्न" (numerical),
+# which cuts across mark values by question CONTENT rather than by any
+# authored label or marks value this parser can read confidently — a
+# numerical question stays in its natural marks-based bucket instead of
+# being guessed into a bucket that might be wrong.
+_QTYPE_BUCKETS = [
+    # (match against `qtype`,      test on the question,              label)
+    ("ऑब्जेक्टिव",   lambda q, has_opts: has_opts,
+     "बहुविकल्पीय प्रश्न (1 अंक)"),
+    ("ऑब्जेक्टिव",   lambda q, has_opts: not has_opts,
+     "अतिलघु उत्तरीय प्रश्न (1 अंक)"),
+    ("लघु उत्तरीय", lambda q, has_opts: (q.get("marks") or 0) <= 2,
+     "लघु उत्तरीय प्रश्न-I (2 अंक)"),
+    ("लघु उत्तरीय", lambda q, has_opts: (q.get("marks") or 0) > 2,
+     "लघु उत्तरीय प्रश्न-II (3 अंक)"),
+    ("दीर्घ उत्तरीय", lambda q, has_opts: True,
+     "विस्तृत उत्तरीय प्रश्न (5 अंक)"),
+]
+
+
+def _qtype_bucket(q, has_opts):
+    raw = (q.get("qtype") or "").strip()
+    if not raw:
+        return None
+    raw = re.sub(r'\s+', ' ', raw)
+    for key, test, label in _QTYPE_BUCKETS:
+        if raw.startswith(key) and test(q, has_opts):
+            return label
+    return None
+
+
+def _year_sort_key(q):
+    y = q.get("year") or ""
+    # Newest year first; a question with no year (an "अतिरिक्त" numerical
+    # one, say) sorts after every dated one, in source order among itself.
+    return (0, -int(y)) if y.isdigit() else (1, 0)
+
+
+def _regroup_by_qtype(children, start_accent, part_label="", part_sub=""):
+    """Part 2's topic-grouped `qgroup`s -> one `qgroup` per question
+    format, each format's questions pooled across every topic and sorted
+    newest-year-first. A no-op — returns `children` unchanged — unless at
+    least one question actually carries a `qtype` (this chapter's dialect
+    uses the `#### 🅾️/✏️/📝` dividers at all); every other chapter's
+    Part 2 keeps parsing exactly as it always has."""
+    buckets = {}   # label -> [question, …], insertion order == bucket order
+    order = []
+    others = []    # non-qgroup children (loose leading content) untouched
+    any_tagged = False
+    for ch in children:
+        if ch["kind"] != "qgroup" or ch.get("_banner_only"):
+            others.append(ch)
+            continue
+        for q in ch.get("children", []):
+            if q["kind"] != "question":
+                continue
+            has_opts = any(b.get("kind") == "options" for b in q.get("blocks", []))
+            label = _qtype_bucket(q, has_opts)
+            if label is None:
+                continue
+            any_tagged = True
+            if label not in buckets:
+                buckets[label] = []
+                order.append(label)
+            buckets[label].append(q)
+    if not any_tagged:
+        return children
+
+    n = 6
+    prev = start_accent
+    out = list(others)
+    canon_order = [lbl for _, _, lbl in _QTYPE_BUCKETS]
+    sorted_labels = sorted(order, key=lambda l: canon_order.index(l))
+    order_first = sorted_labels[0]
+    for label in sorted_labels:
+        qs = sorted(buckets[label], key=_year_sort_key)
+        a = (prev + 1) % n
+        prev = a
+        kids = []
+        last_year = object()
+        for q in qs:
+            q["accent"] = a
+            y = q.get("year") or "बिना वर्ष"
+            if y != last_year:
+                kids.append(node("qgroup", label=y, children=[],
+                                 _year_marker=True))
+                last_year = y
+            kids.append(q)
+        out.append(node("qgroup", label=label, banner="", note="",
+                        children=kids, _qtype_banner=True, accent=a,
+                        part_label=part_label if label == order_first else "",
+                        part_sub=part_sub if label == order_first else ""))
+    return out
 
 
 def hoist_cards(doc):
@@ -4268,7 +4604,11 @@ def parse(path, report=False, subject=None):
     promote_equations(doc)
     draw_structures(doc)
     attach_captions(doc)
-    assign_accents(doc)
+    _last_accent = assign_accents(doc)
+    for _part in doc["parts"]:
+        _part["children"] = _regroup_by_qtype(
+            _part.get("children", []), _last_accent,
+            _part.get("label", ""), _part.get("sub", ""))
     derive_group_summary(doc)
 
     if report:
