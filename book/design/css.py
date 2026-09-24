@@ -93,21 +93,9 @@ body { margin:0; background:#e8e4da; color:#1f2430;
 
 /* exam stamp chip (approved look: dark-red stamp + small yellow pin) */
 #
-# font-size was 13.5px, which is legible on screen but at PRINT_ZOOM
-# (0.734, see tokens.py) prints at 9.9pt — below the 11pt legibility
-# floor `book/qa/visual.py` checks against. 28 stamps on chapter 19 alone
-# came back tiny_text. 15.5px clears the floor (15.5 * 0.734 = 11.4pt)
-# with a small margin; `white-space:nowrap` means a longer stamp just
-# widens (the `.qhead` flex row wraps it to its own line if needed), so
-# growing the font never clips it.
-.examchip { background:#c0392b; color:#fff; font-weight:700; font-size:15.5px;
-            border-radius:11px 15px 9px 13px; padding:4px 15px; white-space:nowrap;
-            transform:rotate(-1.5deg); box-shadow:1.5px 3px 7px rgba(0,0,0,.22);
-            position:relative; }
-.examchip::before { content:""; position:absolute; top:-6px; left:50%; margin-left:-5.5px;
-            width:11px; height:11px; border-radius:50%;
-            background:radial-gradient(circle at 35% 30%,#ffe58a,#e0a80c);
-            box-shadow:0 2px 4px rgba(0,0,0,.35); }
+# `.examchip` retired — the reference has none, and the seal it drew is
+# now `.topic-frequency` in `elements/topic-frequency/`. The legibility
+# note that lived here moved with it.
 .starline { display:inline-flex; align-items:center; gap:8px; background:#fdf3b4;
             border:2px solid #e2b93b; border-radius:12px 16px 10px 14px;
             padding:3px 14px; font-weight:700; font-size:15.5px; margin:2px 0 10px; }

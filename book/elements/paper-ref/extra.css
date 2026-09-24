@@ -1,0 +1,10 @@
+/* The exam-paper provenance pills under a question head. */
+.question-meta { flex-basis:100%; padding:2px 0; font-size:15px; line-height:1.65; }
+.paper-refs { padding:3px 8px; color:#57440a; background:#ffe98d;
+              border-bottom:2px solid #d5aa2c; border-radius:4px 7px 4px 6px;
+              font-weight:700; box-decoration-break:clone;
+              -webkit-box-decoration-break:clone; }
+.paper-ref { white-space:nowrap; }
+/* SEPARATOR AS CSS — see spec.json. Drawn by the tag that FOLLOWS another,
+   so it belongs to no tag's own text and survives any reordering. */
+.paper-ref + .paper-ref::before { content:" \00b7 "; font-weight:700; }

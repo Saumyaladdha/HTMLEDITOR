@@ -148,6 +148,24 @@ RE_QHEAD = re.compile(
     # It must open with one of the markers the chapters actually use.
     r'(?:\*(?P<note>[^*]+)\*'
     r'|(?P<note2>[\u21a9\u261e\u26a0\u2605\u2606\u2192][^\n]*))?'
+    # A HEAD MAY CARRY MORE THAN ONE TRAILING NOTE.
+    #
+    # Maths chapter 3 writes two on the questions the board asked in an
+    # extra year AND set at another mark value:
+    #
+    #     **प्र. 18**  `[1 अंक · …]`  *2020 में भी आया था*  *यही सवाल प्र. 6 में …*
+    #
+    # One note was permitted, and the bold branch then requires the line
+    # to END — so the second `*…*` failed the whole match, the head fell
+    # through to prose, and the question vanished. Exactly two of that
+    # chapter's 87 heads are written this way, which is precisely how a
+    # thing like this survives: 85 questions arrive, nobody counts, and
+    # step02 is the only reason anyone finds out.
+    #
+    # Captured rather than skipped — the second note says where the same
+    # question appears at another mark value, a cross-reference a student
+    # follows and which exists nowhere else on the page.
+    r'(?P<notes_more>(?:\s*\*[^*\n]+\*)*)\s*'
     # A `#{2,4}` HEADING MAY CARRY AN INLINE TITLE \u2014 `**bold**` MAY NOT.
     #
     # History and geography write every question as `### \u092a\u094d\u0930. N \u00b7 <title>`
@@ -192,7 +210,29 @@ RE_QCHIP_CONT = re.compile(
     r'^(?:[`$]\[(?P<chip>[^\]]*)\][`$])\s*'
     r'(?P<stars>★+)?\s*'
     r'(?:\*(?P<note>[^*]+)\*'
-    r'|(?P<note2>[↩☞⚠★☆→][^\n]*))?\s*$')
+    r'|(?P<note2>[↩☞⚠★☆→][^\n]*))?'
+    # The same run of extra notes RE_QHEAD accepts — a continuation line
+    # is the same head written across two lines, so it must not be
+    # stricter than the head itself.
+    r'(?P<notes_more2>(?:\s*\*[^*\n]+\*)*)\s*$')
+
+
+def _join_notes(first, more):
+    """Join a head's trailing notes into the one note the IR carries.
+
+    `more` is the raw run RE_QHEAD captured — `  *a*  *b*` — so the
+    delimiters come off here rather than in the regex, where making each
+    note its own group would mean a fixed number of them.
+
+    Joined with the same `·` the chip uses between its own parts, because
+    that is what the rest of the chapter reads as "and also".
+    """
+    parts = [first.strip()] if first and first.strip() else []
+    for chunk in re.findall(r'\*([^*\n]+)\*', more or ""):
+        chunk = chunk.strip()
+        if chunk and chunk not in parts:
+            parts.append(chunk)
+    return " · ".join(parts) if parts else None
 
 
 def _clean_fullnote(text):
@@ -641,7 +681,25 @@ def opt_tokens(text):
     return out
 
 
-_RE_QREF_BEFORE = re.compile(r'प्रश्न\s*\d+\s*$')
+# A MARKER THE PROSE IS CITING, not one it is offering.
+#
+# `प्रश्न N` was the only cue. A worked solution cites its own earlier
+# steps far more often, and in this book it does so by name:
+#
+#     समी (iii) से p = 4r; इसे समी (ii) में रखने पर,
+#
+# Both markers are roman, both look exactly like options, and the gap
+# between them is a real clause rather than a bare conjunction — so the
+# family check and the connector check above both pass it, and the
+# splitter cut ONE sentence into three paragraphs: "समी", then
+# "(iii) से p = 4r; इसे समी", then "(ii) में रखने पर,". The reader met a
+# line that stopped mid-thought and a fragment beginning with a bracket.
+#
+# The cue is the citation word immediately before the marker. `समी` is
+# how the chapters abbreviate समीकरण; the others are the same shape for a
+# formula, a step or a stage.
+_RE_QREF_BEFORE = re.compile(
+    r'(?:प्रश्न\s*\d+|समी(?:करण)?|सूत्र|चरण|पद|भाग)\s*$')
 _RE_CONNECTOR_ONLY = re.compile(r'^\s*(?:तथा|और|व|एवं)\s*$')
 # A line OPENING with `marker CONNECTOR marker` — "(i) तथा (ii) को …" — see
 # the connector-gap check in `opt_tokens`; this is the same exclusion for
@@ -1427,10 +1485,34 @@ class _Scanner(object):
             if m:
                 icon = (m.group(2) or "").strip()
                 label = (m.group(3) or label).strip()
-            rows = []
+            # A CARD MAY CONTAIN A PIPE TABLE, and one did.
+            #
+            # A card's body was read as plain lines, so maths chapter 3's
+            # "परिभाषाएँ व गुणधर्म" card printed its five-row table as
+            # literal markdown — `| नाम | पहचान |` and `|---|---|` set as
+            # sentences, pipes and all, in the middle of a finished page.
+            # Nothing caught it: the words were all there, so step16's
+            # coverage held at 1.0, and a table drawn as text is exactly
+            # the kind of thing only a reader notices.
+            #
+            # Taken as a real table rather than flattened into rows,
+            # because a two-column key/value grid IS the content here —
+            # joining the cells with a dash would read as prose and lose
+            # the alignment that makes it scannable.
+            rows, tbl_head, tbl_rows = [], None, []
             for r in buf[1:]:
                 r = r.strip()
                 if not r:
+                    continue
+                if RE_TABLE_SEP.match(r):
+                    continue                       # the `|---|---|` rule
+                mt = RE_TABLE_ROW.match(r)
+                if mt:
+                    cells = [c.strip() for c in mt.group(1).split("|")]
+                    if tbl_head is None:
+                        tbl_head = cells
+                    else:
+                        tbl_rows.append(cells)
                     continue
                 mk = ""
                 if r[:1] in "✗✓★•①②③④⑤◆●–-":
@@ -1438,6 +1520,7 @@ class _Scanner(object):
                 rows.append(dict(mark=mk, text=r))
             bg, pin, ink = card_tone(label)
             return node("card", label=label, icon=icon, rows=rows,
+                        head=tbl_head or [], trows=tbl_rows,
                         bg=bg, pin=pin, ink=ink)
 
         mb = RE_BANNER.match(head)
@@ -3151,6 +3234,53 @@ def _h3_group_boundary(lines):
     return pred
 
 
+# A FREQUENCY SEAL MAY BE ITS OWN LINE, NOT ONLY A BRACKET ON THE HEADING.
+#
+# Two dialects were known: the bracket a heading carries
+# (`### 1.5 … **[UP 2022 · 1 अंक]**`, read by `_section_meta`) and the bold
+# trailer (`### 2.3 … · **13 सवाल आए · 1 व 5 अंक में**`, read by
+# `render._split_topic_freq`). Maths chapter 3 writes a third: bare lines
+# directly under the heading, one per year the board asked it.
+#
+#     ### 3.1 आव्यूह की कोटि व प्रकार (Order & Types)
+#     🔥 UP 2022 · 1 अंक
+#     🔥 UP 2026 · 1 अंक
+#
+# Unrecognised, all 42 of them fell through to paragraphs and printed as
+# plain italic text — the red seal that is the loudest thing on a Part-1
+# heading appeared nowhere in a 51-page book. Nothing failed: the words
+# were all present, so step16's coverage stayed at 1.0, and step01 counted
+# them among the 37% that "fell through to para". A construct that
+# degrades to a paragraph keeps its text and loses its meaning, which is
+# the one kind of loss word-counting cannot see.
+RE_FREQ_LINE = re.compile(r'^\s*🔥\s*(?P<text>\S.*?)\s*$')
+
+
+def _absorb_freq_lines(body, meta):
+    """Move any 🔥 lines opening `body` into `meta["pyq"]`.
+
+    Only from the TOP of the section — a 🔥 further down is prose about
+    frequency (the cover says "भाग 1 की 🔥 पंक्तियाँ …"), not a seal.
+    Returns the body with those lines removed.
+    """
+    lines = list(body)
+    taken = []
+    i = 0
+    while i < len(lines):
+        if not lines[i].strip():
+            i += 1
+            continue
+        m = RE_FREQ_LINE.match(lines[i])
+        if not m:
+            break
+        taken.append(m.group("text"))
+        i += 1
+    if not taken:
+        return body
+    meta["pyq"] = list(meta.get("pyq") or []) + taken
+    return lines[i:]
+
+
 def _section_meta(title_line):
     """`1.5 वैद्युत आवेश के मूल गुण  ·  **[UP 2022 · 1 अंक]**` -> fields."""
     raw = title_line.strip()
@@ -3240,6 +3370,12 @@ def _parse_questions(lines, stats):
             stats["consumed"] += 1
             chip_txt, stars, note = mq.group("chip"), mq.group("stars"), \
                 (mq.group("note") or mq.group("note2"))
+            # EVERY trailing note, not just the first — see `notes_more` in
+            # RE_QHEAD. Matching the head and then dropping its second note
+            # would trade a loud failure (step02 stops the build) for a
+            # quiet one, and the note it drops is the cross-reference saying
+            # where the same question appears at another mark value.
+            note = _join_notes(note, mq.group("notes_more"))
             if mq.group("chip2"):
                 chip_txt = ((chip_txt + " · ") if chip_txt else "") + mq.group("chip2")
             # `cite` is the source note that came BEFORE the marks chip —
@@ -3255,6 +3391,7 @@ def _parse_questions(lines, stats):
                 if mc:
                     chip_txt, stars, note = mc.group("chip"), mc.group("stars"), \
                         (mc.group("note") or mc.group("note2"))
+                    note = _join_notes(note, mc.group("notes_more2"))
                     i += 1
             chip = parse_chip(_chip_text(chip_txt))
             cur = dict(num=qhead_num(mq), stars=(len(stars or "") or pending_stars),
@@ -3547,6 +3684,7 @@ def _build_part(head, body, stats):
                 continue
             stats["consumed"] += 1
             meta = _section_meta(RE_H3.match(h).group(1))
+            b = _absorb_freq_lines(b, meta)
             blocks = _Scanner(b, stats).run()
             asides = [x for x in blocks if x["kind"] == "card"]
             blocks = [x for x in blocks if x["kind"] not in ("card", "rule")]

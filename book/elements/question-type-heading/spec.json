@@ -1,0 +1,11 @@
+{
+ "id": "question-type-heading",
+ "ir_kind": "content",
+ "tag": "h2",
+ "classes": "question-type-heading",
+ "when": "A question-format heading inside Part 2 — बहुविकल्पीय प्रश्न (1 अंक).",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "Sits in a .type-banner; the first also carries the part masthead."
+}

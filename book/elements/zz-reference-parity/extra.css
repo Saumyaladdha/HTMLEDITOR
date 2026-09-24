@@ -139,3 +139,57 @@
    to shrink below its content, which would silently re-introduce the
    overflow this is measured against. */
 .acols { flex:1 1 auto; min-height:0; }
+
+/* ---------------------------------------------------------------- */
+/* POSTURE IS LEFT TO THE EXISTING RULES — ON PURPOSE.
+ *
+ * A blanket `font-style: normal` on `.m`/`.dm`/`.mx` was tried here and
+ * reverted. It flattened the one distinction maths typography relies on:
+ * FUNCTION NAMES, DIGITS AND OPERATORS ARE UPRIGHT, VARIABLES ARE ITALIC.
+ * That is what makes `cos θ` read as a function applied to a variable
+ * rather than as a run of five letters, and it is the only thing telling
+ * the zero matrix `O` apart from a cell of `0`.
+ *
+ * Both were reported as bugs within an hour of the change — "sin theta
+ * and cos theta look very different from others", "0 is also looking
+ * like o" — and both are the same cause. The pipeline already models
+ * this: `.up` carries the upright parts, `.m` the italic ones, and
+ * `math-inline/base.rules.json` spells out the reasoning where Charter
+ * was chosen for its more upright italic cut.
+ *
+ * Chemistry keeps its own `font-style:normal` (an element symbol is
+ * roman: SOCl2, not slanted) and is unaffected by anything here.
+ */
+
+
+/* THE NOTATION FACE IS STIX, AND IT IS EMBEDDED.                     */
+/*                                                                    */
+/* Maths asked for Georgia — a SYSTEM font, never embedded, while     */
+/* Kalam and Caveat both are. So the notation rendered differently on */
+/* different machines, and since the packer measures pages in the     */
+/* same headless Chrome, a build box without Georgia measured a       */
+/* different book from the one it laid out.                           */
+/*                                                                    */
+/* STIX Two Text is what the scientific publishers commissioned for   */
+/* technical setting. It is SIL OFL, so it ships inside the file, and */
+/* it separates the glyphs this chapter actually collides on: Georgia */
+/* sets `0` and `O` so alike that `[0 0; 0 0] = O` reads as five of   */
+/* the same character, and `1`/`I`/`l` nearly as badly. In a chapter  */
+/* about matrices, where the zero matrix `O` sits beside cells of     */
+/* `0`, that is not a refinement — it is whether the page can be read.*/
+/*                                                                    */
+/* Georgia stays as the first fallback so a file opened without the   */
+/* embedded CSS still lands on a serif with lining figures.           */
+.m, .dm, .mx, .fr, .up, .work, p.work, .formula-body, .fx,
+.math-line, .eqline, .mx > .mxg > span {
+  font-family: 'STIX Two Text', Georgia, 'Times New Roman', Times, serif;
+}
+
+/* A long display line SCROLLS rather than wrapping mid-expression.   */
+/* `.mx` is `display:inline-flex`, so a matrix is one unbreakable     */
+/* box: a chain `A³ − 6A² + 7A + 2I = [M] − 6[M] + 7[M] + 2[M]` could */
+/* only break at the space between a coefficient and its matrix,      */
+/* stranding `− 6` at the end of one line with its matrix on the      */
+/* next. The reference already sets `overflow-x:auto` on `.dm` for    */
+/* this reason; an A4 override had replaced it with `hidden`.         */
+.dm { overflow-x: auto; }

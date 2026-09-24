@@ -1,0 +1,7 @@
+/* NO SIDE RULE ON A DEFINITION.
+   The reference draws `.def` with a 3px left border and 14px of padding
+   to match. Asked for directly: the line reads as a quote bar on a block
+   that is not a quote, and beside a one-line sample (`2 × 2 पर 2⁴ = 16`)
+   it is the loudest thing in the paragraph. The padding goes with it —
+   kept alone it would leave the text indented against nothing. */
+.def { border-left: none; padding-left: 0; }

@@ -1,0 +1,11 @@
+{
+ "id": "cover-title",
+ "ir_kind": "content",
+ "tag": "h1",
+ "classes": "source-title",
+ "when": "The cover's masthead: the chapter badge and its name.",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "Holds .chapter-badge and .chapter-topic."
+}

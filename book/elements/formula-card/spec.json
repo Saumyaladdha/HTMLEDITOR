@@ -7,5 +7,5 @@
  "signals": [
   "a `**सूत्र:**` lead-in immediately followed by a bullet list"
  ],
- "notes": "Each bullet splits on ' · ' into .fx (boxed formula) / .fd (caption) / .fc (शर्त condition)."
+ "notes": "Each bullet splits on ' · ' into .fx (boxed formula) / .fd (caption) / .fc (शर्त condition). TWO SHAPES. Part 2 sets each result in a boxed `.fx` row with its optional `.fd` caption and `.fc` condition. Part 1's crib sheet sets a flat bulleted `.formula-list` instead, one `.formula-body` per formula — in a 449px column the per-result boxes drew a six-formula topic as six separate cards, so the topic read as six things rather than one. The panel is the same element either way; only the row shape differs."
 }

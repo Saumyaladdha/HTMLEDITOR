@@ -90,8 +90,13 @@ def front_section(n, title, body_html):
     `.front-section-1/2/3` in the stylesheet — a ranked table, a prose
     card, a numbered table are visually distinct, not just repeats of one
     shape)."""
+    # The heading carries a class of its own. Bare, it was addressable by
+    # nothing: the editor could select it and then offer neither a region to
+    # edit nor a control, because an element with no class cannot be looked
+    # up. Six of them on every cover.
     return ('<section class="source-front-section front-section-%d">'
-            '<div class="u"><h2>%s</h2></div>%s</section>'
+            '<div class="u"><h2 class="front-section-title">%s</h2></div>'
+            '%s</section>'
             % (n, inline(title), body_html))
 
 
@@ -162,6 +167,19 @@ def _count_cell(val):
         inline(m.group(1).strip()), inline(m.group(2).strip()))
 
 
+# EVERY CELL CARRIES A CLASS, even where the stylesheet does not need one.
+#
+# The editor can only offer a region it can name, and it names regions by
+# class (see `PART_ROLES` in tools/export_editor_manifest.py). These two
+# tables declared only the chips INSIDE their cells — `.priority-id`,
+# `.count-value`, `.study-number` — so the chips could be edited and the
+# cells around them could not: not one column heading on the cover, not the
+# "करना है" sentence that is the entire point of the reading-order table,
+# not the "किन अंकों में" column. `#` was simply the first one anybody tried
+# to click.
+#
+# These classes are addressing, not styling. They hang no CSS of their own.
+
 def priority_table(title, head, rows, total=None, skin="cvc-pink", body=""):
     """The topic-weight table — `.priority-table` — a real ranked table,
     each row a topic-id chip, a count pill, and whichever marks it came
@@ -194,7 +212,7 @@ def priority_table(title, head, rows, total=None, skin="cvc-pink", body=""):
     if not has_extra:
         _heads = _heads[:2]
     for h in _heads:
-        out.append('<th>%s</th>' % inline(h))
+        out.append('<th class="priority-head">%s</th>' % inline(h))
     out.append('</tr></thead><tbody>')
     for i, r in enumerate(rows):
         m = _RE_TOPIC_CELL.match(r[0] if r else "")
@@ -204,15 +222,17 @@ def priority_table(title, head, rows, total=None, skin="cvc-pink", body=""):
         val = r[col] if col < len(r) else (r[-1] if r else "")
         extra = " · ".join(c.strip() for j, c in enumerate(r)
                            if j not in (0, col) and c.strip())
-        out.append('<tr style="--chip-color:%s"><td>%s</td><td>%s</td>%s</tr>'
+        out.append('<tr style="--chip-color:%s"><td class="priority-cell">%s</td>'
+                   '<td class="priority-count">%s</td>%s</tr>'
                    % (_CHIP_COLOURS[i % len(_CHIP_COLOURS)], topic,
                       _count_cell(val),
                       ('<td class="priority-marks">%s</td>' % inline(extra))
                       if has_extra else ""))
     if total:
         val = total[col] if col < len(total) else total[-1]
-        out.append('<tr style="--chip-color:#e4e4e4"><td><b>%s</b></td>'
-                   '<td>%s</td>%s</tr>'
+        out.append('<tr style="--chip-color:#e4e4e4">'
+                   '<td class="priority-cell"><b>%s</b></td>'
+                   '<td class="priority-count">%s</td>%s</tr>'
                    % (inline(total[0]), _count_cell(val),
                       '<td class="priority-marks"></td>' if has_extra else ""))
     out.append('</tbody></table></div>')
@@ -234,14 +254,15 @@ def study_table(title, rows, skin="cvc-green", body="", head=None):
                 '<table class="study-table"><thead><tr>')
     for h in (head or []):
         if (h or "").strip():
-            out.append('<th>%s</th>' % inline(h))
+            out.append('<th class="study-head">%s</th>' % inline(h))
     out.append('</tr></thead><tbody>')
     for i, r in enumerate(rows, 1):
         label = r[0] if len(r) > 1 and len(r[0]) <= 3 else str(i)
         # Every column after the number — a table can carry three
         # (`क्रम | क्या करना है | क्यों`) or just two.
         rest = [c for c in r[1:] if c.strip()] or ([r[-1]] if r else [""])
-        cells = "".join('<td>%s</td>' % inline(c) for c in rest)
+        cells = "".join('<td class="study-step">%s</td>' % inline(c)
+                        for c in rest)
         out.append('<tr style="--chip-color:%s"><td><span class="study-number">%s</span></td>'
                    '%s</tr>' % (_CHIP_COLOURS[(i - 1) % len(_CHIP_COLOURS)],
                                 plain(label), cells))

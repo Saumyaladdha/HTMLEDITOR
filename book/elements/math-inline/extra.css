@@ -8,7 +8,18 @@
    Every rule that sets Georgia for maths is listed, not just `.m`: a formula
    card (`.frow>.fx`), a display line (`.dm`), a working line (`.work`) and the
    cover formula each set their own face and would keep the old-style figures. */
-.m, .fr, .up, .dm, .frow>.fx, .work, p.work, .cvformula {
+.m, .fr, .up, .dm, .frow>.fx, .work, p.work, .cvformula,
+/* …and the shapes the reference edition added after this list was
+   written. `.formula-list`/`.formula-body` is the सूत्र panel's own skin —
+   the ONLY skin now, since the boxed `.frow>.fx` variant above was
+   retired in favour of it, so every formula in the book was reading its
+   figures from Georgia's old-style set: the `3` in `3(5B - 2A)` sat below
+   the baseline and the `5` above it, which is what "the font looks
+   inconsistent" is. `.mxg>span` is a matrix cell, same reason.
+   THE RULE THIS LIST ENCODES: anything that sets, or inherits, Georgia
+   for notation belongs here. Adding a maths shape without adding it here
+   gives that shape old-style figures and nothing will fail. */
+.formula-list, .formula-body, .fx, .mx>.mxg>span, .math-line, .eqline {
   font-variant-numeric: lining-nums;
 }
 

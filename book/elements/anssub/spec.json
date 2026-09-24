@@ -1,0 +1,11 @@
+{
+ "id": "anssub",
+ "ir_kind": "content",
+ "tag": "div",
+ "classes": "anssub",
+ "when": "A sub-point inside an answer — the (i)/(ii) parts of a multi-part reply.",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "19 in one chapter and none of them was addressable: no element declared the class, so selecting one offered neither a region to edit nor a control."
+}

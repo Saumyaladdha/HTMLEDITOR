@@ -1,0 +1,11 @@
+{
+ "id": "part-heading",
+ "ir_kind": "content",
+ "tag": "h2",
+ "classes": "part-heading",
+ "when": "A part masthead — PART 1 · QUICK REVISION.",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "Three spans: .part-label (the number), .part-divider, .part-name."
+}

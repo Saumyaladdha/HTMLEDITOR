@@ -1,0 +1,4 @@
+/* Declared here so the editor's manifest can see the element at all —
+   the rule itself is emitted by `elements/revision-flow`, which owns the
+   Part-1 skin. Duplicating the value would give two sources of truth for
+   one colour. */

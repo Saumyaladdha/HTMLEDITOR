@@ -1,0 +1,12 @@
+{
+ "id": "topic-frequency",
+ "ir_kind": "_inline",
+ "tag": "span",
+ "classes": "topic-frequency",
+ "when": "The red “hot topic” seal beside a topic name, with its own yellow pin.",
+ "signals": [
+  "a `[🔥 UP <year> · <marks> अंक]` bracket on a section head",
+  "a `· **13 सवाल आए · 1 व 5 अंक में**` trailer on a topic heading"
+ ],
+ "notes": "Sits inside `.topic-heading`, as a sibling of the `<h2>` rather than inside it, so the title can wrap without dragging the seal onto a line of its own. This IS the old `.examchip`, renamed to what the reference calls it: same seal, but the pin is a `::before` on the span instead of a separate element, and `flex:none` keeps it on the heading's own row. Both authoring dialects land here — see `components/inline.examchip` and `render._split_topic_freq`."
+}

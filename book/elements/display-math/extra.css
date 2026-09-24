@@ -23,3 +23,27 @@
 .eq-tail { font-size:15px; text-align:right; margin-bottom:7px; }
 .eq-tail .qmarks { font-style:normal; }
 .eq-lead { font-size:17px; margin-top:8px; }
+
+
+/* THE REASON A STEP IS ALLOWED, set apart from the step itself.
+   A derivation ends `… = cos 2A  [∵ cos²A − sin²A = cos 2A तथा …]`. Set
+   as ordinary maths it welded onto the working (`7A[∵`, no space), took
+   the same italic notation face, and broke wherever the column ran out —
+   so a reader met half a justification, a line break, then the remainder
+   with nothing to say it was not the next step of the proof.
+   Its own line, quieter and unslanted: a note about the maths, not maths.
+   `text-align:left` because a reason is a sentence, and centring a
+   sentence under a centred equation gives two ragged shapes that read as
+   one broken one. */
+.dm .eq-why {
+  display: block;
+  margin: 3px 0 0;
+  text-align: left;
+  font-style: normal;
+  font-size: .8em;
+  line-height: 1.45;
+  color: #6b6558;
+}
+/* Inside a column there is no room for a long reason beside anything, so
+   it indents to sit clear of the equation it belongs to. */
+.acol .dm .eq-why { padding-left: 2px; }

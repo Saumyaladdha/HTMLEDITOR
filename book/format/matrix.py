@@ -160,6 +160,53 @@ def _augment_at(spec):
     return len([c for c in before if c in "lcr"])
 
 
+# A ROW BREAK AND A COLUMN BREAK ONLY COUNT AT THE OUTER LEVEL.
+#
+# `\\` and `&` mean something inside EVERY environment, so a matrix nested
+# in a derivation has its own. Splitting the outer body on them blindly cut
+# up the inner matrix as well:
+#
+#     \begin{aligned} A^2 &= \begin{bmatrix}1&0&2\\0&2&1\end{bmatrix} … \end{aligned}
+#
+# The `aligned` block's cells were taken as `A^2`, `= \begin{bmatrix}1`,
+# `0`, `2` … — the bmatrix torn apart mid-token — and rejoining them with
+# nothing (which is right for an alignment point) welded the digits into a
+# single run. A 3x3 matrix of 1 0 2 / 0 2 1 / 2 0 3 came out as the number
+# "102021203". 135 of this chapter's 851 matrices were inside a derivation
+# and every one of them printed as digit soup.
+#
+# Depth is counted over `\begin{…}`/`\end{…}` pairs, so an outer split
+# never reaches into an inner environment — and `one()` below converts what
+# it finds there afterwards, innermost last, so the nesting is preserved
+# rather than flattened.
+ROW_RE = re.compile(r'\\\\\s*(?:\[[^\]]*\])?')
+COL_RE = re.compile(r'&')
+_DEPTH_RE = re.compile(r'\\(begin|end)\{')
+
+
+def _split_top(text, sep_re):
+    r"""Split `text` on `sep_re`, ignoring separators inside a nested
+    `\begin{…}…\end{…}`."""
+    depth, out, start = 0, [], 0
+    i = 0
+    while i < len(text):
+        md = _DEPTH_RE.match(text, i)
+        if md:
+            depth += 1 if md.group(1) == "begin" else -1
+            depth = max(depth, 0)
+            i = md.end()
+            continue
+        if depth == 0:
+            ms = sep_re.match(text, i)
+            if ms and ms.end() > ms.start():
+                out.append(text[start:i])
+                start = i = ms.end()
+                continue
+        i += 1
+    out.append(text[start:])
+    return out
+
+
 def _cells(body):
     """The rows of a LaTeX matrix body. `&` separates columns, `\\\\` rows.
 
@@ -175,11 +222,11 @@ def _cells(body):
     delimiter itself, same as the row break it rides on.
     """
     rows = []
-    for raw in re.split(r'\\\\\s*(?:\[[^\]]*\])?', body):
+    for raw in _split_top(body, ROW_RE):
         raw = raw.strip()
         if not raw:
             continue
-        rows.append([c.strip() for c in raw.split("&")])
+        rows.append([c.strip() for c in _split_top(raw, COL_RE)])
     return rows
 
 
@@ -394,7 +441,18 @@ def convert_latex(s, render=None):
         lines = _stack_lines(env, rows, spec, delim)
         if lines is not None:
             r = render or (lambda x: x)
-            return "<br>".join(r(l) for l in lines)
+            # INNERMOST LAST. `_ENV_RE.sub` only replaces the OUTER
+            # environment — everything matched is consumed, so a matrix
+            # nested in a derivation was never offered to this function at
+            # all and reached the page as literal `\begin{bmatrix}` text for
+            # the general maths pass to strip. Now that `_cells` keeps a
+            # nested environment whole (see `_split_top`), each recombined
+            # line is run through again, so the derivation's own rows are
+            # built first and the matrices inside them after.
+            return "<br>".join(r(convert_latex(l, render)) for l in lines)
+        # A matrix's own CELLS can hold another environment too — a block
+        # matrix, or a cell whose value is itself a 1x2. Same rule.
+        rows = [[convert_latex(c, render) for c in row] for row in rows]
         return grid(rows, ENVIRONMENTS.get(env, "square"), render,
                     _augment_at(spec))
 

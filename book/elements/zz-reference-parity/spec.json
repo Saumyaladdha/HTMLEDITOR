@@ -1,0 +1,11 @@
+{
+ "id": "zz-reference-parity",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "",
+ "when": "Not an element. Final numeric alignment to the reference edition.",
+ "signals": [
+  "never emitted — this directory carries only CSS corrections"
+ ],
+ "notes": "Named to sort LAST so `bundle()` appends it after every other element's `extra.css`, which is how each value wins over the archived rule it corrects. It introduces no markup, so it must never appear in the insert palette."
+}

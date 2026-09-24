@@ -75,37 +75,18 @@
 .derivation-note .ci { display:block!important; font-size:18px!important; }
 
 /* ---------- question chrome (Part 2) ---------- */
-/* The exam-paper provenance pills under a question head. */
-.paper-refs { padding:3px 8px; color:#57440a; background:#ffe98d;
-              border-bottom:2px solid #d5aa2c; border-radius:4px 7px 4px 6px;
-              font-weight:700; box-decoration-break:clone;
-              -webkit-box-decoration-break:clone; }
-.paper-ref { white-space:nowrap; }
-.question-meta { flex-basis:100%; padding:2px 0; font-size:15px; line-height:1.65; }
+/* `.question-meta`, `.paper-refs` and `.paper-ref` moved to
+   `elements/paper-ref/` — a tag has to be its own element for the
+   editor to see it as one. */
 /* A cross-reference to another question — `प्र. 53 देखिए`. */
 .qref { color:#3a5692; text-decoration:underline; text-decoration-color:#b0bed8;
         text-underline-offset:3px; }
 /* A short tag set inline in running text, e.g. a source marker. */
 .inline-tag { font-family:'Kalam',sans-serif; background:#f5efd8; border-radius:4px;
               padding:0 3px; }
-/* How often a topic has been examined — the red "hot topic" seal with its
-   own yellow pin. This REPLACES `.examchip`, which the reference does not
-   carry at all: same seal, but the pin is a `::before` on the span rather
-   than a separate element, and `flex:none` keeps it on the heading's own
-   row instead of letting the title squeeze it. Both authoring dialects
-   land here — `[🔥 UP 2025 · 3 अंक]` (see `components/inline.examchip`)
-   and the newer `· **13 सवाल आए · 1 व 5 अंक में**` heading trailer (see
-   `render._split_topic_freq`). `elements/examchip` is left in place for
-   chapters not yet rebuilt; nothing emits its class any more. */
-.topic-frequency { position:relative; display:inline-block; flex:none;
-                   white-space:nowrap; font-size:14px; line-height:1.5; color:#fff;
-                   background:#c0392b; padding:3px 9px;
-                   border-radius:11px 15px 9px 13px; font-weight:700;
-                   transform:rotate(-.7deg); box-shadow:1px 2px 4px #00000026; }
-.topic-frequency::before { content:""; position:absolute; top:-4px; left:50%;
-    margin-left:-4px; width:8px; height:8px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%,#ffe58a,#e0a80c);
-    box-shadow:0 1px 2px #00000040; }
+/* `.topic-frequency` moved to `elements/topic-frequency/`, same
+   reason as `.paper-ref` above: the seal is an object, and an
+   object needs an element directory to be described in. */
 /* A standalone `उत्तर:` heading, for an answer long enough that the
    inline `.anslabel` chip would be lost above it. */
 .subhead { font-size:20px; color:var(--blue); font-weight:700; margin:12px 0 8px; }

@@ -82,9 +82,16 @@ def _qtag_html(chip_text, note=""):
         out.append(qmarks(marks))
     meta = []
     if refs:
+        # NO SEPARATOR IN THE MARKUP. The tags used to be joined by a
+        # literal " · ", which welded each one to the dots beside it: the
+        # editor treats a tag as an object you can pick up and reorder, and
+        # moving one past another left its dots behind in the old order.
+        # `.paper-ref + .paper-ref::before` draws them now (see
+        # `elements/paper-ref/extra.css`), so a tag carries only its own
+        # text and the dots fall wherever the tags end up.
         meta.append('<span class="paper-refs">%s</span>'
-                    % " · ".join('<span class="paper-ref">%s</span>' % plain(r)
-                                 for r in refs))
+                    % "".join('<span class="paper-ref">%s</span>' % plain(r)
+                              for r in refs))
     for n in notes:
         meta.append('<span class="inline-tag">%s</span>' % inline(n))
     if (note or "").strip():

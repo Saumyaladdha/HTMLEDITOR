@@ -1,0 +1,11 @@
+{
+ "id": "study-table",
+ "ir_kind": "table",
+ "tag": "table",
+ "classes": "study-table",
+ "when": "The cover's reading-order table — a numbered procedure.",
+ "signals": [
+  "a pipe table inside a cover section"
+ ],
+ "notes": "One .study-number circle per row. Chosen over priority-table by SHAPE — a numbered first column rather than a numeric value column — not by the heading's wording. Every cell carries a class so the editor can name it: `.study-head` on the column headings and `.study-step` on the sentence cells — the sentences ARE this table, and they were the one thing in it that could not be edited."
+}

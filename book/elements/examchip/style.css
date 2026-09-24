@@ -1,9 +1,0 @@
-/* ===== shared ===== */
-.examchip { background:#c0392b; color:#fff; font-weight:700; font-size:13.5px;
-            border-radius:11px 15px 9px 13px; padding:4px 15px; white-space:nowrap;
-            transform:rotate(-1.5deg); box-shadow:1.5px 3px 7px rgba(0,0,0,.22);
-            position:relative; }
-.examchip::before { content:""; position:absolute; top:-6px; left:50%; margin-left:-5.5px;
-            width:11px; height:11px; border-radius:50%;
-            background:radial-gradient(circle at 35% 30%,#ffe58a,#e0a80c);
-            box-shadow:0 2px 4px rgba(0,0,0,.35); }

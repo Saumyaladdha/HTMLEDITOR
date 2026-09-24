@@ -1,0 +1,13 @@
+{
+ "id": "subhead",
+ "ir_kind": "heading",
+ "tag": "div",
+ "classes": "subhead",
+ "when": "A short blue heading: a one-line question stem, a bare उत्तर:, or a section inside a long answer.",
+ "signals": [
+  "a question stem under ~46 characters",
+  "`**उत्तर:**` alone on its line",
+  "a standalone `**bold line**` inside an answer"
+ ],
+ "notes": "One shape, four jobs — see `components/question.py`'s `subhead`. Measured on the reference: its stems run to a median of 25 characters against 108 for the ones set as bold body text, which is why a long stem stays a paragraph. Breaking a wall of answer into named sections is most of what makes a long answer readable."
+}

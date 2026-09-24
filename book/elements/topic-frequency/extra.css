@@ -1,0 +1,25 @@
+/* How often a topic has been examined — the red "hot topic" seal with its
+   own yellow pin.
+
+   THE SEAL IS AN OBJECT, NOT A TEXT RUN. It lives here, in an element
+   directory of its own, rather than folded into `revision-flow/extra.css`
+   where it started: the editor builds its manifest per element, so a class
+   styled inside some other element's stylesheet reports `paints:false` and
+   is treated as running text — the seal could not be picked out of its
+   heading, recoloured or moved.
+
+   FONT SIZE IS SET BY THE PRINT FLOOR, not by the screen. 14px looks fine
+   in a browser and prints at 10.3pt (PRINT_ZOOM 0.734, see tokens.py) —
+   under the 11pt floor `book/qa/visual.py` checks, which is what had 28 of
+   these coming back `tiny_text` on chapter 19 when the old `.examchip`
+   was 13.5px. 15.5px prints at 11.4pt. `white-space:nowrap` means a longer
+   seal simply widens rather than clipping. */
+.topic-frequency { position:relative; display:inline-block; flex:none;
+                   white-space:nowrap; font-size:15.5px; line-height:1.5; color:#fff;
+                   background:#c0392b; padding:3px 9px;
+                   border-radius:11px 15px 9px 13px; font-weight:700;
+                   transform:rotate(-.7deg); box-shadow:1px 2px 4px #00000026; }
+.topic-frequency::before { content:""; position:absolute; top:-4px; left:50%;
+    margin-left:-4px; width:8px; height:8px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe58a,#e0a80c);
+    box-shadow:0 1px 2px #00000040; }

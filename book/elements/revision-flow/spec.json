@@ -1,0 +1,11 @@
+{
+ "id": "revision-flow",
+ "ir_kind": "_shell",
+ "tag": "div",
+ "classes": "acols revision-flow",
+ "when": "Part 1's two-column spread. Its own design, not Part 2 restyled.",
+ "signals": [
+  "structural — emitted by the assembler for any page holding a Part-1 unit"
+ ],
+ "notes": "Each Part-1 block is `.u.revision-unit`. The skin it carries: a bulleted `.formula-list` सूत्र panel with one `.formula-body` per formula, a two-column green `.trio` fact strip of `.fact-item`/`.fact-label`, a `.subhead` section heading inside long answers, a red `.topic-frequency` seal beside a topic name, and `.derivation-note` for an un-rotated निगमन card. Part 2's question chrome lives here too: `.question-meta` holding `.paper-refs`/`.paper-ref`, plus `.inline-tag` and `.qref`."
+}

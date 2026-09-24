@@ -1,2 +1,60 @@
-/* Nothing extra. A cell may hold a number, a variable, an expression
-   (3a + 8c) or a minus sign, so no rule here may assume its width. */
+/* Nothing extra about WIDTH — a cell may hold a number, a variable, an
+   expression (3a + 8c) or a minus sign, so no rule here may assume it.
+   What follows is about TYPE, which had four separate problems. */
+
+/* A MATRIX DOES NOT TAKE WEIGHT FROM THE SENTENCE AROUND IT.
+   77 of this chapter's matrices sit inside a `<b>` — a question written
+   `**… $\begin{bmatrix}…$ …**` puts every cell in bold. So a question's
+   matrix came out heavy and every matrix in the answer below it did not,
+   which reads as two different designs on one page. A matrix is an
+   object; its weight is its own. */
+.mx, .mx > .mxg, .mx > .mxg > span { font-weight: 400; }
+
+/* A VARIABLE LOOKS THE SAME INSIDE A MATRIX AS OUTSIDE ONE.
+   The cell forced `font-style:normal` while the maths around it kept the
+   ordinary italic-variable/upright-operator distinction — so on one page
+   `cosα` sat upright in a matrix and italic in the line below it, the
+   same expression set two ways. In a chapter where every other step
+   moves a term into or out of a matrix, that reads as the font changing
+   at random.
+   Inheriting instead means `.up` (digits, operators, function names)
+   stays upright inside a cell exactly as it does outside, and a variable
+   stays italic — one rule for the whole book rather than one for
+   notation and another for notation-in-a-box. */
+.mx > .mxg > span { font-style: inherit; }
+
+/* SIZE IS LEFT ALONE — ON PURPOSE.
+   It looks like six rules fighting (16.5 / 19 / 18 / 16 / 15.5px) and it
+   is not: `maths-steps/base.rules.json` works the chain out explicitly,
+   because maths NESTS. A matrix cell holds a fraction which can hold
+   another, each level multiplies, and the sizes are chosen so the
+   SMALLEST thing on the page still clears the print floor —
+   18 x .95 x .97 = 16.6px, which is 12.2px on paper at PRINT_ZOOM.
+   Collapsing them to one relative size pushed a nested fraction inside a
+   matrix to 14px (10.5px printed) and step15 failed four of them. Read
+   that comment before touching any of these numbers. */
+
+/* A CELL IS ONE TOKEN AND DOES NOT WRAP. `white-space:normal` plus
+   `overflow-wrap:break-word` let `21-30+7+2` break across two lines
+   inside its own cell, which makes a 3x3 look like a 3x6. */
+.subj-maths .mx > .mxg > span { white-space: nowrap; overflow-wrap: normal; }
+
+/* COLUMNS NEED AIR, AND MORE OF IT THAN A FLAT NUMBER GIVES.
+   This rule previously CUT the gap (24px -> 13px) on the argument that a
+   three-column matrix was too wide for a 449px column. That is true of a
+   matrix of single digits and false of the ones that matter: a working
+   step holds cells like `21-30+7+2` beside `0-0+0+0`, and at 13px the
+   columns ran together into one field of digits with no way to tell where
+   one entry ended and the next began.
+   Expressed in `em` so it tracks the cell's own size instead of being
+   re-tuned per context, and set wide enough that the widest cells in this
+   chapter still read as three columns. Row gap grows with it — a cell
+   two lines tall needs the same separation vertically. */
+.mx > .mxg { gap: 0.5em 1.6em; }
+.acol .mx > .mxg { gap: 0.45em 1.35em; }
+.mx.mx-dense > .mxg { gap: 0.4em 1.1em; }
+
+/* Cells are centred, not flushed right. `justify-items:end` lines a
+   single digit up against a wide neighbour's right edge, so `[1 0; 0 1]`
+   reads as two ragged columns rather than a square. */
+.mx > .mxg { justify-items: center; }

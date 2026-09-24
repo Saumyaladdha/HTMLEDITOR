@@ -1,0 +1,11 @@
+{
+ "id": "answer-note",
+ "ir_kind": "content",
+ "tag": "div",
+ "classes": "note",
+ "when": "A short aside set apart from the prose around it.",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "Also used on the cover, where the masthead's average-marks line is a .note."
+}

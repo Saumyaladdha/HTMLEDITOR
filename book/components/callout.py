@@ -127,7 +127,8 @@ def fullnote(n_stars, text):
 _DERIVATION_RE = _re.compile(r'निगमन|व्युत्पत्ति')
 
 
-def sticky(label, rows, bg=None, pin="red", ink="#c81e1e", rotate=None, icon=""):
+def sticky(label, rows, bg=None, pin="red", ink="#c81e1e", rotate=None,
+           icon="", head=(), trows=()):
     """A titled card. `.sticky` + the pin are added by the A4 stylesheet."""
     cls = "callout sticky"
     if _DERIVATION_RE.search(label or ""):
@@ -137,6 +138,12 @@ def sticky(label, rows, bg=None, pin="red", ink="#c81e1e", rotate=None, icon="")
     out.append('<span class="pin %s"></span>' % pin)
     out.append('<div class="ch" style="color:%s;">%s %s</div>'
                % (ink, icon or "📌", inline(label)))
+    # The card's own table, if it has one — see the reader's card branch.
+    # Emitted before the loose lines because that is where it is written:
+    # the grid states the definitions, the lines below comment on them.
+    if trows:
+        from .table import table as _table
+        out.append(_table(list(head), [list(r) for r in trows]))
     for r in rows:
         mk = r.get("mark") or ""
         out.append('<div class="ci"><span class="b" style="color:%s;">%s</span>'

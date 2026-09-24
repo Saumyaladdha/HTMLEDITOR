@@ -8,5 +8,5 @@
   "sits between a question head and the next question head",
   "reads as a sentence, not as an equation"
  ],
- "notes": "18.5px. The reference has 516 of these; rendering them as .para sets Part 2 a half-point small throughout."
+ "notes": "18.5px. The reference has 516 of these; rendering them as .para sets Part 2 a half-point small throughout. A second phrasing of the same question is `.q.variant-head` — `<b>अथवा</b> <i>(2025 के विकल्प)</i>` — an ordinary question paragraph, not a rule across the column. The marks pill that rides on the question head is `.qmarks` — a yellow-bordered chip, named here so the editor can treat it as the object it looks like rather than as a run of text inside the heading; it was the one thing on a question head that could not be moved or deleted on its own."
 }

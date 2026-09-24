@@ -1,0 +1,11 @@
+{
+ "id": "priority-table",
+ "ir_kind": "table",
+ "tag": "table",
+ "classes": "priority-table",
+ "when": "The cover's topic-weight table — a ranked value column.",
+ "signals": [
+  "a pipe table inside a cover section"
+ ],
+ "notes": "Each row is a .priority-topic with its coloured .priority-id chip and a .count-value pill. The third column only exists when the source has one; a two-column source must not get a blank ruled strip. Every cell carries a class so the editor can name it: `.priority-head` on the column headings, `.priority-cell` on the topic cell, `.priority-count` on the value cell (which holds the `.count-value` pill and any qualifier beside it, such as `लगभग`), and `.priority-marks` on the third column."
+}

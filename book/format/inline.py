@@ -122,6 +122,23 @@ def _fr_right(s, i):
     depth, j, n = 0, i, len(s)
     while j < n:
         ch = s[j]
+        if ch == '|' and depth == 0:
+            # AN ABSOLUTE-VALUE BAR ENDS THE DENOMINATOR, WHEREVER IT SITS.
+            #
+            # `a_{ij} = \frac{1}{2}|-3i + j|` — the half multiplies the
+            # modulus; the bar is not part of the two. LaTeX's braces say so
+            # exactly, but by the time the stacker runs the source has become
+            # `1/2|-3i + j|` and `|` was just another character to scan past,
+            # so the denominator came out as `2|` and the expression printed
+            # as a fraction over "2|" followed by a stray `-3i + j|`. Every
+            # element of that 3x4 matrix — twelve of them on one page — read
+            # as nonsense.
+            #
+            # Unconditional, unlike `[` above: a bar can never OPEN a
+            # denominator either (`a/|b|` is a over the modulus of b, which
+            # is this same rule seen from the other side), so there is no
+            # `j > i` case to preserve.
+            break
         if ch == '[' and depth == 0 and j > i:
             # A SQUARE BRACKET AFTER THE DENOMINATOR IS A NEW FACTOR.
             #
@@ -407,7 +424,27 @@ def _fr_one(s, _depth=0):
         right = _fr_one(right, _depth + 1)
     frac = ('<span class="fr"><span>%s</span><span class="dn">%s</span></span>'
             % (left, right))
-    return s[:left_start] + frac + _fr_one(s[right_end:], _depth)
+    # THE PREFIX GETS LOOKED AT TOO, NOT JUST THE TAIL.
+    #
+    # This stacked the first top-level slash and then recursed only on
+    # what FOLLOWED it, leaving `s[:left_start]` untouched. That text has
+    # no top-level slash of its own — it sits before the first one — but
+    # it can hold whole BRACKET GROUPS whose fractions are one level down,
+    # and only the `_paren_groups` branch at the top of this function
+    # reaches those. So in
+    #
+    #     1/(4πε₀)[(2q²)/((d-x)) + …] = 1/(4πε₀)·q²[2/((d-x)) - …]
+    #
+    # the leading `1/(4πε₀)` was stacked, the tail was recursed into and
+    # found the SECOND `1/(4πε₀)` — and the bracket between them was never
+    # examined at all. Its three fractions printed flat, beside stacked
+    # ones on the same line, which is what read as inconsistent sizing.
+    #
+    # Recursing the prefix is safe and terminates: it has no top-level
+    # slash, so it goes straight to the bracket branch, and `_depth`
+    # still bounds the nesting.
+    head = _fr_one(s[:left_start], _depth + 1) if _depth < 3 else s[:left_start]
+    return head + frac + _fr_one(s[right_end:], _depth)
 
 
 # SI unit names, in Hindi and as symbols. A closed set, and the reason a
@@ -1603,7 +1640,23 @@ def _stash_matrices(s, store):
         # `matrix._is_stack`. Joined plain, each row set the way a whole
         # equation is set elsewhere, instead of `grid()`'s bracketed cells.
         if style == "stack":
-            html = "<br>".join(_matrix_cell(row[0]) for row in rows)
+            # A STACK ROW MAY STILL HOLD A MATRIX.
+            #
+            # `matrix.stash` matches the OUTERMOST environment and consumes
+            # everything inside it, so a `bmatrix` nested in a derivation's
+            # `aligned` block never reached this callback: its row arrived
+            # as raw LaTeX, `_matrix_cell` stripped the commands it did not
+            # know, and a 2x2 of `\cos\theta & \sin\theta` printed as
+            # `cosθ cosθ -sinθ` — unbracketed, cells adrift. 135 of this
+            # chapter's 851 matrices are inside a derivation.
+            #
+            # Stashing again here parks the inner matrix in the SAME store
+            # and hands back a token, which `_restore_matrices` resolves —
+            # it loops now, for exactly this reason. Recursing inside
+            # `matrix.stash` itself does not work: it would nest a token
+            # inside the text a token already stands for.
+            html = "<br>".join(
+                _matrix_cell(_matrix.stash(row[0], one)) for row in rows)
         else:
             html = _matrix.grid(rows, style, render=_matrix_cell,
                                 augment=augment)
@@ -1618,9 +1671,21 @@ def _stash_matrices(s, store):
 
 
 def _restore_matrices(s, store):
+    """Restore innermost-first, so a token parked inside another token's
+    html is itself replaced.
+
+    One pass was enough while matrices never nested. A matrix inside a
+    derivation's stacked row parks a second token inside the first one's
+    html (see `_stash_matrices`), and a single pass left it on the page as
+    a private-use character — `▯a▯ = ▯b▯A` where the matrices should be.
+    `_restore_reactions` has always looped for the same reason."""
     if not store:
         return s
-    return _MX_TOKEN_RE.sub(lambda m: store[_mx_number(m.group(1))], s)
+    for _ in range(6):
+        if not _MX_TOKEN_RE.search(s):
+            break
+        s = _MX_TOKEN_RE.sub(lambda m: store[_mx_number(m.group(1))], s)
+    return s
 
 
 def _inline_html(s):

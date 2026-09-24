@@ -202,31 +202,55 @@ def pull_up_columns(cols, render_fn, free_fn, over_fn,
             if verbose:
                 sys.stderr.write("pull_up_columns: probe failed; stopping\n")
             return cols
+        # ONE RENDER FOR THE WHOLE BATCH, NOT ONE PER CANDIDATE.
+        #
+        # Rendering the book to verify each move separately is what the
+        # 300s Chrome timeout in step09 was: ~30 candidates a round, four
+        # rounds, each a full 26-page headless render. The original
+        # `pull_up` above solves this the same way — try every candidate
+        # at once, keep the batch only if the render is still clean, and
+        # fall back to one-at-a-time only when the batch was too greedy.
+        # A clean batch costs ONE render instead of thirty.
+        #
+        # Last column first: moving a block out of column N+1 changes
+        # what N+1 can then take from N+2, so going backwards keeps each
+        # decision independent of one still to be made.
+        cand_cols = sorted((k for k, v in free.items() if v >= min_free),
+                           reverse=True)
+
+        def _apply(picks, base):
+            trial = [list(c) for c in base]
+            for i in picks:
+                j = i + 1
+                if j >= len(trial) or not trial[j] or not trial[i]:
+                    continue
+                cand = trial[j][0]
+                if cand.get("tag") in HEAD_TAGS:
+                    continue
+                if cand.get("h", 0) > free[i]:
+                    continue
+                trial[i].append(cand)
+                trial[j] = trial[j][1:]
+            return trial
+
+        picks = [i for i in cand_cols
+                 if i + 1 < len(cols) and cols[i + 1]
+                 and cols[i + 1][0].get("tag") not in HEAD_TAGS
+                 and cols[i + 1][0].get("h", 0) <= free[i]]
         moved = 0
-        # Last column first: moving a block out of column N+1 changes what
-        # column N+1 can then take from N+2, and going backwards means each
-        # decision is made against a column that is not about to change.
-        for i in sorted((k for k, v in free.items() if v >= min_free),
-                        reverse=True):
-            j = i + 1
-            if j >= len(cols) or not cols[j] or not cols[i]:
-                continue
-            cand = cols[j][0]
-            # A HEAD IS NEVER PULLED UP ALONE. `pack_columns` already
-            # refuses to leave one at the foot of a column; moving one
-            # there by hand would undo that and strand a question number
-            # above the column break from its own question.
-            if cand.get("tag") in HEAD_TAGS:
-                continue
-            if cand.get("h", 0) > free[i]:
-                continue
-            trial = [list(c) for c in cols]
-            trial[i].append(cand)
-            trial[j] = trial[j][1:]
-            if over_fn(render_fn(trial)):
-                continue
-            cols = trial
-            moved += 1
+        if picks:
+            batch = _apply(picks, cols)
+            if not over_fn(render_fn(batch)):
+                cols, moved = batch, len(picks)
+            else:
+                # Too greedy. Fall back to one at a time, but only over
+                # the candidates that already looked plausible.
+                for i in picks:
+                    trial = _apply([i], cols)
+                    if over_fn(render_fn(trial)):
+                        continue
+                    cols = trial
+                    moved += 1
         if verbose:
             print("  pull-up round %d: reclaimed %d block(s)" % (r + 1, moved))
         if not moved:

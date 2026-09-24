@@ -155,7 +155,9 @@ def rebuild_split(payload, rows, cont=False):
         # reclaims. A table without its header row is unreadable.
         return C.table(payload.get("head") or [], rows,
                        payload.get("align", ()))
-    return C.fcard(rows, payload.get("title", "सूत्र"), cont)
+    # The bulleted panel here too — a continuation must be rebuilt in the
+    # same skin its head was drawn in. See the `formula_card` branch.
+    return C.formula_list(rows, payload.get("title", "सूत्र"), cont)
 
 
 # ==========================================================================
@@ -346,21 +348,20 @@ def _render_block(b, ctx):
         return [_item(C.eq(b["text"], b.get("eqno", ""),
                            None, b.get("marks", "")), atomic=True)]
     if k == "formula_card":
-        # PART 1 GETS THE BULLETED PANEL, PART 2 THE BOXED ONE.
+        # ONE सूत्र PANEL, BOTH PARTS — the bulleted list.
         #
-        # Two different designs for two different jobs — see
-        # `components.math.formula_list`. The panel no longer clears a note
-        # column in either half (there is no float column any more), but
-        # `clears` is still read below for the wide Part-2 variant.
-        if ctx.get("revision"):
-            html = C.formula_list(b["rows"], b.get("title", "सूत्र"))
-            it = _item(html, atomic=True)
-            it["split"] = split_payload(b)
-            return [it]
-        # A wide सूत्र panel CLEARS the note column, so it always renders at
-        # full width. The packer must size it with the wide height, not the
-        # narrow one — see `clears` in layout/pack.
-        html = C.fcard(b["rows"], b.get("title", "सूत्र"))
+        # There were two skins: `formula_list` in Part 1 and `fcard`'s
+        # per-result coloured boxes in Part 2. The reference has no second
+        # skin at all: all eighteen of its सूत्र panels are
+        # `.formula-list`, and it carries zero `.fx` and zero `.frow`. So a
+        # chapter came out with fifteen bulleted panels and three boxed
+        # ones — same heading, same content, two designs — and which you
+        # got depended only on which part the topic happened to sit in.
+        #
+        # `clears` is kept for the packer, and is now always false: the
+        # wide variant was a property of the boxed skin, and there is no
+        # float column left for it to clear.
+        html = C.formula_list(b["rows"], b.get("title", "सूत्र"))
         it = _item(html, atomic=True)
         it["clears"] = "fcard-wide" in html
         # A सूत्र panel is a list, so it may be broken across a page boundary
@@ -434,7 +435,8 @@ def _render_block(b, ctx):
         return [_item(C.qsep(), atomic=True)]
     if k == "card":
         return [_item(C.sticky(b["label"], b["rows"], b.get("bg"), b.get("pin", "red"),
-                               b.get("ink", "#c81e1e"), icon=b.get("icon", "")),
+                               b.get("ink", "#c81e1e"), icon=b.get("icon", ""),
+                               head=b.get("head", ()), trows=b.get("trows", ())),
                       atomic=True)]
     return [_item(C.para(b.get("text", "")))]
 
@@ -751,8 +753,15 @@ def collect_asides(part):
 
 
 def render_card(c, rotate=1.6):
+    # `head`/`trows` are the card's own pipe table, when it has one — see
+    # the reader's card branch. THIS is the path a card actually takes: a
+    # card becomes an `aside` of its section, so the `k == "card"` branch
+    # in `render_block` is the rarer one, and passing the table there alone
+    # left the grid parsed and never drawn. step16 caught it — three words
+    # that appear only inside that table vanished from the book.
     return C.sticky(c["label"], c["rows"], c["bg"], c["pin"], c["ink"],
-                    rotate=rotate, icon=c.get("icon", ""))
+                    rotate=rotate, icon=c.get("icon", ""),
+                    head=c.get("head", ()), trows=c.get("trows", ()))
 
 
 ASIDE_W = 300          # the float column (.stickycol)

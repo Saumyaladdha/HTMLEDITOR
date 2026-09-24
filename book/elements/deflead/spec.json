@@ -1,0 +1,11 @@
+{
+ "id": "deflead",
+ "ir_kind": "content",
+ "tag": "div",
+ "classes": "deflead",
+ "when": "The lead-in line of a definition — the term, before its body.",
+ "signals": [
+  "emitted by the renderer"
+ ],
+ "notes": "Pairs with .def; the two are one definition split so the term can be styled on its own."
+}

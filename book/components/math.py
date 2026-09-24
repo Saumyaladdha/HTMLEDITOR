@@ -250,6 +250,46 @@ def _tail_html(marks):
     return '<div class="eq-tail">%s</div>' % _inline.marks_chip(marks)
 
 
+# A BRACKETED REASON IS A NOTE, NOT PART OF THE EQUATION.
+#
+# A derivation step often ends by saying WHY:
+#
+#     … = cos 2A  [∵ cos²A − sin²A = cos 2A तथा 2 sin A cos A = sin 2A]
+#
+# Set as ordinary maths it welded onto the line before it (`7A[∵`, no
+# space), took the same italic notation face as the working, and wrapped
+# wherever the column ran out — so a reader met half a justification, a
+# line break, and then `Acos A = sin 2A]` with no way to tell it apart
+# from the next step of the proof. Reported as "whenever there is a
+# formula line it is very confusing".
+#
+# Pulled out and marked so the stylesheet can set it back: smaller,
+# unslanted, muted, and on its own line when it is long. The brackets are
+# kept — they are the author's, and a reader looking for the reason a
+# step is allowed is looking for them.
+#
+# Matched only at the END of a line and only when the bracket actually
+# carries a justification marker (`∵`/`∴`) or Devanagari prose. A bare
+# `[1 0]` is a matrix and `[1]` is a marks chip; neither is a note.
+_EQ_NOTE_RE = _re.compile(
+    r'\s*\[\s*(?=[^\]]*(?:[\u2235\u2234]|[\u0900-\u097F]))([^\]]{4,})\]\s*$')
+
+
+def _split_eq_note(text):
+    """-> (equation without its trailing reason, the reason or "")."""
+    m = _EQ_NOTE_RE.search(text or "")
+    if not m:
+        return text, ""
+    return text[:m.start()].rstrip(), m.group(1).strip()
+
+
+def _eq_note_html(note):
+    """The `[∵ …]` reason, set apart from the working it explains."""
+    if not note:
+        return ""
+    return '<span class="eq-why">[%s]</span>' % inline(note, math=True)
+
+
 def eq(text, eqno="", step=None, marks=""):
     """One display equation, centred on its own line — see `_eq` for the
     real body. This wrapper only stashes/restores `\\boxed{…}` around it,
@@ -273,6 +313,7 @@ def _eq(text, eqno="", step=None, marks=""):
     if m_in and not marks:
         marks = m_in.group(1)
         text = text[:m_in.start()] + text[m_in.end():]
+    text, eq_note = _split_eq_note(text)
     body, inside = _display.split_eqno(text)
     # A number can be written INSIDE the delimiters or after the closing
     # `$$`; the reader hands the second form in as `eqno`.
@@ -291,7 +332,8 @@ def _eq(text, eqno="", step=None, marks=""):
             rows.append(("%s %s" % (lhs, part)).strip() if i == 0 else part)
         html = "<br>".join(inline(r, math=True) for r in rows)
         html = _wrap_eqlines(html, eqno)
-        return '<div class="dm">%s</div>%s' % (html, _tail_html(marks))
+        return '<div class="dm">%s%s</div>%s' % (
+            html, _eq_note_html(eq_note), _tail_html(marks))
 
     html = inline(body, math=True)
     html = _wrap_eqlines(html, eqno)
@@ -317,8 +359,9 @@ def _eq(text, eqno="", step=None, marks=""):
     # so it costs no width and reads as a marker on the step rather than as
     # part of the maths.
     if step:
-        return ('<div class="dm dm-step"><span class="stepno">%s</span>%s</div>%s'
-                % (plain(step) if isinstance(step, str) else step, html, tail))
+        return ('<div class="dm dm-step"><span class="stepno">%s</span>%s%s</div>%s'
+                % (plain(step) if isinstance(step, str) else step, html,
+                   _eq_note_html(eq_note), tail))
     # A REACTION IS NOT A LINE OF TEXT — see format/reaction.structure.
     #
     # Given no structure in the DOM, the line breaker decided the geometry of
@@ -329,7 +372,8 @@ def _eq(text, eqno="", step=None, marks=""):
     #
     # Returns `html` untouched when there is no arrow, so an ordinary display
     # equation keeps the geometry it has always had.
-    return '<div class="dm">%s</div>%s' % (_reaction.structure(html), tail)
+    return '<div class="dm">%s%s</div>%s' % (
+        _reaction.structure(html), _eq_note_html(eq_note), tail)
 
 
 PAIR_CHARS = 20        # a formula this short can share a row with the next

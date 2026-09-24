@@ -305,13 +305,47 @@ _FIG_BRIEF = re.compile(r'```\s*चित्र[^\n]*\n.*?```', re.S)
 # design meant to keep, and exactly the noise a real loss would hide in.
 # The first sentence stays in the count, so a caption that genuinely
 # disappeared is still caught.
-_FIG_CAPTION_TAIL = re.compile(
-    r'^\*\s*चित्र\s*[0-9०-९.]+\s*[—·:-].*?(?:।|\.)(.*)\*\s*$', re.M | re.S)
+# THE ITALIC FIGURE CAPTION LINE, whose TAIL is never printed.
+#
+# `21_figures_final.md` writes each figure twice: the image with a short
+# caption in its `![...]`, then a standalone italic line repeating it and
+# continuing for hundreds of characters of drawing description. One runs
+# to 950. The reader keeps only the opening clause (`first_sentence`);
+# the reference confirms that is right — its 35 figcaptions have a MEDIAN
+# of 51 characters and a maximum of 76.
+#
+# Counted whole as source prose the unprinted tail reported as ~112
+# vanished words: a hard failure on a document that dropped nothing, and
+# exactly the noise a real loss would hide in.
+_FIG_CAPTION_LINE = re.compile(r'^\*\s*चित्र\s*[0-9०-९.]+\s*[—·:-][^\n]*\*\s*$',
+                               re.M)
+
+
+def _caption_head(line):
+    """What the page will actually print from one italic caption line.
+
+    A SECOND IMPLEMENTATION of the reader's `first_sentence`, deliberately
+    not a call to it — two independent counts disagreeing is what this
+    whole module is for, and sharing the helper would make the check agree
+    with the reader by construction.
+
+    Cut at the first danda or full stop; 24 of this chapter's 29 captions
+    have NEITHER — they run on with `—` and commas — so fall back to the
+    first `;`, which is where the description starts.
+    """
+    m = (re.search(r'।(?=\s|$)', line)
+         or re.search(r'(?<![0-9A-Z])\.(?=\s|$)', line))
+    out = line[:m.end()] if m else line
+    if not m or len(out) > 340:
+        cut = out.find(";")
+        if cut >= 12:
+            out = out[:cut + 1]
+    return out
 
 
 def _drop_caption_tails(src):
-    return _FIG_CAPTION_TAIL.sub(
-        lambda m: m.group(0)[:m.start(1) - m.start(0)] + " ", src)
+    return _FIG_CAPTION_LINE.sub(lambda m: _caption_head(m.group(0)) + " ", src)
+
 
 
 # An HTML comment, which the reader removes and the page never shows.

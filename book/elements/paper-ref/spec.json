@@ -1,0 +1,11 @@
+{
+ "id": "paper-ref",
+ "ir_kind": "_inline",
+ "tag": "span",
+ "classes": "paper-refs paper-ref",
+ "when": "One exam-paper provenance tag under a question head — `2024/set_a`.",
+ "signals": [
+  "a `(2024/set_a, 2024/set_c)` provenance list after a question"
+ ],
+ "notes": "`.question-meta` holds one `.paper-refs` pill, which holds one `.paper-ref` per paper. THE SEPARATOR IS CSS, not a text node: the tags were joined by a literal ` · `, which made each tag unmovable — dragging one past another left the dots behind in the old order. `.paper-ref + .paper-ref::before` draws it instead, so a tag is self-contained and the dots renumber themselves however the tags end up ordered. The BAND is declared here alongside the tag, and that is load-bearing: the editor decides what is an object from whether an element's own stylesheet paints a box, and the yellow is on `.paper-refs`, not on the tags inside it. Declared apart, a tag painted nothing, so it was read as running text — the same verdict inline maths gets, and the right one for maths."
+}

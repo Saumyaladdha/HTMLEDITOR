@@ -87,7 +87,22 @@ SOURCE_RULES = [
                  # `\includegraphics` too would count the same figure twice.
                  r'|^\s*\\begin\{figure\*?\}'),
     ("table",    None),          # counted as pipe-table blocks, below
-    ("given",    r'^\*\*\s*दिया है'),
+    # A LABEL, NOT ANY SENTENCE THAT OPENS WITH THE WORDS.
+    #
+    # A `given` is a bolded LABEL with its values beside it — `**दिया है :**
+    # $A = …$` — which is exactly what `readers.markdown.RE_GIVEN` matches:
+    # the bold CLOSES after the label. Matching `^**दिया है` alone also
+    # caught a bolded question stem that happens to begin with the same
+    # words, where the bold wraps the whole sentence:
+    #
+    #     **दिया है $A = \begin{bmatrix}…\end{bmatrix}, B = …**
+    #
+    # Maths chapter 3 has one, the second line of प्र. 61's stem. The reader
+    # was right to keep it in the question and this counter called it a
+    # dropped `given`, which stopped the build over content that had not
+    # moved. An independent cross-check is only worth having while it
+    # describes the same thing the reader does.
+    ("given",    r'^\*\*\s*दिया है\s*[,，:：]?\s*\*\*'),
     # A CARD'S HEADING LEVEL IS THE CHAPTER'S CHOICE, NOT PART OF THE FACT.
     #
     # chem_06 writes its one card `> ### 🧭 अभिक्रिया-पथ के चरण — …` with
