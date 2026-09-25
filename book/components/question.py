@@ -31,6 +31,23 @@ from .inline import chip, swipe, stars, starnote, qmarks
 _TAG_MARKS = _re.compile(r'^\s*\d+(?:[.·]\d+)?\s*(?:अंक|marks?|M)\s*$', _re.I)
 _TAG_YEAR = _re.compile(r'^\s*(\d{4}[A-Za-z]?)\s*$')
 _TAG_SETS = _re.compile(r'^\s*Set\s+(.+?)\s*$', _re.I)
+# BIOLOGY CHAPTER 1'S DIALECT: ONE FIELD, ALREADY COMPLETE.
+#
+# Physics writes a paper and its sets as two `·`-separated fields —
+# `2024 · Set A/G` — which `_TAG_YEAR`/`_TAG_SETS` above pair up. Biology
+# chapter 1 writes the same fact pre-combined, WITH the question's own
+# number inside that paper: `2024/Set GH प्र.3`. Neither regex above
+# matches a field with a `/` and a `प्र.N` tail in it, so every one of
+# these fell to `notes` and printed in the small grey `.inline-tag` —
+# right text, wrong chip: gold `.paper-ref` styling lost, and grouped
+# with unrelated one-off notes instead of with the papers it belongs
+# beside.
+#
+# The प्र.N is kept verbatim rather than stripped to match physics's
+# bare `year/set_x` shape — it says which question this was IN that
+# paper, which physics's own source never recorded and dropping it here
+# would be losing real information the chapter author put in on purpose.
+_TAG_COMBINED_REF = _re.compile(r'^\s*\d{4}[A-Za-z]?\s*/\s*Set\s+.+$', _re.I)
 
 
 def split_qtag(chip_text):
@@ -48,6 +65,10 @@ def split_qtag(chip_text):
             continue
         if not marks and _TAG_MARKS.match(f):
             marks = f
+            continue
+        if _TAG_COMBINED_REF.match(f):
+            refs.append(f)           # already a complete, self-named paper
+            cur = None               # does not open a group of its own
             continue
         m = _TAG_YEAR.match(f)
         if m:

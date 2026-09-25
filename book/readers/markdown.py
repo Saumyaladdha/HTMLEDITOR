@@ -2533,10 +2533,23 @@ class _Scanner(object):
                 # and nowhere in the HTML.
                 if self.out and self.out[-1].get("kind") == "figure":
                     prev = self.out[-1]
+                    # THE ITALIC LINE CARRIES THE NUMBER TOO, AND A FIGURE
+                    # WHOSE OWN ALT TEXT HAD NO `चित्र N` PREFIX HAS NONE YET.
+                    #
+                    # Biology chapter 1 writes 30-odd figures as
+                    # `![long unnumbered description](url)` followed by
+                    # `*चित्र 1.1 — short caption*` — the number lives only
+                    # in the italic line. Without this, `prev["num"]` stayed
+                    # empty, `components.figure` fell back to `caption` for
+                    # its label, and — see below — that label ended up being
+                    # the SAME sentence `cap_text` was about to carry,
+                    # printing every one of those figures as
+                    # "short caption — short caption" with no चित्र number
+                    # at all, on data-figure="".
+                    if not (prev.get("num") or "").strip():
+                        prev["num"] = num
                     if len(cap) > len((prev.get("desc") or "").strip()):
                         prev["desc"] = cap
-                    if not (prev.get("caption") or "").strip():
-                        prev["caption"] = cap
                     # ONE SENTENCE OF IT IS PRINTED, INSIDE THE CARD.
                     #
                     # Everything above files the italic line under `desc`,
@@ -2548,9 +2561,19 @@ class _Scanner(object):
                     # italic text under the box). Subjects that opt in with
                     # `caption_in_card` get the first sentence set as the
                     # card's own `<figcaption>`; the rest stays in `desc`.
+                    #
+                    # NEVER BOTH. `caption` is what supplies figure()'s own
+                    # label when there is no number (see its "cap and num"
+                    # merge) — setting it to the SAME sentence `cap_text`
+                    # gets is what produced the doubled caption above; a
+                    # `caption_in_card` subject prints through `cap_text`
+                    # only, exactly like every figure that already had its
+                    # number.
                     if _PROFILE.get("caption_in_card") and cap.strip():
                         prev["cap_text"] = first_sentence(
                             cap, _caption_limit())
+                    elif not (prev.get("caption") or "").strip():
+                        prev["caption"] = cap
                     continue
                 # Every following `> 🖼️ …` line is the brief. Kept OUT of the
                 # rendered text — `desc` is what step11 reads to commission

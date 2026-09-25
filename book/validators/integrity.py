@@ -347,6 +347,42 @@ def _drop_caption_tails(src):
     return _FIG_CAPTION_LINE.sub(lambda m: _caption_head(m.group(0)) + " ", src)
 
 
+# THE ALT TEXT OF A REAL PHOTO CAN BE THE ART-GENERATION PROMPT, NOT A CAPTION.
+#
+# `21_figures_final.md` writes each figure as `![long Devanagari description
+# with (English) part labels](https://real-cdn-url)`. The reader's own
+# `RE_FIG_MD` (book/readers/markdown.py) treats anything past 60 characters
+# of alt text as the brief that commissioned the art — "a caption is a
+# LABEL; anything this long is the description" — and for a figure whose
+# `ref` resolves to a real image, `components.figure` never prints `desc` at
+# all. Checked directly against two of this chapter's own generated images:
+# every word in the alt text ("बाह्यत्वचा", "Endothecium", "archaesporial
+# cell"...) is a label ALREADY DRAWN INTO the artwork that URL points at.
+# Printing them again would be redundant, not a fix, and counting them here
+# reported 214 vanished words on a chapter that had lost nothing.
+#
+# Mirrors the reader's own >60-char threshold and चित्र-prefix/title
+# extraction exactly, so this can only ever disagree with the reader by a
+# bug in one of the two independent implementations — never by the two
+# developing to match each other's blind spot.
+_IMG_MD = re.compile(r'!\[(?P<alt>[^\]]*)\]\((?P<url>[^)]*)\)')
+
+
+def _drop_long_image_alt(src):
+    def strip(m):
+        alt = m.group("alt").strip()
+        if len(alt) <= 60:
+            return m.group(0)
+        ref = m.group("url").strip()
+        title = ""
+        mt = re.match(r'^(\S+)\s+["“](.*?)["”]\s*$', ref)
+        if mt:
+            ref, title = mt.group(1), mt.group(2).strip()
+        cap = title or (re.match(r'^(चित्र\s*[\d.]+)', alt) or [""])[0]
+        return "![%s](%s)" % (cap, ref)
+    return _IMG_MD.sub(strip, src)
+
+
 
 # An HTML comment, which the reader removes and the page never shows.
 #
@@ -411,6 +447,7 @@ def _md_words(path):
     src = io.open(path, encoding="utf-8").read()
     src = _COMMENT.sub(" ", src)
     src = _FIG_BRIEF.sub(" ", src)
+    src = _drop_long_image_alt(src)
     src = _drop_caption_tails(src)
     src = _strip_fig_env(src)
     src = _ENV_NAME.sub(" ", src)

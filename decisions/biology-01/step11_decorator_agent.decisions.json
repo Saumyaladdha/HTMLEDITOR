@@ -1,0 +1,16 @@
+{
+ "decisions": [
+  {
+   "id": "7dc54294e9bf",
+   "accept": true,
+   "role": "doodle-lg",
+   "why": "Page 4 col 0 is genuinely bare below the last definition block — confirmed against a screenshot, no table/figure/callout on the page to make this already busy. Removing the doodle would be a visible loss."
+  },
+  {
+   "id": "c92374a1e7b3",
+   "accept": true,
+   "role": "doodle-lg",
+   "why": "Page 4 col 1 — same page, same reasoning as 7dc54294e9bf. Both columns run short at the same spot, which is why the page reads as unfinished."
+  }
+ ]
+}

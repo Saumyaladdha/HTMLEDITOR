@@ -28,7 +28,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 # How tall the art is allowed to be, by role — the policy's own numbers.
 ROLE_H = {"character": 170, "doodle-lg": 190, "doodle-md": 140, "doodle-sm": 96}
 
-_PAGE_RE = re.compile(r'<div class="page[^"]*">')
+# Matches `<div class="page">`, `<div class="page keep" data-page="4"
+# style="--accent:...">` and every other class/attribute combination the
+# page shell emits — NOT just the bare, attribute-less shape this used to
+# require. Requiring an immediate `">` right after the class attribute
+# meant this matched ZERO pages the moment `book/assemble/html.py` started
+# writing `data-page`/`style` on every page div for the per-page accent
+# colours: every accepted placement silently placed nothing, every build,
+# with no error — `apply_placements` fell straight through its own
+# `if not starts: return html, 0`.
+_PAGE_RE = re.compile(r'<div class="page(?:\s[^"]*)?"[^>]*>')
 
 
 def _pick(manifest, role, page):
@@ -54,8 +63,52 @@ def _art_html(path, role, free_px):
             % (role, h, body))
 
 
+_DIV_OPEN_RE = re.compile(r'<div\b')
+_DIV_CLOSE = "</div>"
+_ACOL_OPEN_RE = re.compile(r'<div class="acol"[^>]*>')
+
+
+def _matching_close(html, after, end):
+    """Position of `</div>` that closes the div whose content starts at
+    `after`, searching no further than `end`. -> index, or -1.
+
+    `.acol` holds a whole column's worth of deeply nested markup — a plain
+    `rfind`/`find` for the next `</div>` closes on the first CHILD div
+    instead of the column itself. This walks the tag stream counting
+    open/close so the boundary found is the column's own.
+    """
+    depth = 1
+    pos = after
+    while pos < end:
+        nxt_open = _DIV_OPEN_RE.search(html, pos, end)
+        nxt_close = html.find(_DIV_CLOSE, pos, end)
+        if nxt_close < 0:
+            return -1
+        if nxt_open and nxt_open.start() < nxt_close:
+            depth += 1
+            pos = nxt_open.end()
+            continue
+        depth -= 1
+        if depth == 0:
+            return nxt_close
+        pos = nxt_close + len(_DIV_CLOSE)
+    return -1
+
+
+def _acol_bounds(html, start, end):
+    """[(content_end, close_pos), ...] for every `.acol` inside `html[start:end]`,
+    in document order — index `n` is column `n`, matching `probe.py`'s `ci`."""
+    bounds = []
+    for m in _ACOL_OPEN_RE.finditer(html, start, end):
+        close = _matching_close(html, m.end(), end)
+        if close >= 0:
+            bounds.append((m.end(), close))
+    return bounds
+
+
 def apply_placements(html, accepted, verbose=False):
-    """Append accepted art to the foot of each named page. -> (html, placed).
+    """Append accepted art to the foot of each named page/column.
+    -> (html, placed).
 
     Free space is MEASURED on the html being changed, not taken from the
     `free` the proposal carries. That number came from `step10`, and the
@@ -63,6 +116,20 @@ def apply_placements(html, accepted, verbose=False):
     Trusting it put 170px of art into a page that had 128px left, and
     `.page` is overflow:hidden — 42px of a real page quietly cut off, which
     `step09` could not see because its model said the page fitted.
+
+    ART GOES INSIDE THE COLUMN IT WAS PROPOSED FOR, NOT AFTER THE PAGE.
+    `.page` is a fixed-height box; everything in it is the two `.acol`s and
+    the footer. This used to find the LAST `</div>` in the whole page
+    chunk — which, after `assemble.html` started closing every page with
+    `</footer></div>`, is the `.page` element's OWN closing tag, past the
+    footer. Every accepted placement landed there: extra height appended
+    below the footer inside a box that cannot grow, clipped by the exact
+    same `overflow:hidden` the docstring above warns about — two
+    `doodle-lg`s (190px each) on one page reported as 2/2 placed and
+    turned into a 416px overflow nobody could see coming from the count
+    alone. This was never exercised before — every prior chapter's
+    `decorators: N accepted placement(s)` shipped with N literal `<div
+    class="bookart">`s nowhere on the page.
     """
     man = slots.load_manifest()
     if not man or not accepted:
@@ -88,12 +155,29 @@ def apply_placements(html, accepted, verbose=False):
         if i < 0 or i >= len(starts):
             continue
         chunk_end = ends[i]
-        close = html.rfind("</div>", starts[i], chunk_end)
-        if close < 0:
+        acols = _acol_bounds(html, starts[i], chunk_end)
+        if not acols:
+            # A flow document (or a page with no `.acols`) has one scope:
+            # `.sheet-body`, matching `JS_EMPTY`'s own fallback.
+            m = re.search(r'<div class="sheet-body"[^>]*>', html[starts[i]:chunk_end])
+            if not m:
+                continue
+            open_end = starts[i] + m.end()
+            close = _matching_close(html, open_end, chunk_end)
+            acols = [(open_end, close)] if close >= 0 else []
+        if not acols:
             continue
-        pieces = []
+
         chars = doodles = 0
+        # Collect insertions for this page as (close_pos, html) and apply
+        # right-to-left too, so a second insertion in the SAME page never
+        # invalidates the first one's position.
+        inserts = []
+        placed_here = []
         for p in by_page[page]:
+            col = int(p.get("col") or 0)
+            if col < 0 or col >= len(acols):
+                continue
             role = p.get("role", "doodle-md")
             if role == "character":
                 if chars >= 1:
@@ -106,29 +190,25 @@ def apply_placements(html, accepted, verbose=False):
             path = _pick(man, role, page)
             # The measured value wins; the proposal's is only a fallback for
             # when the probe cannot run at all.
-            room = p.get("free", 0) if live is None else live.get(page, 0)
+            room = (p.get("free", 0) if live is None
+                    else live.get((page, col), p.get("free", 0)))
             art = _art_html(path, role, room) if path else None
             if not art and verbose:
-                print("  art: page %d skipped — only %spx free now (proposal said %s)"
-                      % (page, room, p.get("free")))
+                print("  art: page %d col %d skipped — only %spx free now "
+                      "(proposal said %s)" % (page, col, room, p.get("free")))
             if art:
-                pieces.append(art)
-        if not pieces:
-            continue
-        html = html[:close] + "".join(pieces) + html[close:]
-        placed += len(pieces)
-        if verbose:
-            print("  art: page %d <- %s" % (page, ", ".join(
-                p.get("role", "?") for p in by_page[page])))
+                inserts.append((acols[col][1], art))
+                placed_here.append(role)
+        for close, art in sorted(inserts, key=lambda t: t[0], reverse=True):
+            html = html[:close] + art + html[close:]
+            placed += 1
+        if placed_here and verbose:
+            print("  art: page %d <- %s" % (page, ", ".join(placed_here)))
     return html, placed
 
 def _free_now(html):
-    """Free px at the foot of each page, measured on THIS html. -> {page: px}.
-
-    Keyed by 1-based page number to match a placement. A two-column page
-    reports the smallest of its columns, since art at the foot of the page
-    has to clear both.
-    """
+    """Free px at the foot of each page column, measured on THIS html.
+    -> {(page, col): px}, both 1-based/0-based to match a placement."""
     try:
         from ..layout import probe as _probe
         space = _probe.empty_space_html(html)
@@ -138,7 +218,6 @@ def _free_now(html):
         return None
     out = {}
     for rec in space:
-        cols = rec.get("cols") or []
-        if cols:
-            out[rec["page"]] = min(c["free"] for c in cols)
+        for c in rec.get("cols") or []:
+            out[(rec["page"], c["col"])] = c["free"]
     return out

@@ -20,3 +20,18 @@
 .ansrow { display:block; margin:11px 0 6px; }
 .anslabel { float:left; margin:0 12px 2px 0; padding:2px 11px; }
 .ansrow:after { content:""; display:block; clear:both; }
+
+/* AN अथवा VARIANT BELONGS TO THE QUESTION ABOVE IT, AND SHOULD READ THAT WAY.
+ *
+ * `.q`'s own 8px top margin plus its 1.6 line-height reads as almost a
+ * blank line between two ordinary paragraphs — correct there, but wrong
+ * stacked between a question and its own अथवा rewordings: four of them in
+ * a row read as four disconnected floating lines with nothing visually
+ * tying them to the question they are alternatives OF, only the bold
+ * `अथवा` label to say so. Pulling the top margin in keeps that label doing
+ * the same job with the spacing helping instead of fighting it. Bottom
+ * margin is untouched — an answer or a real next question still gets the
+ * normal gap. The reference does not carry this rule at all (biology
+ * chapter 1 is the first chapter to stack अथवा variants this way), a
+ * deliberate difference rather than an oversight. */
+.q.variant-head { margin-top:2px; }
