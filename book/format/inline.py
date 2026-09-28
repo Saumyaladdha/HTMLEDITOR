@@ -559,6 +559,24 @@ def _fraction_worthy(text):
     # part before a hyphen is tested. `mv/qB` and `E/B` are unaffected:
     # neither side of those is a single o, m or p.
 
+    # A BARE NUMBER OVER A NUMBER, WITH NO LETTER EITHER SIDE, IS PROSE'S
+    # "1/10 OF THE PROFITS" \u2014 NOT A FORMULA.
+    #
+    # Every worked example above (`mv/qB`, `2\u03c0m/qB`, `Tm/A`, `E/B`) has a
+    # letter on at least one side; the digit only ever rode along beside
+    # one as a coefficient. An English accountancy chapter writes plain
+    # fraction phrases in prose constantly \u2014 "giving him 1/10 of the
+    # profits", ratios like "3/2" \u2014 that a Hindi physics/chemistry corpus
+    # never produced in quantity, so this never came up when the rule was
+    # tuned. Stacked, `1/10` sat as a fraction with everything up to the
+    # next `_FR_STOP` character swallowed as its denominator \u2014 reported
+    # as a formula that "ate" the rest of the sentence. A genuine bare
+    # numeric fraction meant to stack still can, the same way every other
+    # formula does: marked with `$\u2026$`, which is what `stack_fracs` only
+    # ever runs on to begin with \u2014 this function exists for the slash
+    # left OUTSIDE that marking.
+    if a.strip().isdigit() and b.strip().isdigit():
+        return False
     if re.search(r'[A-Za-z\u0370-\u03ff0-9]', a + b):
         return True
     # A compound unit: `(ऐम्पियर·मीटर)` is two unit names joined by a middle
