@@ -48,11 +48,32 @@ for d in defects:
 shots = []
 want = [int(x) for x in a.shots.split(",") if x.strip().isdigit()]
 if not want:
-    want = sorted({i["page"] for i in issues})[:6]
-for p in want:
-    png = os.path.join(ROOT, "build", a.stem, "qa", "page-%02d.png" % p)
-    if visual.screenshot(html_path, p, png):
-        shots.append(os.path.relpath(png, ROOT))
+    # EVERY PAGE, NOT JUST THE ONES GEOMETRY ALREADY FLAGGED.
+    #
+    # This step's whole reason to exist is catching what geometry CANNOT
+    # see — crowding, awkward rag, a decorator in a silly place. Screenshotting
+    # only pages already in `issues` meant a chapter with zero geometry
+    # findings got ZERO pages looked at, which is the one case this step
+    # is actually FOR: a page can be geometrically perfect and still read
+    # badly. Six pages was never a sample of the book, it was a sample of
+    # the pages a different, narrower check happened to flag.
+    want = list(range(1, asm.get("pages", 0) + 1))
+if want:
+    # PARALLEL, NOT ONE HEADLESS CHROME LAUNCH AT A TIME.
+    #
+    # Rendering every page (above) makes this step's own runtime scale
+    # with the book's length, and each screenshot is an independent
+    # subprocess — Python's GIL releases for the whole time one is
+    # blocked on Chrome, so a thread pool gets real, not fake, concurrency
+    # out of it. Ordered back into page order afterward so `shots` reads
+    # the same as it always did.
+    from concurrent.futures import ThreadPoolExecutor
+    def _shoot(p):
+        png = os.path.join(ROOT, "build", a.stem, "qa", "page-%02d.png" % p)
+        return p, (os.path.relpath(png, ROOT) if visual.screenshot(html_path, p, png) else None)
+    with ThreadPoolExecutor(max_workers=min(8, len(want))) as pool:
+        results = dict(pool.map(_shoot, want))
+    shots = [results[p] for p in want if results.get(p)]
 if shots:
     line(True, "screenshots", "%d rendered for review" % len(shots))
 

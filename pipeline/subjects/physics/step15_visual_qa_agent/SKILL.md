@@ -22,7 +22,14 @@ live between the model and the browser.
 ]}
 ```
 
-Render more pages when you need them:
+**Every page is rendered by default now, not a sample of the ones geometry
+already flagged.** A chapter with zero geometry findings used to get zero
+screenshots — the one case this step exists for, since a page can be
+geometrically perfect and still read badly. `build/<stem>/qa/` holds one
+PNG per page after a normal run; open all of them, not the first few.
+
+Render specific pages only when you already know which ones you want
+(after fixing something, to recheck just that page):
 
 ```bash
 python3 pipeline/step15_visual_qa_agent/run.py --shots 7,14,22
@@ -70,9 +77,10 @@ Do not fix things here. Say where the fix belongs:
 
 ## Never
 
-- Never sign this step off without opening a screenshot. Geometry passing is
-  not the same as the page being good, and that gap is the entire reason this
-  step exists.
+- Never sign this step off without opening EVERY screenshot, not just one or
+  the first few. Geometry passing is not the same as the page being good,
+  and that gap is the entire reason this step exists — a single sampled
+  page tells you nothing about the other forty.
 - Never mark an `overflow` acceptable. There is no version of clipped content
   that is fine.
 

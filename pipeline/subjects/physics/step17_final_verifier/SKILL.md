@@ -64,7 +64,11 @@ The interesting findings are the ones that appear twice. Some real pairs:
 
 ## Before you say "ship"
 
-1. Open at least three PNGs — a Part 1 page, a Q&A page, and a cover.
+1. `step15` now renders every page by default, not a sample — open all of
+   them, not just three. A Part 1 page, a Q&A page and a cover are the
+   minimum that used to be reachable when only a handful existed; they are
+   not a substitute for the rest now that the rest is sitting right there
+   in `build/<stem>/qa/`.
 2. Check the page count is plausible against the content.
 3. Check `14_assembled.json` byte count is not smaller than the draft.
 4. Confirm every `high` severity finding has a decision, not just a reading.
