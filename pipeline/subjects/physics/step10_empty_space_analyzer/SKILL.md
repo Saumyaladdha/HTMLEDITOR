@@ -9,6 +9,17 @@ Not all whitespace is a fault. The end of a part, the foot of a cover page
 and the last page are all legitimately short. What matters is space that
 reads as a **mistake**.
 
+**This file's own numbers are physics's, not universal.** Biology's worst
+hole went from 1,026px to 422px when table-splitting landed for it (see
+`pipeline/subjects/biology/step10_empty_space_analyzer/SKILL.md`) — a
+different subject with a different content mix has its own current
+baseline, not physics's. Judging a new subject's first chapter against
+these thresholds without first checking whether that subject has its own
+delta file (and, if it doesn't yet, treating its numbers as a fresh
+baseline rather than a physics-shaped target) is how a genuinely fine
+build reads as a regression, or a genuine regression reads as "that subject
+is just like that."
+
 **Input**
 - `build/<stem>/artifacts/10_space.json` → `findings`, `summary`, `raw`
 - `build/<stem>/review/step10_empty_space_analyzer.open.json` — only `gap`

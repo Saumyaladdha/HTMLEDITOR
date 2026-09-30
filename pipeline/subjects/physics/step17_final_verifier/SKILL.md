@@ -38,6 +38,7 @@ items" but **"does any open item mean the book is wrong?"**
 |---|---|
 | any `overflow` | `.page` is `overflow:hidden` — content is *deleted*, not reflowed |
 | `missing_text` with real prose words | a block is being dropped |
+| a stacked fraction whose denominator reads like a sentence | `_fraction_worthy` (`book/format/inline.py`) decided a bare `N/M` was maths and stacked it — right for a coefficient beside a letter (`2πm/qB`), wrong for a plain English fraction phrase in prose (`giving him 1/10 of the profits`, `in the ratio 3/2`). Confirmed live on an Accountancy chapter: the "denominator" ran on to swallow the rest of the sentence up to the next stop character. `render/PNG` shows it as a formula box with normal words crammed inside it — visually obvious once you know the shape, easy to read past as "a busy page" otherwise. This is the general failure mode to watch for on ANY chapter outside physics/chemistry's own Hindi corpus this heuristic was tuned against: a rule that was safe because a pattern "never happened in 179 slashes" is not safe once a new subject or a new language makes that pattern common. If one shows up, it is a shipping defect, not a quirky formula.
 | `no_answer` on any question | a physics book shipping a question with no answer is a defect |
 | `broken_math` | an empty fraction or vector on the page |
 | a broken component name | the block renders as nothing |
