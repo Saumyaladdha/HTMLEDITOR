@@ -1,13 +1,24 @@
 /**
  * File-picker or clipboard-paste image swap. Resizes client-side (cap the
  * longest edge, since these are A4-print figure slots, not full-camera-res
- * assets) and re-encodes as JPEG before converting to a base64 data URI —
- * matching the "images embedded as base64, no separate asset storage"
- * requirement, entirely client-side until the next full-HTML save.
+ * assets) and re-encodes as a base64 data URI — matching the "images embedded
+ * as base64, no separate asset storage" requirement, entirely client-side
+ * until the next full-HTML save.
+ *
+ * TRANSPARENCY IS PRESERVED. This used to always encode JPEG, which has no
+ * alpha channel: a cut-out diagram on a transparent background came out with
+ * every transparent pixel flattened to BLACK, so a science doodle dropped
+ * into a figure box appeared as a black rectangle. Almost all of this book's
+ * artwork is transparent PNG, so that hit the common case rather than an edge
+ * one.
  */
 
 const MAX_EDGE = 1200;
-const JPEG_QUALITY = 0.8;
+const QUALITY = 0.88;
+
+/** Formats that can carry an alpha channel. A JPEG source never can, so it is
+ * safe to re-encode as JPEG, which compresses photographs far better. */
+const ALPHA_TYPES = /^image\/(png|webp|gif|avif|svg\+xml)$/i;
 
 export function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -16,15 +27,25 @@ export function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       img.onerror = () => reject(new Error("Could not read image"));
-      img.onload = () => resolve(resizeAndEncode(img));
+      img.onload = () => resolve(resizeAndEncode(img, ALPHA_TYPES.test(file.type)));
       img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
   });
 }
 
-function resizeAndEncode(img: HTMLImageElement): string {
-  let { width, height } = img;
+/**
+ * Re-encodes at print size, keeping alpha when the source could have it.
+ *
+ * WebP is preferred for transparent art: it keeps the alpha channel and is
+ * far smaller than PNG, which matters when the result is inlined as base64
+ * into a chapter that already runs to megabytes. A browser without WebP
+ * encoding returns a PNG data URL from `toDataURL` rather than failing, so
+ * the result is checked instead of assumed.
+ */
+export function resizeAndEncode(img: HTMLImageElement, mayHaveAlpha: boolean): string {
+  let width = img.naturalWidth || img.width;
+  let height = img.naturalHeight || img.height;
   if (width > MAX_EDGE || height > MAX_EDGE) {
     const scale = MAX_EDGE / Math.max(width, height);
     width = Math.round(width * scale);
@@ -35,7 +56,12 @@ function resizeAndEncode(img: HTMLImageElement): string {
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0, width, height);
-  return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+
+  if (!mayHaveAlpha) return canvas.toDataURL("image/jpeg", QUALITY);
+
+  const webp = canvas.toDataURL("image/webp", QUALITY);
+  if (webp.startsWith("data:image/webp")) return webp;
+  return canvas.toDataURL("image/png");
 }
 
 /** Listens for a paste event anywhere in `doc` and resolves with the first

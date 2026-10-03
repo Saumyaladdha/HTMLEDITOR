@@ -23,9 +23,43 @@ const EDITOR_ATTRS = [
   "draggable",
   "contenteditable",
   "spellcheck",
+  // A stacked fraction is frozen for the caret while editing — see
+  // mathAtomic.ts. The marker is editor state, not content.
+  "data-math-atom",
+  // Where a formula's own inline style is parked while it is emphasised —
+  // see toggleMathEmphasis. Editor bookkeeping, never part of the book.
+  "data-emph-prev",
+  "data-math-editing",
 ];
 
-const EDITOR_ELEMENT_IDS = ["__drop_indicator__", "__nested_drop_indicator__", CHROME_STYLE_ID];
+/** The list above, for tests that assert a new piece of editor state is
+ * actually stripped. Exported rather than duplicated in the test, so a
+ * marker added without being listed here fails instead of silently
+ * shipping into every saved chapter. */
+export const EDITOR_ATTRS_FOR_TEST: readonly string[] = EDITOR_ATTRS;
+
+const EDITOR_ELEMENT_IDS = [
+  "__drop_indicator__",
+  "__nested_drop_indicator__",
+  // The drop overlays live on <body> rather than in the flow, so nothing
+  // removes them structurally — without listing them here they would be
+  // serialised straight into the saved chapter.
+  "__drop_label__",
+  "__side_drop_indicator__",
+  // Snap guides live on the .page while a free block is being dragged. A
+  // save that lands mid-gesture would otherwise serialise a green hairline
+  // into the chapter.
+  "__free_drop_indicator__",
+  // The landing preview is a CLONE of a real block, and it now lives inside
+  // the target's own column so that the column's CSS applies to it (see
+  // showGhost). That makes stripping it essential rather than tidy: an
+  // autosave landing mid-drag would otherwise write a duplicate of the
+  // dragged block into the chapter as content.
+  "__drag_ghost__",
+  "__ed_guide_x__",
+  "__ed_guide_y__",
+  CHROME_STYLE_ID,
+];
 
 /** Strips editor scaffolding from a detached clone, in place. */
 function stripInto(root: Document | Element) {

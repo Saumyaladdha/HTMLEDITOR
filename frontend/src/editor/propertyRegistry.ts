@@ -14,6 +14,13 @@
  */
 
 import { findFigureImageSlot } from "./selection";
+import {
+  manifestElementFor,
+  manifestImagePart,
+  manifestImageParts,
+  type ManifestControl,
+  type ManifestElement,
+} from "./manifest";
 
 export type ControlKind = "text-color-picker" | "color-picker" | "size-slider" | "step-slider";
 
@@ -67,6 +74,39 @@ export interface LayoutToggleControl {
   hiddenInsideParentClass?: string;
 }
 
+/** A control that writes a plain CSS property straight onto the element.
+ *
+ * The BEM library exposed everything through CSS custom properties, so
+ * `cssVars` was enough. The current elements do not: `.callout` gets its
+ * colour from an inline `border-color` the pipeline writes per note, `.po`
+ * from a `.po-*` variant class, `.fcard` from a hardcoded rule. An inline
+ * property beats all three, so that is what these write. */
+export interface StyleControl {
+  kind: "color" | "size";
+  label: string;
+  property: string;
+  /** Apply to this descendant rather than the block (picture height belongs
+   * on `.figspace`, not on the `.figcard` wrapping it). */
+  target?: string;
+  /** Every shape that descendant can take, first match wins — see
+   * ManifestControl.targets. */
+  targets?: string[];
+  min?: number;
+  max?: number;
+  unit?: string;
+}
+
+/** A set of designed looks to switch between — `.po-trap` carries a matched
+ * border, background and label colour. Offered as one choice so a user picks
+ * "Trap" and gets the whole triple, rather than three colour wells they have
+ * to coordinate by hand. */
+export interface VariantGroup {
+  label: string;
+  /** Prefix every option shares, cleared before the picked one is applied. */
+  prefix: string;
+  options: { className: string; label: string }[];
+}
+
 export interface RegistryEntry {
   label: string;
   /** True if this block's own text should be directly contenteditable
@@ -76,6 +116,17 @@ export interface RegistryEntry {
   subParts?: Record<string, { editable: "text" | "richtext" | "image" }>;
   cssVars?: CssVarControl[];
   layoutToggle?: LayoutToggleControl;
+  /** Populated from the element manifest; empty for BEM/foreign documents. */
+  styleControls?: StyleControl[];
+  variantGroup?: VariantGroup;
+  /** Manifest description, shown in the panel so a user knows what the block
+   * IS without having to recognise `.po-trap` on sight. */
+  hint?: string;
+  /** Flex wrapper for putting content beside this block, when its own CSS
+   * defines one (see the manifest exporter's side-by-side detection). */
+  sideBySide?: { wrapper: string; label: string } | null;
+  /** Float variants that let text wrap around this block. */
+  floats?: { class: string; side: "left" | "right"; label: string }[];
 }
 
 /** All class names any layoutToggle option might add, across every
@@ -211,7 +262,111 @@ function discoverGenericSubParts(el: Element, baseClass: string): Record<string,
  * generically-discovered entry built from the element's own BEM structure
  * (never the flat "just directText" fallback unless truly nothing BEM-ish
  * is found) — see discoverGenericSubParts. */
+function controlToStyle(c: ManifestControl): StyleControl {
+  return {
+    kind: c.type,
+    label: c.label,
+    property: c.property,
+    target: c.target,
+    targets: c.targets,
+    min: c.min,
+    max: c.max,
+    unit: c.unit,
+  };
+}
+
+/** Turn a manifest element into the shape the panel already knows how to
+ * render. Parts become sub-parts, controls become style controls, and the
+ * `.po-*` family becomes one variant picker. */
+export function entryFromManifest(m: ManifestElement): RegistryEntry {
+  const subParts: RegistryEntry["subParts"] = {};
+  for (const part of m.parts) {
+    // `icon` is a decoration — a pin, an emoji. It is text to edit, but it
+    // must not be offered as a rich-text region with its own toolbar.
+    const editable = part.editable === "icon" ? "text" : part.editable;
+    subParts[part.selector.replace(/^\./, "")] = { editable };
+  }
+  const hasParts = Object.keys(subParts).length > 0;
+  return {
+    label: m.label,
+    hint: m.description || undefined,
+    // A block with named regions must NOT also be one big editable blob:
+    // that is exactly what turned the सूत्र panel's ten rows into a single
+    // contenteditable. Blocks with no named regions still edit directly.
+    directText: !hasParts,
+    subParts: hasParts ? subParts : undefined,
+    styleControls: m.controls.map(controlToStyle),
+    sideBySide: m.sideBySide ?? null,
+    floats: m.floats ?? [],
+    variantGroup:
+      m.variants.length > 0
+        ? {
+            label: "Style",
+            prefix: m.variantPrefix || m.classes[0] + "-",
+            options: m.variants.map((v) => ({ className: v.class, label: v.label })),
+          }
+        : undefined,
+  };
+}
+
+/** Art the editor placed. Not a pipeline element, so nothing in the manifest
+ * describes it — and without an entry it fell to FALLBACK_ENTRY's
+ * `directText: true`, which made an <img> contenteditable and offered a
+ * teacher a text box for a picture. */
+export const DECORATOR_ENTRY: RegistryEntry = {
+  label: "Picture",
+  hint: "Sits on top of the page — moving or resizing it never shifts your text.",
+  directText: false,
+};
+
+/**
+ * Adds any DECLARED component nested inside a block to its sub-parts.
+ *
+ * A section heading is `.secno` + `.hdu` + one or more `.examchip`, and the
+ * chips are a separate element in the library rather than a named part of the
+ * heading — so clicking the red `UP 2026 · 1 अंक` badge selected the whole
+ * heading and there was no way to touch the badge itself.
+ *
+ * Only nested elements that PAINT something are added. A paragraph contains
+ * 1197 `.m` maths spans across the chapter and they are text runs, not
+ * objects: making every one of them independently selectable would put a
+ * selection box round half the words on the page.
+ */
+function withNestedParts(el: Element, entry: RegistryEntry): RegistryEntry {
+  const own = manifestElementFor(el);
+  const extra: NonNullable<RegistryEntry["subParts"]> = {};
+  el.querySelectorAll("*").forEach((node) => {
+    const nested = manifestElementFor(node);
+    if (!nested || nested === own) return;
+    // `paints` comes from the manifest, computed from the element's own
+    // stylesheet — see its doc comment for why this is not read off
+    // getComputedStyle here.
+    if (!nested.paints) return;
+    const cls = nested.classes[0];
+    if (!cls || entry.subParts?.[cls] || extra[cls]) return;
+    extra[cls] = { editable: "richtext" };
+  });
+  if (Object.keys(extra).length === 0) return entry;
+  return { ...entry, subParts: { ...(entry.subParts ?? {}), ...extra } };
+}
+
 export function registryEntryFor(el: Element): { key: string; entry: RegistryEntry } {
+  if (el.classList.contains("bookdecor")) {
+    return { key: "bookdecor", entry: DECORATOR_ENTRY };
+  }
+  // The pipeline's own vocabulary first — it is the most specific thing we
+  // know about the element, and it is regenerated from the element library
+  // rather than maintained by hand here.
+  const m = manifestElementFor(el);
+  // Inline elements are not blocks and never get size or background controls,
+  // but one with a designed palette is still worth selecting: a section
+  // heading is coloured entirely through the `.hd-*` accent on the `.hdu`
+  // underline inside it, so refusing inline entries left headings with no
+  // colour control at all.
+  if (m && (m.role === "content" || m.variants.length > 0)) {
+    return { key: m.id, entry: withNestedParts(el, entryFromManifest(m)) };
+  }
+
   for (const cls of Array.from(el.classList)) {
     if (PROPERTY_REGISTRY[cls]) return { key: cls, entry: PROPERTY_REGISTRY[cls] };
   }
@@ -231,6 +386,19 @@ export function registryEntryFor(el: Element): { key: string; entry: RegistryEnt
  * `<div>` that never gets `.figure__img` at all. */
 export function isImageSubPart(block: Element, subPart: Element | null, entry: RegistryEntry): boolean {
   if (!subPart) return false;
+  // `.figspace` is the reserved plate a picture goes into. Without this the
+  // structural fallback below picked `.fh` — the caption — because it is the
+  // figure's first child, so "add an image" replaced the caption text.
+  // EVERY declared picture region, not just the first. A figure declares
+  // both shapes — the reserved `.figspace` plate and the `.figure-image`
+  // box holding a real photo — and only one exists in a given block.
+  // Matching just the first meant a chapter of real photographs answered
+  // "no" for its own picture, so the image controls never appeared.
+  const imageParts = manifestImageParts(manifestElementFor(block));
+  if (imageParts.length) {
+    return imageParts.some((p) => subPart.matches(p.selector))
+      || findFigureImageSlot(block) === subPart;
+  }
   const classMatch = Object.entries(entry.subParts ?? {}).some(
     ([cls, def]) => def.editable === "image" && subPart.classList.contains(cls),
   );

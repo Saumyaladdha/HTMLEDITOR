@@ -7,6 +7,7 @@
  */
 
 import type { InlineStyleRecipe } from "./capabilities";
+import { looksLikeLatex, formatLatex } from "./latexInput";
 
 export function setContentEditable(el: HTMLElement, on: boolean) {
   if (on) {
@@ -19,6 +20,95 @@ export function setContentEditable(el: HTMLElement, on: boolean) {
     // in the output, forever, which is meaningless outside this editor.
     el.removeAttribute("contenteditable");
   }
+}
+
+/**
+ * Every Greek letter, operator and mark a maths chapter actually uses,
+ * grouped for a picker. Values are the exact glyphs the pipeline itself
+ * emits — `book/format/inline.py`'s own Unicode targets — so a symbol
+ * typed by hand and one inserted here are indistinguishable on the page.
+ */
+export const MATH_SYMBOLS: { label: string; symbols: string[] }[] = [
+  { label: "Greek", symbols: [
+    "α", "β", "γ", "δ", "ε", "θ", "λ", "μ", "π", "ρ", "σ", "τ", "φ", "ψ", "ω",
+    "Δ", "Σ", "Φ", "Ω",
+  ] },
+  { label: "Operators", symbols: [
+    "×", "÷", "±", "∓", "·", "≤", "≥", "≠", "≈", "≡", "∝", "→", "⇒", "⇌",
+    "∞", "√", "∫", "∂", "∇", "∑", "∏", "∆",
+  ] },
+  { label: "Marks", symbols: ["°", "′", "″", "⊥", "∥", "∠", "△", "⊙", "∅"] },
+];
+
+/**
+ * Inserts `text` at the live caret/selection in `doc`, replacing whatever
+ * (if anything) is selected — exactly what typing that text would do.
+ *
+ * READS THE SELECTION FRESH, AT CALL TIME, rather than taking a Range as a
+ * parameter. The picker that calls this renders OUTSIDE the iframe as an
+ * absolute-positioned overlay (the same shape the colour/highlight swatches
+ * already use), so by the time its button is clicked, focus has moved to
+ * that button — but the iframe's own `Selection` is a property of ITS
+ * document, independent of which element in the OUTER page currently has
+ * focus, and survives untouched as long as nothing inside the iframe steals
+ * it first. Every other toolbar action here (`toggleInlineTag`, `wrapSelection`)
+ * already relies on exactly this, which is why the caller must call
+ * `e.preventDefault()` on the button's `mousedown` — the one event that
+ * WOULD refocus the outer page and drop the iframe's selection.
+ */
+export function insertAtCaret(doc: Document, text: string): boolean {
+  const sel = doc.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const node = doc.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return true;
+}
+
+/**
+ * Marks the current selection as a vector — `<span class="vec">…</span>`,
+ * the exact shape `book/format/inline.py`'s `_vectors()` builds from a
+ * letter followed by the combining arrow U+20D7 in the source markdown.
+ * The arrow itself is CSS (`::after` in every chapter's own stylesheet,
+ * see math-inline/style.css), not a Unicode glyph, which is why this
+ * wraps a real element rather than inserting a combining character: a
+ * bare U+20D7 renders as whatever the browser's font does with it —
+ * usually nothing usable — and would not match a single vector elsewhere
+ * on the same page.
+ *
+ * With no selection (a collapsed caret), inserts a one-letter placeholder
+ * `a⃗` for the user to type over, the same "insert a template, not an
+ * empty shell" idea `itemEditing.ts` uses for a new row.
+ */
+export function wrapSelectionAsVector(doc: Document): boolean {
+  const sel = doc.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
+  const span = doc.createElement("span");
+  span.className = "vec";
+  if (sel.isCollapsed) {
+    span.textContent = "a";
+    range.insertNode(span);
+  } else {
+    try {
+      range.surroundContents(span);
+    } catch {
+      const fragment = range.extractContents();
+      span.appendChild(fragment);
+      range.insertNode(span);
+    }
+  }
+  const after = doc.createRange();
+  after.setStartAfter(span);
+  after.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(after);
+  return true;
 }
 
 /** Wraps the current selection (must be fully inside `container`) in a new
@@ -75,39 +165,117 @@ export function unwrapAncestor(container: HTMLElement, node: Node, className: st
   }
 }
 
+/** Everything built by the maths renderer: a run, a stacked fraction, a
+ *  display block, and the `.up`/`.mt`/`.k` parts inside them. */
+const MATH_SELECTOR = ".m, .fr, .dm, .up, .mt, .mx, .math-line, [data-math-atom]";
+
+/**
+ * Does the selection touch maths?
+ *
+ * WHY THIS HAS TO BE ASKED BEFORE ANY INLINE FORMATTING. Bold, italic,
+ * underline and "clear formatting" all go through `document.execCommand`,
+ * which is the only cross-browser way to toggle a tag over an arbitrary
+ * mid-text range — and which re-writes the markup it spans to whatever it
+ * considers equivalent. For a paragraph that is fine. For maths it is
+ * destructive: a stacked fraction is `.fr > span + span.dn`, a term is
+ * `.m > .up + sup`, and there is no arrangement of `<b>` that preserves
+ * either. `removeFormat` is worse still — it strips exactly the `<b>` and
+ * `<sup>` that a formula is built from. The formula does not error; it
+ * quietly renders as ordinary text, which is how it was reported: "I
+ * highlighted one formula and it goes to normal".
+ *
+ * Refusing is the honest answer. A formula is edited by double-clicking it
+ * (see mathAtomic.attachMathEditing), which round-trips it through the same
+ * plain-text form the pipeline reads.
+ */
+export function selectionTouchesMath(doc: Document): boolean {
+  const sel = doc.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+
+  // Inside a formula: the whole selection sits within one.
+  const start = range.startContainer;
+  const host = start.nodeType === Node.ELEMENT_NODE
+    ? (start as Element)
+    : start.parentElement;
+  if (host?.closest(MATH_SELECTOR)) return true;
+
+  // Or spanning one: any maths element the range intersects, whole or part.
+  const scope = range.commonAncestorContainer;
+  const root = scope.nodeType === Node.ELEMENT_NODE
+    ? (scope as Element)
+    : scope.parentElement;
+  if (!root) return false;
+  for (const el of Array.from(root.querySelectorAll(MATH_SELECTOR))) {
+    if (range.intersectsNode(el)) return true;
+  }
+  return false;
+}
+
 /** Toggles a native inline formatting tag (b/i/u) around the current
  * selection. Uses document.execCommand — deprecated but still the only
  * cross-browser way to toggle bold/italic/underline on an arbitrary
  * mid-text range without hand-rolling DOM-splitting for every case
  * (nested tags, partial overlaps, collapsed selections mid-word). */
-export function toggleInlineTag(doc: Document, tagName: "bold" | "italic" | "underline") {
+export function toggleInlineTag(doc: Document, tagName: "bold" | "italic" | "underline"): boolean {
   const sel = doc.getSelection();
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  if (selectionTouchesMath(doc)) return false;   // see selectionTouchesMath
   doc.execCommand(tagName, false);
+  return true;
 }
 
 /** Bumps the selected text's font size up/down a step, independent of the
  * block's own --fs-base — wraps the selection in a span with an inline
  * font-size style (relative em, so it still scales with the page's own
  * base size instead of freezing an absolute px value). */
+/** How small and how large text may be stepped, relative to its own size. */
+const FS_MIN = 0.4;
+const FS_MAX = 4;
+
+/**
+ * Grows or shrinks text — the SELECTION if there is one, otherwise the whole
+ * block.
+ *
+ * Two things made this feel dead. It did nothing at all unless text was
+ * selected first, so clicking a paragraph and pressing A+ appeared broken.
+ * And it cleared the selection when it finished, so a SECOND press had
+ * nothing to act on: you got exactly one step, then it stopped, however many
+ * times you pressed. Both are why "increase and decrease" seemed useless.
+ *
+ * The selection is now kept across the change, so presses compound, and a
+ * collapsed caret steps the block instead of being ignored.
+ */
 export function stepSelectionFontSize(doc: Document, container: HTMLElement, deltaEm: number) {
   const sel = doc.getSelection();
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
-  const range = sel.getRangeAt(0);
-  if (!container.contains(range.commonAncestorContainer)) return;
+  const clamp = (v: number) => Math.max(FS_MIN, Math.min(FS_MAX, v));
 
+  // Nothing selected — step the block. Clicking something and pressing A+ is
+  // the obvious gesture and it previously did nothing.
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed
+      || !container.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    const current = parseFloat(container.style.fontSize || "1") || 1;
+    container.style.fontSize = `${clamp(current + deltaEm)}em`;
+    return;
+  }
+
+  const range = sel.getRangeAt(0);
   const node = range.commonAncestorContainer;
   const startEl = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+
+  // Already inside a stepped span — adjust it rather than nesting another.
+  // The old test compared the span's whole text against the selection, so any
+  // partial re-selection nested a new span instead of stepping the one there.
   const existing = startEl?.closest<HTMLElement>(".fs-step");
-  if (existing && container.contains(existing) && existing.textContent === sel.toString()) {
+  if (existing && container.contains(existing)) {
     const current = parseFloat(existing.style.fontSize || "1") || 1;
-    existing.style.fontSize = `${Math.max(0.5, Math.min(3, current + deltaEm))}em`;
+    existing.style.fontSize = `${clamp(current + deltaEm)}em`;
     return;
   }
 
   const span = doc.createElement("span");
   span.className = "fs-step";
-  span.style.fontSize = `${1 + deltaEm}em`;
+  span.style.fontSize = `${clamp(1 + deltaEm)}em`;
   try {
     range.surroundContents(span);
   } catch {
@@ -115,7 +283,13 @@ export function stepSelectionFontSize(doc: Document, container: HTMLElement, del
     span.appendChild(fragment);
     range.insertNode(span);
   }
+
+  // Keep the words selected, so pressing again keeps going. Clearing the
+  // selection here is what limited this to a single step.
+  const after = doc.createRange();
+  after.selectNodeContents(span);
   sel.removeAllRanges();
+  sel.addRange(after);
 }
 
 /** The <a> the caret/selection currently sits inside, if any. */
@@ -278,6 +452,25 @@ export function attachPasteSanitizer(doc: Document): () => void {
     const range = sel.getRangeAt(0);
     range.deleteContents();
 
+    // A pasted formula — copied straight out of a LaTeX source file or a
+    // question bank written in LaTeX — arrives as plain text, not HTML. Runs
+    // it through the same converter the ƒx button uses instead of dropping
+    // `\frac{\mu_0}{4\pi}` onto the page literally.
+    if ((!html || !html.trim() || shiftHeld) && looksLikeLatex(text)) {
+      const holder = doc.createElement("span");
+      holder.innerHTML = formatLatex(text);
+      const formula = holder.firstElementChild;
+      if (formula) {
+        range.insertNode(formula);
+        const after = doc.createRange();
+        after.setStartAfter(formula);
+        after.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(after);
+        return;
+      }
+    }
+
     const node: Node =
       html && html.trim() && !shiftHeld ? sanitizePastedHtml(doc, html) : doc.createTextNode(text);
 
@@ -297,11 +490,13 @@ export function attachPasteSanitizer(doc: Document): () => void {
 /** Strips bold/italic/underline and text-color/highlight/fs-step spans from
  * the current selection, leaving plain text — the toolbar's "clear
  * formatting" action. */
-export function clearSelectionFormatting(doc: Document, container: HTMLElement) {
+export function clearSelectionFormatting(doc: Document, container: HTMLElement): boolean {
   const sel = doc.getSelection();
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
   const range = sel.getRangeAt(0);
-  if (!container.contains(range.commonAncestorContainer)) return;
+  if (!container.contains(range.commonAncestorContainer)) return false;
+  // `removeFormat` strips the very `<b>` and `<sup>` a formula is built from.
+  if (selectionTouchesMath(doc)) return false;
 
   doc.execCommand("removeFormat", false);
   // removeFormat handles b/i/u but not our own spans — unwrap those for every
@@ -333,4 +528,65 @@ export function clearSelectionFormatting(doc: Document, container: HTMLElement) 
     while (el.firstChild) parent.insertBefore(el.firstChild, el);
     parent.removeChild(el);
   });
+  return true;
+}
+
+/** Class the emphasis below carries, so a chapter's own stylesheet can own
+ *  the look and `clearSelectionFormatting` can recognise it. */
+export const MATH_EMPHASIS_CLASS = "math-emph";
+
+/**
+ * Rings a formula in a gold box and sets it bold — the safe answer to
+ * "make this formula stand out".
+ *
+ * Bold and highlight go through `execCommand`, which rewrites the markup it
+ * spans, and a formula is markup: `.fr > span + span.dn` for a stacked
+ * fraction, `.m > .up + sup` for a term. So those are refused on maths (see
+ * selectionTouchesMath) — and refusing without offering anything would leave
+ * a real need unmet, since a key result is exactly what a teacher wants to
+ * mark.
+ *
+ * This touches NOTHING inside: one class on the formula's outermost element,
+ * and the same declarations inline so it looks right in a chapter built
+ * before the class existed. Toggling it off removes both. The formula's own
+ * structure is never read, split or rebuilt, so it cannot be damaged.
+ */
+/** Where the element's own inline style is parked while emphasis is on, so
+ *  removing the emphasis restores exactly what was there. Stripped on save —
+ *  see EDITOR_ATTRS in sanitize.ts. */
+export const MATH_EMPHASIS_PREV_ATTR = "data-emph-prev";
+
+export function toggleMathEmphasis(el: HTMLElement): boolean {
+  // SNAPSHOT AND RESTORE, rather than removing properties one by one.
+  // `background` expands to eight longhands and `border` to twelve, and
+  // removing a shorthand does not reliably clear what it expanded into — the
+  // formula came back carrying `border-top-width: 2px; …` after the emphasis
+  // was taken off, which is residue in every future diff of the chapter.
+  // Putting the original style back is exact, whatever the browser did in
+  // between.
+  const on = el.classList.toggle(MATH_EMPHASIS_CLASS);
+  if (on) {
+    el.setAttribute(MATH_EMPHASIS_PREV_ATTR, el.getAttribute("style") ?? "");
+    el.style.fontWeight = "700";
+    el.style.background = "#fdf6dd";
+    el.style.border = "2px solid #d9a825";
+    el.style.borderRadius = "8px";
+    el.style.padding = "2px 8px";
+    el.style.setProperty("box-decoration-break", "clone");
+  } else {
+    const prev = el.getAttribute(MATH_EMPHASIS_PREV_ATTR) ?? "";
+    el.removeAttribute(MATH_EMPHASIS_PREV_ATTR);
+    if (prev.trim()) el.setAttribute("style", prev);
+    else el.removeAttribute("style");
+  }
+  return on;
+}
+
+
+/** The formula a selection or click is inside, if any — what
+ *  `toggleMathEmphasis` should be applied to. */
+export function mathTargetOf(el: Element | null): HTMLElement | null {
+  // Outermost first: emphasising the whole display block reads better than
+  // ringing one fraction inside it.
+  return el?.closest<HTMLElement>(".dm, .math-line, .mx") ?? el?.closest<HTMLElement>(".m, .fr") ?? null;
 }

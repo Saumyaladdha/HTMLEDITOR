@@ -56,7 +56,25 @@ def get_version_html(
 ):
     book = _get_owned_book(db, book_id, user)
     version = _get_version(db, book, version_id)
-    html = storage.get_html(version.s3_key)
+    try:
+        html = storage.get_html(version.s3_key)
+    except FileNotFoundError:
+        # The row exists but its stored HTML does not. This is a real,
+        # foreseeable state — most often a database that outlived the bucket
+        # it was written against (a book uploaded while STORAGE_BACKEND was
+        # "s3", reopened on a machine running "local", or vice versa). Left
+        # as an unhandled error it surfaced in the editor as a bare "Internal
+        # Server Error" over a blank page, which says nothing about what is
+        # wrong or what to do about it.
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail=(
+                "This version's HTML is missing from storage. The book record "
+                "still exists, but its file was saved to a different storage "
+                "backend than this server is configured to read. Re-upload the "
+                "chapter to edit it."
+            ),
+        )
     return Response(content=html, media_type="text/html; charset=utf-8")
 
 

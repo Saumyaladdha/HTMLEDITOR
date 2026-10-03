@@ -20,6 +20,10 @@ interface Props {
   onSelect: (pageIndex: number) => void; // 1-indexed
   onReorder: (fromIndex: number, toIndex: number) => void; // 0-indexed
   onAdd: (afterIndex: number) => void; // 0-indexed, -1 = at start
+  /** How full each page is, 0–1+. Over 1 means it is overflowing and text is
+   * being clipped. A page's box never grows, so without this the only sign
+   * that a page is nearly full is text vanishing. */
+  fullness?: number[];
   onDuplicate: (index: number) => void;
   onDelete: (index: number) => void;
 }
@@ -81,7 +85,7 @@ function Thumbnail({ entry, renderHtml }: { entry: PageEntry; renderHtml: (index
   );
 }
 
-export default function PageThumbnailRail({ pages, renderHtml, activePage, onSelect, onReorder, onAdd, onDuplicate, onDelete }: Props) {
+export default function PageThumbnailRail({ pages, renderHtml, activePage, onSelect, onReorder, onAdd, onDuplicate, onDelete, fullness }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [menuFor, setMenuFor] = useState<number | null>(null);
@@ -144,6 +148,27 @@ export default function PageThumbnailRail({ pages, renderHtml, activePage, onSel
               }}
             >
               <Thumbnail entry={entry} renderHtml={renderHtml} />
+              {/* How full the page is. A page's box never grows, so text that
+                  no longer fits is simply invisible — this is the only warning
+                  before that happens rather than after. */}
+              {fullness?.[i] !== undefined && (
+                <div
+                  title={fullness[i] > 1
+                    ? "Overflowing — text is being cut off"
+                    : `${Math.round(fullness[i] * 100)}% full`}
+                  style={{
+                    position: "absolute", left: 0, right: 0, bottom: 0, height: 3,
+                    background: "rgba(0,0,0,0.10)",
+                  }}
+                >
+                  <div style={{
+                    width: `${Math.min(100, fullness[i] * 100)}%`,
+                    height: "100%",
+                    background: fullness[i] > 1 ? "#e05a5a"
+                      : fullness[i] > 0.9 ? "#e0a53c" : "#3ec27f",
+                  }} />
+                </div>
+              )}
               <div
                 style={{
                   position: "absolute",

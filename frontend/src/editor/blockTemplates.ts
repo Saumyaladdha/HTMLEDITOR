@@ -18,6 +18,8 @@
  *     editor with no editor change at all, because it appears in the
  *     documents themselves.
  */
+import { MANIFEST_ELEMENTS, SHELL_CLASSES, documentUsesManifest } from "./manifest";
+
 export interface BlockTemplate {
   key: string;
   label: string;
@@ -56,6 +58,11 @@ export const SEMANTIC_TEMPLATES: BlockTemplate[] = [
  * wrappers and the page scaffolding itself. */
 const NOT_A_COMPONENT = new Set([
   "page", "page__cols", "page__full", "book", "wrapper", "container", "content", "row", "col",
+  // Whatever the element library marks `_shell` — `.page`, `.flowwrap`,
+  // `.acol`, `.acols`, `.u`, `.stickycol`. Offering one would let a user
+  // insert a page inside a page. Read from the manifest rather than listed
+  // here so a new wrapper is excluded the moment the library declares one.
+  ...SHELL_CLASSES,
 ]);
 
 /** How many times a class must appear before it's considered a component of
@@ -63,7 +70,19 @@ const NOT_A_COMPONENT = new Set([
 const MIN_OCCURRENCES = 2;
 const MAX_DISCOVERED = 12;
 
-function labelFor(className: string): string {
+function labelFor(className: string, ours: boolean): string {
+  // The element library's own name — "Formula panel (सूत्र)" rather than
+  // "Fcard", "Sticky note" rather than "Callout". A discovered template is
+  // only as useful as the name on the button.
+  //
+  // Only when the document is actually ours, though. A foreign document that
+  // happens to use the class name `callout` means its own thing by it, and
+  // labelling that "Sticky note" tells the user something untrue about their
+  // own file.
+  if (ours) {
+    const known = MANIFEST_ELEMENTS.find((e) => e.classes.includes(className));
+    if (known) return known.label;
+  }
   return className
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
@@ -74,11 +93,54 @@ function labelFor(className: string): string {
  * Scans a document for repeated component-looking elements and turns the
  * cleanest example of each into an insertable template.
  *
- * Text is deliberately left as-is rather than blanked: a real example
- * carrying real wording is a far better starting point than an empty shell,
- * and it shows the user what they're inserting.
+ * Text is BLANKED, but not thrown away — see `blankToPlaceholders`.
  */
+/**
+ * Empty a cloned template's text, keeping the original wording as a ghost.
+ *
+ * A discovered template is a clone of a real block, and it used to arrive
+ * carrying that block's real wording. On a page of similar-looking boxes the
+ * one you just inserted was then indistinguishable from the four already
+ * there — "I don't even know which box was placed" — and every insert began
+ * with deleting someone else's sentence about resistors.
+ *
+ * Blanking it outright would have cost the other half of that: an empty
+ * shell tells you nothing about which slot is the title and which the body.
+ * So each text leaf is emptied AND its old text kept in `data-ph`, which
+ * chrome.ts paints as faint ghost text. The box reads as a labelled, empty
+ * form: obviously new, obviously yours to type into, still recognisable.
+ *
+ * Only leaves are touched. An element with element children keeps its
+ * structure, and `:empty` — which is what the placeholder CSS hangs on —
+ * would not match it anyway.
+ */
+export function blankToPlaceholders(root: HTMLElement) {
+  const walk = (el: HTMLElement) => {
+    const kids = Array.from(el.children) as HTMLElement[];
+    if (kids.length) {
+      kids.forEach(walk);
+      // Text sitting directly beside child elements is body copy — the `.trio`
+      // card is one long line of it — and has no leaf of its own to blank.
+      Array.from(el.childNodes).forEach((n) => {
+        if (n.nodeType === 3 && (n.textContent ?? "").trim()) n.textContent = " ";
+      });
+      return;
+    }
+    const text = (el.textContent ?? "").trim();
+    if (!text) return;
+    // Long sample copy makes a poor label; a word or two is exactly the hint
+    // that tells you what the slot is for.
+    el.setAttribute("data-ph", text.length > 42 ? text.slice(0, 42) + "…" : text);
+    el.textContent = "";
+  };
+  walk(root);
+  return root;
+}
+
 export function discoverTemplates(blocks: HTMLElement[]): BlockTemplate[] {
+  // Whether this document is one of ours decides only how the buttons are
+  // NAMED — discovery itself is identical either way.
+  const ours = blocks.length > 0 && documentUsesManifest(blocks[0].ownerDocument);
   const byClass = new Map<string, HTMLElement[]>();
 
   for (const el of blocks) {
@@ -88,6 +150,16 @@ export function discoverTemplates(blocks: HTMLElement[]): BlockTemplate[] {
       .map((c) => c.split("--")[0])
       .find((c) => c && !c.includes("__"));
     if (!base || NOT_A_COMPONENT.has(base)) continue;
+    // In OUR documents, offer only what the element library actually declares
+    // as a component. Discovery on its own surfaced every repeated class in
+    // the file, so the palette filled up with "Cvi", "Deflead" and "Cvcard" —
+    // internal parts of other blocks, named after classes that mean nothing
+    // to a teacher. A foreign document keeps the old behaviour, since there
+    // is nothing else to go on there.
+    if (ours) {
+      const m = MANIFEST_ELEMENTS.find((e) => e.classes.includes(base));
+      if (!m || m.role !== "content") continue;
+    }
     const list = byClass.get(base) ?? [];
     list.push(el);
     byClass.set(base, list);
@@ -99,12 +171,12 @@ export function discoverTemplates(blocks: HTMLElement[]): BlockTemplate[] {
     // Prefer the SMALLEST example: it's the one least likely to carry a huge
     // embedded image or an unusually long body, and it inserts fastest.
     const example = els.reduce((a, b) => (a.outerHTML.length <= b.outerHTML.length ? a : b));
-    const html = example.cloneNode(true) as HTMLElement;
+    const html = blankToPlaceholders(example.cloneNode(true) as HTMLElement);
     html.removeAttribute("data-block-id");
     html.querySelectorAll("[data-block-id]").forEach((n) => n.removeAttribute("data-block-id"));
     discovered.push({
       key: `doc:${base}`,
-      label: labelFor(base),
+      label: labelFor(base, ours),
       html: html.outerHTML,
       fromDocument: true,
     });

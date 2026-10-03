@@ -41,7 +41,10 @@ export default function ImageResizeHandles({ rect, scale, aspectRatio, onResizeW
       if (!startRef.current) return;
       const current = axis === "x" ? ev.clientX : ev.clientY;
       const deltaOuter = (current - startRef.current.pos) * sign;
-      const newSize = Math.max(30, startRef.current.size + deltaOuter / scale);
+      // 16px, not 30. A decorator used as a small marker beside a line wants
+      // to be smaller than a thumbnail, and the old floor stopped it well
+      // above that with no way past.
+      const newSize = Math.max(16, startRef.current.size + deltaOuter / scale);
       apply(Math.round(newSize));
     }
     function onUp() {

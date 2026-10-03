@@ -31,7 +31,25 @@ const KNOWN_PAGE_SELECTORS = [".page", "[data-page]", ".pf"];
 /** Containers whose DIRECT CHILDREN are the editable blocks, when the
  * document declares its own block structure this way. Anything not listed
  * falls back to structural inference (see collectBlocks). */
-const KNOWN_BLOCK_CONTAINERS = [".page__cols", ".page__full"];
+const KNOWN_BLOCK_CONTAINERS = [
+  ".page__cols", ".page__full",          // the older BEM chapters
+  // Current pipeline: `.flowwrap` is a Part-1 page body, `.acol` one of the
+  // two Part-2 columns. Their direct children are the blocks. `.u` is a
+  // margin-collapse guard wrapping each one — see unit/spec.json — so blocks
+  // are found one level inside it, which collectBlocks already handles by
+  // descending through single-child wrappers.
+  ".flowwrap", ".acol",
+  // THE COVER IS NOT IN A COLUMN, and was therefore unreachable.
+  //
+  // The reference edition lays page 1 out linearly — a `.source-front-title`
+  // masthead, then one `.source-front-section` per analytics heading —
+  // rather than in the two `.acol` columns the body uses. Listing only the
+  // column containers meant `collectBlocks` returned nothing for that page:
+  // 665 blocks stamped across the chapter and ZERO on the cover, so clicking
+  // the chapter title, a section, or a row of the topic table selected
+  // nothing at all and the page looked broken rather than unsupported.
+  ".source-front-title", ".source-front-section",
+];
 
 /** Treated as single editable units even though they contain block-level
  * children — splitting a table into its rows, or a figure into image and
@@ -42,6 +60,8 @@ const ATOMIC_TAGS = new Set([
 ]);
 
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "LINK", "META", "TITLE", "HEAD", "NOSCRIPT", "TEMPLATE"]);
+
+import { documentUsesManifest, manifestElementFor } from "./manifest";
 
 export type DocumentMode = "paginated" | "flow";
 
@@ -59,6 +79,44 @@ export interface DocumentStructure {
   /** Fixed page height, when the document has one — powers overflow
    * detection, which is meaningless without it. */
   pageHeightPx: number | null;
+}
+
+/**
+ * The narrowest viewport this document still lays out as designed in.
+ *
+ * THE CANVAS IS NOT A PHONE. A chapter's stylesheet carries responsive rules
+ * — this pipeline's has `@media (max-width:1100px)`, which shrinks `.page`
+ * padding from 56/68/58 to 26/22/34 and collapses `.opts` from a two-column
+ * grid to one. The editor sizes its iframe to the page width, 1080px, and
+ * 1080 is under 1100: so simply OPENING a chapter fired its own mobile
+ * layout. Every line re-wrapped against a different content box, every set
+ * of MCQ options doubled in height, and four of twenty-six pages spilled
+ * past the sheet — on a file the pipeline had just measured as fitting
+ * exactly. It looked like the editor corrupting the book, and it was the
+ * book's own CSS answering a question the canvas never meant to ask.
+ *
+ * Read rather than hardcoded: the document declares its own breakpoints, so
+ * a chapter that moves its breakpoint moves this with it. Sheets that cannot
+ * be read (none here — everything is inline) are skipped rather than fatal.
+ */
+export function minSafeViewportWidth(doc: Document): number {
+  let widest = 0;
+  for (const sheet of Array.from(doc.styleSheets)) {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;                                   // cross-origin, unreadable
+    }
+    for (const rule of Array.from(rules)) {
+      const media = (rule as CSSMediaRule).media;
+      if (!media) continue;
+      const m = /max-width\s*:\s*(\d+(?:\.\d+)?)px/.exec(media.mediaText ?? "");
+      if (m) widest = Math.max(widest, parseFloat(m[1]));
+    }
+  }
+  // One pixel clear of the widest "this is a narrow screen" claim.
+  return widest ? Math.ceil(widest) + 1 : 0;
 }
 
 function isSkippable(el: Element): boolean {
@@ -235,13 +293,114 @@ export function detectStructure(doc: Document): DocumentStructure {
  * post all yield exactly the paragraphs, lists, figures and tables a person
  * would point at and call "a block".
  */
+
+/** Displays that exist to arrange OTHER elements rather than to render
+ * anything themselves. */
+const LAYOUT_DISPLAYS = new Set(["flex", "grid", "inline-flex", "inline-grid"]);
+
+/**
+ * True if this element is scaffolding whose CHILDREN are the real blocks.
+ *
+ * The cover is the case that forced this. Its markup is
+ * `.flowwrap > .cvgrid > .cvcol > .cvcard`, and "direct children of a block
+ * container" made the whole `.cvgrid` — both columns, all four cards — a
+ * single block. Selecting any card selected the lot, and dragging moved them
+ * as one slab.
+ *
+ * The test is what the element DOES, not what it is called: `.cvgrid` and
+ * `.cvcol` are `display:flex` with no box of their own, while `.cvcard` is an
+ * ordinary bordered block. A declared component is never treated as a wrapper
+ * however it lays its own insides out — `.po` and `.sechead` are both flex,
+ * and both are single blocks a user edits as one thing.
+ */
+function isLayoutWrapper(el: Element, win: Window, ours: boolean): boolean {
+  // AN ATOMIC ELEMENT IS NEVER A WRAPPER, whatever it computes to.
+  //
+  // `ATOMIC_TAGS` was consulted only on the inference path, not here — and
+  // a `<table>` computes `display:table`, a `<tbody>` `table-row-group`,
+  // neither of which `paintsNothing` rules out. So a table holding other
+  // blocks was descended into and the cover's topic table arrived as
+  // twelve separate `<tr>` blocks: each selectable, none nameable, none
+  // offering anything to edit. Splitting a table into rows is exactly what
+  // `ATOMIC_TAGS` exists to prevent; it simply was not asked.
+  if (ATOMIC_TAGS.has(el.tagName)) return false;
+  const m = manifestElementFor(el);
+  if (m && m.role === "content") return false;
+  if (elementChildren(el).length === 0) return false;
+  // Anything the element library itself calls scaffolding. `.u` is a
+  // margin-collapse guard and `.stickycol` a float column: both are direct
+  // children of `.flowwrap`, so both were being treated as blocks. Selecting
+  // the PART banner actually selected the full-width `.u` around it, whose
+  // outline swallowed the sticky note floating over its right-hand side —
+  // which is why the banner and the note appeared to be one thing.
+  if (m && m.role === "shell") return true;
+
+  const cs = win.getComputedStyle(el);
+  if (LAYOUT_DISPLAYS.has(cs.display)) return true;
+
+  // An element that PAINTS NOTHING and only holds other blocks is grouping,
+  // not content. `.sec` and `.exp` wrap a chapter section and have no CSS
+  // rule of their own at all, so a section heading arrived welded to them and
+  // clicking it selected the wrapper instead.
+  //
+  // ONLY in our own documents. The test asks what an element renders, which
+  // means it depends on the stylesheet actually being applied — in a document
+  // whose CSS has not loaded, or one built by a tool we know nothing about,
+  // every container looks unpainted and the whole document would shatter into
+  // its leaves. A `.tip-box` in a foreign file must stay one block.
+  if (!ours) return false;
+  return paintsNothing(cs) && hasBlockChildren(el, win);
+}
+
+/** No border, no background, no meaningful padding — nothing a reader sees. */
+function paintsNothing(cs: CSSStyleDeclaration): boolean {
+  const bg = cs.backgroundColor;
+  const hasBg = !!bg && bg !== "transparent" && !/rgba\(0,\s*0,\s*0,\s*0\)/.test(bg);
+  // An UNSET property reads back as "" in some engines and as "none" in
+  // others; both mean "paints nothing", and testing only for "none" made
+  // every element look like it had a background image.
+  const bgImg = cs.backgroundImage;
+  if (hasBg || (bgImg && bgImg !== "none")) return false;
+  const border = ["borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth"]
+    .some((k) => parseFloat((cs as unknown as Record<string, string>)[k] || "0") > 0);
+  if (border) return false;
+  // `.u` carries 0.02px of padding purely to stop margins collapsing through
+  // it — that is not a visual box.
+  const pad = ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"]
+    .some((k) => parseFloat((cs as unknown as Record<string, string>)[k] || "0") >= 2);
+  return !pad;
+}
+
+/** True if the element's children are block-level — i.e. it is holding other
+ * blocks rather than wrapping a run of text. */
+function hasBlockChildren(el: Element, win: Window): boolean {
+  const kids = elementChildren(el);
+  if (kids.length === 0) return false;
+  return kids.every((k) => !TEXT_LEVEL.has(win.getComputedStyle(k).display));
+}
+
+const TEXT_LEVEL = new Set(["inline", "inline-block", "inline-flex", "contents"]);
+
+/** Adds `el` as a block, or — if it only arranges other blocks — whatever it
+ * arranges. Depth-capped so a pathological nest cannot recurse far. */
+function pushBlock(
+  el: HTMLElement, out: HTMLElement[], win: Window, depth: number, ours: boolean,
+) {
+  if (depth < 3 && isLayoutWrapper(el, win, ours)) {
+    elementChildren(el).forEach((child) => pushBlock(child, out, win, depth + 1, ours));
+    return;
+  }
+  out.push(el);
+}
+
 export function collectBlocks(doc: Document, structure: DocumentStructure): HTMLElement[] {
   const win = doc.defaultView ?? window;
 
+  const ours = documentUsesManifest(doc);
   if (structure.blockContainerSelectors.length > 0) {
     const blocks: HTMLElement[] = [];
     doc.querySelectorAll(structure.blockContainerSelectors.join(", ")).forEach((container) => {
-      elementChildren(container).forEach((child) => blocks.push(child));
+      elementChildren(container).forEach((child) => pushBlock(child, blocks, win, 0, ours));
     });
     if (blocks.length > 0) return blocks;
     // Fall through to inference: a document can declare containers and still

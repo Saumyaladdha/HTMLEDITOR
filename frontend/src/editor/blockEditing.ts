@@ -304,3 +304,55 @@ export const BLOCK_TYPES: { tag: string; label: string; shortcut?: string }[] = 
   { tag: "blockquote", label: "Quote" },
   { tag: "pre", label: "Code" },
 ];
+
+/**
+ * Puts a block and its neighbour SIDE BY SIDE, or takes them apart again.
+ *
+ * The stylesheet has always been able to do this — `figcard/style.css` ships
+ * `.figrow { display:flex; gap:12px }` with `.figrow > .figcard { flex:1 }`
+ * — but nothing in the editor ever created the wrapper, so "put text beside
+ * this picture" was impossible despite being fully implemented in CSS. The
+ * wrapper class is not named here: it comes from the element manifest, which
+ * derives it from that CSS, so any element whose stylesheet grows the same
+ * pattern gets the behaviour without an editor change.
+ *
+ * The neighbour is REUSED rather than replaced. Wrapping a figure that
+ * already has a paragraph after it should put that paragraph beside it —
+ * inventing an empty box next to real content is never what was meant. Only
+ * when there is no neighbour is a placeholder created.
+ */
+export function toggleSideBySide(
+  doc: Document,
+  block: HTMLElement,
+  wrapperClass: string,
+  makePlaceholder: () => HTMLElement,
+): HTMLElement {
+  const existing = block.parentElement;
+  if (existing && existing.classList.contains(wrapperClass)) {
+    // Unwrap: children go back to being siblings, in order.
+    const parent = existing.parentElement;
+    if (parent) {
+      while (existing.firstChild) parent.insertBefore(existing.firstChild, existing);
+      parent.removeChild(existing);
+    }
+    return block;
+  }
+
+  const row = doc.createElement("div");
+  row.className = wrapperClass;
+  const parent = block.parentElement;
+  if (!parent) return block;
+
+  // `.u` is the pipeline's margin-collapse guard around each block; the
+  // neighbour to pair with is that wrapper, not the bare element inside it,
+  // or the row would contain a half-unwrapped block.
+  const partner =
+    block.nextElementSibling && !block.nextElementSibling.classList.contains(wrapperClass)
+      ? (block.nextElementSibling as HTMLElement)
+      : null;
+
+  parent.insertBefore(row, block);
+  row.appendChild(block);
+  row.appendChild(partner ?? makePlaceholder());
+  return block;
+}

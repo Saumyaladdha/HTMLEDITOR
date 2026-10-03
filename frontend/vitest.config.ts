@@ -6,6 +6,9 @@ export default defineConfig({
     // structure detection, sanitisation — so tests need a real DOM rather
     // than mocks of one.
     environment: "jsdom",
-    include: ["src/**/*.test.ts"],
+    // .tsx as well: a panel that throws during render simply stops
+    // appearing, with no error in the page — the only way to catch that
+    // is to mount the component, which needs JSX in the test.
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
 });

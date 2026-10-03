@@ -1,6 +1,8 @@
 # Secrets — NEVER commit. See backend/.env.example for the shape.
 .env
 *.env
+.env.*
+*.env.*
 !.env.example
 !backend/.env.example
 

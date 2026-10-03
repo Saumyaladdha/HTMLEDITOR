@@ -30,7 +30,11 @@ interface Props {
  */
 
 type Prop =
-  | { kind: "slider"; label: string; css: string; min: number; max: number; unit: string; step?: number }
+  | { kind: "slider"; label: string; css: string; min: number; max: number; unit: string;
+      step?: number;
+      /** Longhands to set alongside `css`, so one control still drives all
+       * four sides — the shorthand cannot be READ back, only written. */
+      alsoSet?: string[] }
   | { kind: "color"; label: string; css: string }
   | { kind: "choice"; label: string; css: string; options: { label: string; value: string }[] };
 
@@ -65,14 +69,31 @@ const TEXT_PROPS: Prop[] = [
 const BOX_PROPS: Prop[] = [
   { kind: "slider", label: "Space above", css: "margin-top", min: 0, max: 80, unit: "px" },
   { kind: "slider", label: "Space below", css: "margin-bottom", min: 0, max: 80, unit: "px" },
-  { kind: "slider", label: "Inner padding", css: "padding", min: 0, max: 60, unit: "px" },
+  // `padding` and `margin` are SHORTHANDS. `getComputedStyle` returns "" for
+  // them in most engines, which parsed to NaN and displayed as 0 — so the
+  // panel reported no padding on a card that plainly has some, and moving the
+  // slider from that false 0 jumped the real value. Longhands compute.
+  { kind: "slider", label: "Inner padding", css: "padding-top", min: 0, max: 60,
+    unit: "px", alsoSet: ["padding-right", "padding-bottom", "padding-left"] },
   { kind: "color", label: "Background", css: "background-color" },
-  { kind: "slider", label: "Corner radius", css: "border-radius", min: 0, max: 40, unit: "px" },
+  { kind: "slider", label: "Corner radius", css: "border-top-left-radius", min: 0, max: 40,
+    unit: "px", alsoSet: ["border-top-right-radius", "border-bottom-right-radius",
+                          "border-bottom-left-radius"] },
 ];
 
+/** True when a computed colour is fully transparent — i.e. the element paints
+ * no colour of its own. Shown as "none" rather than as a black swatch, which
+ * is what it looked like before and made every unstyled block appear to have
+ * a solid black background. */
+export function isTransparent(computed: string): boolean {
+  const m = /rgba\(([^)]+)\)/.exec(computed);
+  if (!m) return false;
+  const parts = m[1].split(",").map((n) => parseFloat(n.trim()));
+  return parts.length === 4 && parts[3] === 0;
+}
+
 /** getComputedStyle always returns rgb()/rgba(); <input type="color"> only
- * accepts #rrggbb. Fully transparent reads as black so the swatch shows
- * something predictable rather than an empty control. */
+ * accepts #rrggbb. */
 function toHexColor(computed: string): string {
   const m = /rgba?\(([^)]+)\)/.exec(computed);
   if (!m) return /^#[0-9a-f]{6}$/i.test(computed) ? computed : "#000000";
@@ -82,9 +103,27 @@ function toHexColor(computed: string): string {
   return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
+/** A computed value that carries no number of its own — `normal`, `auto`, or
+ * the empty string a shorthand returns. These are NOT zero, and showing them
+ * as zero is what made line-height read 0.8 (the slider's own minimum) on
+ * text set in the stylesheet. */
+export function isUnset(computed: string): boolean {
+  const t = (computed || "").trim();
+  return t === "" || t === "normal" || t === "auto" || t === "none";
+}
+
 function numericValue(computed: string, fallback: number): number {
   const n = parseFloat(computed);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/** Line height computes to px against the font size; the control is a
+ * multiplier, so it is converted rather than shown as a raw pixel count. */
+function lineHeightMultiple(computed: string, fontSizePx: number): number | null {
+  if (isUnset(computed)) return null;
+  const n = parseFloat(computed);
+  if (!Number.isFinite(n)) return null;
+  return computed.includes("px") && fontSizePx > 0 ? n / fontSizePx : n;
 }
 
 export default function StyleInspector({ el, onChange, onCommit }: Props) {
@@ -96,23 +135,48 @@ export default function StyleInspector({ el, onChange, onCommit }: Props) {
   const computed = win.getComputedStyle(el);
   const tokens = discoverTokens(el);
 
-  const set = (css: string, value: string) => {
+  const set = (css: string, value: string, alsoSet?: string[]) => {
     el.style.setProperty(css, value);
+    (alsoSet ?? []).forEach((p) => el.style.setProperty(p, value));
     onChange();
     rerender();
   };
 
+  /** Back to whatever the stylesheet says, for one property or all of them. */
+  const clear = (css: string, alsoSet?: string[]) => {
+    el.style.removeProperty(css);
+    (alsoSet ?? []).forEach((p) => el.style.removeProperty(p));
+    onChange();
+    rerender();
+  };
+
+  /** True when the value comes from the stylesheet rather than from an
+   * override made here — worth showing, because it is the difference between
+   * "this block is set to 18.5px" and "everything on the page is". */
+  const isInherited = (css: string) => !el.style.getPropertyValue(css);
+
   const renderProp = (p: Prop) => {
     const current = computed.getPropertyValue(p.css);
     if (p.kind === "color") {
+      const none = isTransparent(current);
       return (
-        <Row key={p.css} label={p.label}>
+        <Row
+          key={p.css}
+          label={p.label}
+          value={none ? "none" : undefined}
+          onReset={isInherited(p.css) ? undefined : () => { clear(p.css); onCommit(); }}
+        >
           <input
             type="color"
             value={toHexColor(current)}
             onChange={(e) => set(p.css, e.target.value)}
             onBlur={onCommit}
-            style={{ width: 44, height: 26, background: "none", border: "none", cursor: "pointer" }}
+            // A transparent element has no colour of its own; the swatch is
+            // dimmed rather than showing a solid black it does not have.
+            style={{
+              width: 44, height: 26, background: "none", border: "none",
+              cursor: "pointer", opacity: none ? 0.35 : 1,
+            }}
           />
         </Row>
       );
@@ -148,16 +212,33 @@ export default function StyleInspector({ el, onChange, onCommit }: Props) {
         </Row>
       );
     }
-    const value = numericValue(current, p.min);
+    // Line height computes to px; the control is a multiplier.
+    const asMultiple = p.css === "line-height"
+      ? lineHeightMultiple(current, parseFloat(computed.fontSize) || 0)
+      : null;
+    const unset = isUnset(current) && asMultiple === null;
+    const raw = asMultiple ?? numericValue(current, p.min);
+    const value = Math.min(p.max, Math.max(p.min, raw));
+    const inherited = isInherited(p.css);
     return (
-      <Row key={p.css} label={p.label} value={`${Math.round(value * 100) / 100}${p.unit}`}>
+      <Row
+        key={p.css}
+        label={p.label}
+        // An unset value is reported as such rather than as the slider's own
+        // minimum, and an inherited one says where it comes from — the panel
+        // used to present both as if the block had been set that way.
+        value={unset
+          ? "default"
+          : `${Math.round(value * 100) / 100}${p.unit}${inherited ? " · from the page" : ""}`}
+        onReset={inherited ? undefined : () => { clear(p.css, p.alsoSet); onCommit(); }}
+      >
         <input
           type="range"
           min={p.min}
           max={p.max}
           step={p.step ?? 1}
           value={value}
-          onChange={(e) => set(p.css, `${e.target.value}${p.unit}`)}
+          onChange={(e) => set(p.css, `${e.target.value}${p.unit}`, p.alsoSet)}
           onMouseUp={onCommit}
           onTouchEnd={onCommit}
           onKeyUp={onCommit}
@@ -250,20 +331,40 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div style={sectionStyle}>{children}</div>;
 }
 
-function Row({ label, value, children }: { label: string; value?: string; children: React.ReactNode }) {
+function Row({ label, value, onReset, children }: {
+  label: string; value?: string; onReset?: () => void; children: React.ReactNode;
+}) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
           fontSize: 11,
           color: "var(--ink-500)",
           marginBottom: 4,
+          gap: 6,
         }}
       >
         <span>{label}</span>
-        {value && <span style={{ color: "var(--ink-300)" }}>{value}</span>}
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {value && <span style={{ color: "var(--ink-300)" }}>{value}</span>}
+          {/* Only shown once this block actually overrides the stylesheet, so
+              there is always a way back from an experiment. */}
+          {onReset && (
+            <button
+              onClick={onReset}
+              title="Back to the stylesheet's value"
+              style={{
+                background: "none", border: "none", cursor: "pointer", padding: 0,
+                color: "var(--ink-500)", fontSize: 12, lineHeight: 1,
+              }}
+            >
+              ↺
+            </button>
+          )}
+        </span>
       </div>
       {children}
     </div>

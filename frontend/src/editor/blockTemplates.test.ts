@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { discoverTemplates, SEMANTIC_TEMPLATES } from "./blockTemplates";
+import { blankToPlaceholders, discoverTemplates, SEMANTIC_TEMPLATES } from "./blockTemplates";
 import { collectBlocks, detectStructure } from "./structure";
 
 /**
@@ -96,5 +96,57 @@ describe("discoverTemplates", () => {
     for (const t of discoverTemplates(blocksOf(CHAPTER))) {
       expect(t.fromDocument).toBe(true);
     }
+  });
+});
+
+/**
+ * An inserted box arrives empty.
+ *
+ * Reported as "the box that was placed — it's very difficult [to tell] which
+ * box, as it contains content. Make that box empty and very clear." A
+ * discovered template is a clone of a real block, so it used to carry that
+ * block's real wording and was indistinguishable from the ones already on the
+ * page. Blanked, it is obviously the new one; the old wording survives in
+ * `data-ph` so the empty slots are still labelled.
+ */
+describe("blankToPlaceholders", () => {
+  const parse = (html: string) =>
+    new DOMParser().parseFromString(`<body>${html}</body>`, "text/html")
+      .body.firstElementChild as HTMLElement;
+
+  it("empties a leaf and keeps its wording as a placeholder", () => {
+    const el = blankToPlaceholders(parse(`<p class="para">विभवांतर कहलाता है।</p>`));
+    expect(el.textContent).toBe("");
+    expect(el.getAttribute("data-ph")).toBe("विभवांतर कहलाता है।");
+  });
+
+  it("keeps the structure, blanking only the leaves", () => {
+    const el = blankToPlaceholders(parse(
+      `<div class="fcard"><div class="ft">सूत्र</div><div class="fb">q = q₊ − q₋</div></div>`));
+    expect(el.className).toBe("fcard");
+    expect(el.children.length).toBe(2);
+    expect(el.querySelector(".ft")?.getAttribute("data-ph")).toBe("सूत्र");
+    expect(el.querySelector(".fb")?.textContent).toBe("");
+  });
+
+  it("clears body copy sitting beside child elements", () => {
+    // `.trio` is one long line of text with <span>s embedded in it — there is
+    // no leaf to blank, so the loose text nodes have to be cleared directly.
+    const el = blankToPlaceholders(parse(
+      `<div class="trio">त्रिक: <span class="m">V</span> · मात्रक वोल्ट</div>`));
+    expect(el.textContent?.trim()).toBe("");
+  });
+
+  it("truncates a long example so the label stays a label", () => {
+    const long = "क".repeat(80);
+    const el = blankToPlaceholders(parse(`<p>${long}</p>`));
+    expect(el.getAttribute("data-ph")!.length).toBe(43);   // 42 + the ellipsis
+    expect(el.getAttribute("data-ph")!.endsWith("…")).toBe(true);
+  });
+
+  it("leaves an already-empty element alone", () => {
+    const el = blankToPlaceholders(parse(`<div class="box"><img src="x.png"></div>`));
+    expect(el.hasAttribute("data-ph")).toBe(false);
+    expect(el.querySelector("img")).toBeTruthy();
   });
 });
